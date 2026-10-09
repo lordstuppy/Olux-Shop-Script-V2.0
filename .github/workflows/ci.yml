@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
 
 jobs:
   php:
@@ -68,3 +71,26 @@ jobs:
           php artisan key:generate
       - run: cd tests/browser && npm install --no-fund && npm audit --audit-level=high && npx playwright install --with-deps chromium
       - run: ./tests/browser/run.sh
+
+  # End-to-end run on a production-like stack (nginx TLS, queue worker,
+  # scheduler, PostgreSQL 15, Shkeeper mock). Takes about 8 minutes because it
+  # waits for the 5-minute payment reconciliation, so it runs weekly and on demand.
+  live:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    needs: php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, gd, sodium, curl
+          coverage: none
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: LIVE_DIR=/tmp/shop-live ./tests/live/run.sh all
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-test-logs
+          path: /tmp/shop-live/logs

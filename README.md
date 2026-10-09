@@ -171,9 +171,14 @@ at a load balancer.
 php artisan test               # PHPUnit: unit + feature (needs a PostgreSQL database "shop_test")
 ./tests/browser/run.sh         # Playwright: every page with JS disabled, purchase flows, axe a11y
 ./tests/load/run.sh            # k6: concurrent checkouts and duplicate webhooks + integrity checks
+./tests/live/run.sh            # end-to-end run on a production-like stack (see docs/LIVE_TEST.md)
 ./scripts/check-ascii.sh       # source files must be ASCII-only
 vendor/bin/pint --test         # code style
 ```
+
+`tests/live/run.sh` builds the committed code into a separate directory
+(`LIVE_DIR`, default `/tmp/shop-live`) and needs Docker; it uses ports 2525,
+3310, 5433, 8000, 8080, 8081 and 8443. `tests/live/run.sh down` stops it.
 
 CSRF verification stays enabled in tests. `tests/browser/run.sh` and
 `tests/load/run.sh` **drop and re-seed** the database named in `.env`, so run
