@@ -143,6 +143,34 @@ class OrderService
     }
 
     /**
+     * Minimum and maximum order totals from the gateway settings, in the
+     * default currency. Totals in other currencies are converted with the
+     * configured rate; without a rate the limits cannot be compared and are
+     * not applied. Free (fully discounted) orders are always allowed.
+     */
+    private function assertWithinOrderLimits(int $totalMinor, string $currency): void
+    {
+        $min = (int) config('shop.order_min_minor');
+        $max = (int) config('shop.order_max_minor');
+        if (($min === 0 && $max === 0) || $totalMinor === 0) {
+            return;
+        }
+        $base = (string) config('shop.default_currency');
+        if ($currency !== $base) {
+            if ($this->converter->rate($currency, $base) === null) {
+                return;
+            }
+            $totalMinor = $this->converter->convert($totalMinor, $currency, $base)[0];
+        }
+        if ($min > 0 && $totalMinor < $min) {
+            throw new UserFacingException(__('The minimum order is :amount. Add more to your cart to check out.', ['amount' => Money::format($min, $base)]));
+        }
+        if ($max > 0 && $totalMinor > $max) {
+            throw new UserFacingException(__('Orders above :amount cannot be placed online. Split your order or contact support.', ['amount' => Money::format($max, $base)]));
+        }
+    }
+
+    /**
      * Expires unpaid orders past their deadline and releases stock and coupon
      * reservations. Orders with a partial payment are left for staff review.
      */
@@ -216,6 +244,8 @@ class OrderService
         if ($couponCode !== null && trim($couponCode) !== '') {
             [$coupon, $discount] = $this->coupons->reserve($couponCode, $currency, $subtotal, $buyer);
         }
+
+        $this->assertWithinOrderLimits($subtotal - $discount, $currency);
 
         $order = Order::create([
             'public_id' => (string) Str::uuid(),

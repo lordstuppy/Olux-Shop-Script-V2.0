@@ -3,6 +3,7 @@
 namespace App\Services\Shkeeper;
 
 use App\Exceptions\ShkeeperException;
+use App\Support\GatewayLog;
 use App\Support\Money;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -241,18 +242,27 @@ class ShkeeperClient
             throw new ShkeeperException('SHKEEPER_API_KEY is not configured.');
         }
 
+        $action = $method.' '.preg_replace('/\?.*$/', '', $path);
+        $started = hrtime(true);
+        $elapsed = fn () => (int) ((hrtime(true) - $started) / 1_000_000);
         try {
             $response = $this->request($authenticated)->send($method, $this->baseUrl.$path, $json === null ? [] : ['json' => $json]);
         } catch (ConnectionException $e) {
+            $timeout = str_contains(strtolower($e->getMessage()), 'timed out') || str_contains($e->getMessage(), 'cURL error 28');
+            GatewayLog::record('api', $timeout ? 'timeout' : 'error', ['action' => $action, 'duration_ms' => $elapsed(), 'message' => $e->getMessage()]);
             throw new ShkeeperException("Shkeeper is unreachable: {$e->getMessage()}", 0, $e);
         }
 
         if (! $response->successful()) {
+            GatewayLog::record('api', 'error', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed(), 'message' => 'HTTP '.$response->status()]);
             throw new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.");
         }
         if ($response->json('status') === 'error') {
-            throw new ShkeeperException('Shkeeper error: '.mb_substr((string) ($response->json('message') ?? $response->json('msg')), 0, 200));
+            $message = mb_substr((string) ($response->json('message') ?? $response->json('msg')), 0, 200);
+            GatewayLog::record('api', 'error', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed(), 'message' => $message]);
+            throw new ShkeeperException('Shkeeper error: '.$message);
         }
+        GatewayLog::record('api', 'ok', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed()]);
 
         return $response;
     }

@@ -30,7 +30,36 @@ final class Settings
         'support_email' => ['email', 'max:255'],
     ];
 
+    /**
+     * Payment gateway settings, edited on /admin/gateway (super admin only).
+     * Secrets (API keys, payout credentials) stay in the environment.
+     */
+    public const GATEWAY = [
+        'payments_crypto_enabled' => ['boolean'],
+        'payments_balance_enabled' => ['boolean'],
+        'crypto_disabled' => ['nullable', 'string', 'max:255'],
+        'order_min_minor' => ['integer', 'min:0', 'max:100000000'],
+        'order_max_minor' => ['integer', 'min:0', 'max:1000000000'],
+    ];
+
     private const CACHE_KEY = 'shop.settings';
+
+    /** @return array<string, list<string>> */
+    public static function rules(): array
+    {
+        return self::EDITABLE + self::GATEWAY;
+    }
+
+    private static function cast(string $key, mixed $value): mixed
+    {
+        $rules = self::rules()[$key];
+
+        return match (true) {
+            in_array('integer', $rules, true) => (int) $value,
+            in_array('boolean', $rules, true) => in_array((string) $value, ['1', 'true'], true),
+            default => (string) $value,
+        };
+    }
 
     /**
      * Translated label and hint for each editable key.
@@ -64,8 +93,8 @@ final class Settings
             return;
         }
         foreach ($values as $key => $value) {
-            if (array_key_exists($key, self::EDITABLE)) {
-                config(['shop.'.$key => in_array('integer', self::EDITABLE[$key], true) ? (int) $value : $value]);
+            if (array_key_exists($key, self::rules())) {
+                config(['shop.'.$key => self::cast($key, $value)]);
             }
         }
     }
@@ -74,10 +103,11 @@ final class Settings
     public static function save(array $values, User $actor): void
     {
         foreach ($values as $key => $value) {
-            if (! array_key_exists($key, self::EDITABLE)) {
+            if (! array_key_exists($key, self::rules())) {
                 continue;
             }
-            DB::table('settings')->updateOrInsert(['key' => $key], ['value' => (string) $value, 'updated_by' => $actor->id, 'updated_at' => now(), 'created_at' => now()]);
+            $stored = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
+            DB::table('settings')->updateOrInsert(['key' => $key], ['value' => $stored, 'updated_by' => $actor->id, 'updated_at' => now(), 'created_at' => now()]);
         }
         Cache::forget(self::CACHE_KEY);
         self::apply();

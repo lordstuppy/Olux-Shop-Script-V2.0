@@ -114,6 +114,17 @@ return [
     | payment when nothing was delivered); sellers must answer within
     | dispute_response_days before the case escalates to staff.
     */
+    /*
+    | Payment methods and order limits; editable on /admin/gateway. Limits
+    | are in minor units of default_currency (0 = no limit); orders in other
+    | currencies are converted with the configured rate.
+    */
+    'payments_crypto_enabled' => (bool) env('SHOP_PAYMENTS_CRYPTO', true),
+    'payments_balance_enabled' => (bool) env('SHOP_PAYMENTS_BALANCE', true),
+    'crypto_disabled' => (string) env('SHOP_CRYPTO_DISABLED', ''),
+    'order_min_minor' => (int) env('SHOP_ORDER_MIN_MINOR', 0),
+    'order_max_minor' => (int) env('SHOP_ORDER_MAX_MINOR', 0),
+
     'dispute_window_days' => (int) env('SHOP_DISPUTE_WINDOW_DAYS', 14),
     'dispute_response_days' => (int) env('SHOP_DISPUTE_RESPONSE_DAYS', 3),
 

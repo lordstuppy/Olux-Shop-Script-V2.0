@@ -3,6 +3,7 @@
         ['admin.dashboard', __('Overview'), 'staff.dashboard'],
         ['admin.orders.index', __('Orders'), 'orders.view'],
         ['admin.payments.index', __('Payments'), 'payments.view'],
+        ['admin.gateway.index', __('Payment gateway'), 'gateway.view'],
         ['admin.webhooks.index', __('Webhooks'), 'webhooks.manage'],
         ['admin.products.index', __('Products'), 'products.manage'],
         ['admin.categories.index', __('Categories'), 'categories.manage'],

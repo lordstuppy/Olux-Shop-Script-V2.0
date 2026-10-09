@@ -57,12 +57,31 @@ class PaymentService
         });
     }
 
+    /**
+     * Cryptos buyers can pay with: those Shkeeper offers minus the ones staff
+     * switched off on /admin/gateway. Empty when crypto payments are off.
+     *
+     * @return list<array{name: string, display_name: string}>
+     */
+    public function paymentCryptos(): array
+    {
+        if (! config('shop.payments_crypto_enabled')) {
+            return [];
+        }
+        $disabled = array_filter(array_map('trim', explode(',', strtoupper((string) config('shop.crypto_disabled')))));
+
+        return array_values(array_filter($this->availableCryptos(), fn ($c) => ! in_array(strtoupper($c['name']), $disabled, true)));
+    }
+
     public function startShkeeperPayment(Order $order, string $crypto): Payment
     {
         if ($order->status !== OrderStatus::Pending) {
             throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $order->shortId(), 'status' => mb_strtolower($order->status->label())]));
         }
-        $allowed = array_column($this->availableCryptos(), 'name');
+        if (! config('shop.payments_crypto_enabled')) {
+            throw new UserFacingException(__('Crypto payments are switched off right now. Pay with your shop balance or try again later.'));
+        }
+        $allowed = array_column($this->paymentCryptos(), 'name');
         if (! in_array($crypto, $allowed, true)) {
             throw new UserFacingException(__(':crypto is not accepted. Choose one of: :options.', ['crypto' => $crypto, 'options' => implode(', ', $allowed)]));
         }
@@ -129,6 +148,9 @@ class PaymentService
             }
             if ($locked->status !== OrderStatus::Pending) {
                 throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
+            }
+            if ($locked->total_minor > 0 && ! config('shop.payments_balance_enabled')) {
+                throw new UserFacingException(__('Paying with the shop balance is switched off right now. Choose another payment method.'));
             }
             if ($locked->total_minor === 0) {
                 // Fully discounted order: nothing to debit.

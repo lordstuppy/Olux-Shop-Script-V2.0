@@ -12,6 +12,7 @@ use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
@@ -45,7 +46,8 @@ class CheckoutController extends Controller
             'discountMinor' => $discount,
             'totalMinor' => $totals['subtotal_minor'] - $discount,
             'couponError' => $couponError,
-            'cryptos' => $payments->availableCryptos(),
+            'cryptos' => $payments->paymentCryptos(),
+            'balanceEnabled' => (bool) config('shop.payments_balance_enabled'),
             'balanceUsable' => $user->currency === $totals['currency'] && $user->balance_minor >= $totals['subtotal_minor'] - $discount,
             // A fresh key per rendered form; resubmitting the same form cannot create a second order.
             'idempotencyKey' => (string) Str::uuid(),
@@ -74,12 +76,13 @@ class CheckoutController extends Controller
     {
         $data = $request->validate([
             'idempotency_key' => ['required', 'string', 'max:64'],
-            'payment_method' => ['required', 'in:crypto,balance'],
+            'payment_method' => ['required', Rule::in(array_keys(array_filter(['crypto' => (bool) config('shop.payments_crypto_enabled'), 'balance' => (bool) config('shop.payments_balance_enabled')])))],
             'crypto' => ['required_if:payment_method,crypto', 'nullable', 'string', 'max:32'],
             'accept_terms' => ['accepted'],
         ], [
             'accept_terms.accepted' => __('You must accept the terms of service to place an order.'),
             'crypto.required_if' => __('Choose the cryptocurrency you want to pay with.'),
+            'payment_method.in' => __('This payment method is switched off right now. Choose another one.'),
         ]);
 
         $user = $request->user();

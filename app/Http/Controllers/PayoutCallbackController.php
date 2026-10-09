@@ -6,6 +6,7 @@ use App\Enums\WebhookEventStatus;
 use App\Models\WebhookEvent;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Services\ShkeeperPayoutService;
+use App\Support\GatewayLog;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,11 +25,14 @@ class PayoutCallbackController extends Controller
         $raw = $request->getContent();
         if (! $client->verifyWebhookSignature($raw, $request->header('X-Shkeeper-Signature'), $request->header('X-Shkeeper-Timestamp'))) {
             Log::warning('Payout webhook signature mismatch from ip {ip}', ['ip' => $request->ip()]);
+            GatewayLog::record('payout_webhook', 'rejected_signature', ['ip' => $request->ip(), 'http_status' => 401]);
 
             return response()->json(['message' => 'Invalid or missing signature.'], 401);
         }
         $payload = json_decode($raw, true);
         if (! is_array($payload) || ! is_string($payload['external_id'] ?? null)) {
+            GatewayLog::record('payout_webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 400]);
+
             return response()->json(['message' => 'Body is not a payout callback.'], 400);
         }
 
@@ -42,6 +46,8 @@ class PayoutCallbackController extends Controller
                 'source_ip' => $request->ip(),
             ]));
         } catch (UniqueConstraintViolationException) {
+            GatewayLog::record('payout_webhook', 'duplicate', ['ip' => $request->ip(), 'http_status' => 202, 'external_id' => $payload['external_id']]);
+
             return response()->json(['message' => 'Duplicate event ignored.'], 202);
         }
 
@@ -51,6 +57,9 @@ class PayoutCallbackController extends Controller
             'attempts' => 1,
             'processed_at' => now(),
         ])->save();
+
+        GatewayLog::record('payout_webhook', 'ok', ['ip' => $request->ip(), 'http_status' => 202, 'external_id' => $payload['external_id'],
+            'message' => trim($outcome.' '.($payload['status'] ?? ''))]);
 
         return response()->json(['message' => 'Accepted.', 'status' => $outcome], 202);
     }

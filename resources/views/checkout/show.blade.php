@@ -64,18 +64,25 @@
 
                 <fieldset>
                     <legend>{{ __('Payment method') }}</legend>
-                    <label class="check">
-                        <input type="radio" name="payment_method" value="crypto" @checked(old('payment_method', 'crypto') === 'crypto')>
-                        {{ __('Cryptocurrency (self-hosted Shkeeper)') }}
-                    </label>
-                    <x-select name="crypto" :label="__('Cryptocurrency')" :options="collect($cryptos)->pluck('display_name', 'name')->all()" :value="old('crypto')" />
-                    <label class="check">
-                        <input type="radio" name="payment_method" value="balance" @checked(old('payment_method') === 'balance') @disabled(! $balanceUsable)>
-                        {{ __('Shop balance (:balance)', ['balance' => money(auth()->user()->balance_minor, auth()->user()->currency)]) }}
-                    </label>
-                    @unless ($balanceUsable)
-                        <p class="hint">{{ __('Your balance cannot cover :amount in :currency.', ['amount' => money($totalMinor, $totals['currency']), 'currency' => $totals['currency']]) }}</p>
-                    @endunless
+                    @if ($cryptos === [] && ! $balanceEnabled)
+                        <p class="error-text">{{ __('Payments are switched off right now. Your cart is kept; please try again later.') }}</p>
+                    @endif
+                    @if ($cryptos !== [])
+                        <label class="check">
+                            <input type="radio" name="payment_method" value="crypto" @checked(old('payment_method', 'crypto') === 'crypto')>
+                            {{ __('Cryptocurrency (self-hosted Shkeeper)') }}
+                        </label>
+                        <x-select name="crypto" :label="__('Cryptocurrency')" :options="collect($cryptos)->pluck('display_name', 'name')->all()" :value="old('crypto')" />
+                    @endif
+                    @if ($balanceEnabled)
+                        <label class="check">
+                            <input type="radio" name="payment_method" value="balance" @checked(old('payment_method', $cryptos === [] ? 'balance' : null) === 'balance') @disabled(! $balanceUsable)>
+                            {{ __('Shop balance (:balance)', ['balance' => money(auth()->user()->balance_minor, auth()->user()->currency)]) }}
+                        </label>
+                        @unless ($balanceUsable)
+                            <p class="hint">{{ __('Your balance cannot cover :amount in :currency.', ['amount' => money($totalMinor, $totals['currency']), 'currency' => $totals['currency']]) }}</p>
+                        @endunless
+                    @endif
                 </fieldset>
 
                 <label class="check">

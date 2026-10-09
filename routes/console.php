@@ -15,6 +15,7 @@ use App\Services\PayoutService;
 use App\Services\ShkeeperPayoutService;
 use App\Support\TranslationCatalog;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
@@ -79,6 +80,11 @@ Artisan::command('shop:escalate-disputes', function (DisputeService $disputes) {
     $this->info("Escalated {$count} disputes whose seller did not respond in time.");
 })->purpose('Hand disputes to staff when the seller missed the response deadline');
 
+Artisan::command('shop:prune-gateway-logs {--days=90}', function () {
+    $count = DB::table('gateway_logs')->where('created_at', '<', now()->subDays((int) $this->option('days')))->delete();
+    $this->info("Deleted {$count} gateway log entries.");
+})->purpose('Delete gateway log entries older than --days (default 90)');
+
 Artisan::command('shop:create-admin {email} {--name=Administrator}', function (string $email) {
     $validator = Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255', 'unique:users,email']]);
     if ($validator->fails()) {
@@ -130,3 +136,4 @@ Schedule::command('queue:prune-failed --hours=720')->daily();
 Schedule::command('shop:subscription-reminders')->hourly()->withoutOverlapping();
 Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->hourly();
+Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');

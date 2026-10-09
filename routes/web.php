@@ -213,6 +213,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/orders/{order}/invoice', [Admin\OrderController::class, 'regenerateInvoice'])->can('orders.manage')->name('orders.invoice');
         Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->can('orders.manage')->middleware('password.recent')->name('orders.refund');
 
+        Route::get('/gateway', [Admin\GatewayController::class, 'index'])->can('gateway.view')->name('gateway.index');
+        Route::put('/gateway', [Admin\GatewayController::class, 'update'])->can('gateway.manage')->middleware('password.recent')->name('gateway.update');
+        Route::post('/gateway/check', [Admin\GatewayController::class, 'check'])->can('gateway.view')->middleware('throttle:forms')->name('gateway.check');
         Route::get('/payments', [Admin\PaymentController::class, 'index'])->can('payments.view')->name('payments.index');
         Route::get('/webhooks', [Admin\WebhookEventController::class, 'index'])->can('webhooks.manage')->name('webhooks.index');
         Route::post('/webhooks/{event}/retry', [Admin\WebhookEventController::class, 'retry'])->can('webhooks.manage')->name('webhooks.retry');

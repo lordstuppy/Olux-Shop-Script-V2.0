@@ -81,7 +81,8 @@ class OrderController extends Controller
             'payment' => $payment,
             'partial' => $payment !== null ? $this->partialSummary($payment) : null,
             'qr' => $qr,
-            'cryptos' => $payments->availableCryptos(),
+            'cryptos' => $payments->paymentCryptos(),
+            'balanceEnabled' => (bool) config('shop.payments_balance_enabled'),
             'user' => auth()->user(),
             'stale' => $payment !== null && $payments->quoteIsStale($payment),
         ]);

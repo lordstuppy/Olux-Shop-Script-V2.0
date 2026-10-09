@@ -6,6 +6,7 @@ use App\Enums\WebhookEventStatus;
 use App\Models\WebhookEvent;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Services\WebhookProcessor;
+use App\Support\GatewayLog;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class WebhookController extends Controller
         $allowed = array_filter(array_map('trim', explode(',', (string) config('shop.webhook_allowed_ips'))));
         if ($allowed !== [] && ! IpUtils::checkIp((string) $request->ip(), $allowed)) {
             Log::warning('Webhook from ip {ip} outside SHKEEPER_WEBHOOK_ALLOWED_IPS rejected', ['ip' => $request->ip()]);
+            GatewayLog::record('webhook', 'rejected_ip', ['ip' => $request->ip(), 'http_status' => 403]);
 
             return response()->json(['message' => 'Source address not allowed.'], 403);
         }
@@ -46,6 +48,8 @@ class WebhookController extends Controller
                 'has_signature' => $signature !== null,
                 'has_timestamp' => $timestamp !== null,
             ]);
+            GatewayLog::record('webhook', 'rejected_signature', ['ip' => $request->ip(), 'http_status' => 401,
+                'message' => $signature === null || $timestamp === null ? 'missing signature or timestamp' : 'signature mismatch or stale timestamp']);
 
             return response()->json(['message' => 'Invalid or missing signature.'], 401);
         }
@@ -53,6 +57,7 @@ class WebhookController extends Controller
         $payload = json_decode($raw, true);
         if (! is_array($payload)) {
             Log::warning('Webhook with signed but unparseable body from ip {ip}', ['ip' => $request->ip()]);
+            GatewayLog::record('webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 400, 'message' => 'body is not a JSON object']);
 
             return response()->json(['message' => 'Body is not a JSON object.'], 400);
         }
@@ -72,11 +77,16 @@ class WebhookController extends Controller
             Log::info('Duplicate Shkeeper webhook for {external_id} acknowledged without processing', [
                 'external_id' => $payload['external_id'] ?? null,
             ]);
+            GatewayLog::record('webhook', 'duplicate', ['ip' => $request->ip(), 'http_status' => 202, 'external_id' => (string) ($payload['external_id'] ?? '')]);
 
             return response()->json(['message' => 'Duplicate event ignored.'], 202);
         }
 
         $processor->process($event);
+        GatewayLog::record('webhook', $event->status === WebhookEventStatus::Failed ? 'error' : 'ok', [
+            'ip' => $request->ip(), 'http_status' => 202, 'external_id' => $event->external_id,
+            'message' => trim($event->status->value.' '.($payload['status'] ?? '').' '.($event->last_error ?? '')),
+        ]);
 
         return response()->json(['message' => 'Accepted.', 'status' => $event->status->value], 202);
     }

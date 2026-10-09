@@ -56,6 +56,8 @@
                 </form>
             </section>
         </div>
+    @elseif ($cryptos === [])
+        <p class="flash flash-info" role="status">{{ __('Crypto payments are switched off right now. Pay with your shop balance or try again later.') }}</p>
     @else
         <section class="card" aria-labelledby="choose-heading">
             <h2 id="choose-heading">{{ __('Choose how to pay') }}</h2>
@@ -67,7 +69,7 @@
         </section>
     @endif
 
-    @if ($user->currency === $order->currency && $user->balance_minor >= $order->total_minor)
+    @if ($balanceEnabled && $user->currency === $order->currency && $user->balance_minor >= $order->total_minor)
         <h2>{{ __('Pay from your balance') }}</h2>
         <form method="post" action="{{ route('orders.pay.balance', $order) }}" data-once>
             @csrf
