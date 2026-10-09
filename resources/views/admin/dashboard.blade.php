@@ -41,7 +41,7 @@
             <li><span>{{ __('Checkout conversion') }}</span><strong>{{ $kpis['conversion']['value'] === null ? '-' : $kpis['conversion']['value'].'%' }}</strong><span class="delta">{{ __('orders placed that were paid; :delta', ['delta' => $delta($kpis['conversion'], false)]) }}</span></li>
         </ul>
 
-        <div class="two-col mt">
+        <div class="mt">
             <section aria-labelledby="revenue-heading">
                 <h3 id="revenue-heading">{{ __('Revenue trend') }}</h3>
                 @include('partials.column-chart', ['series' => $revenueSeries, 'currency' => $currency, 'chartId' => 'dash-revenue', 'caption' => __('Net revenue per day in :currency, last :days days', ['currency' => $currency, 'days' => $days])])

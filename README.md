@@ -93,21 +93,31 @@ payout API) are described in [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ### Features at a glance
 
-- **Buyers:** catalog with search, filters and best sellers; product images;
-  reviews from verified buyers; wishlist; session cart; balance or crypto
-  checkout with coupons; quote refresh; downloads with limits;
-  subscriptions with expiry and reminders; invoices; tickets; gift cards;
-  2FA; email change; session management.
-- **Sellers:** onboarding; products with files, licence keys and images
-  (virus-scanned, reviewed by staff); manual delivery; sales; ledger-based
-  payouts; payout address change with confirmation.
-- **Staff:** roles (admin, finance, support) behind 2FA; orders (refund,
-  cancel, deliver, retry, invoice, reset downloads); payments; webhooks;
-  payouts; reconciliation; reports with charts; CSV exports; balance
-  adjustments; coupons; gift cards; exchange rates; categories; product
-  review with file inspection; seller approval; tickets with assignment and
-  internal notes; reviews moderation; announcements; settings; audit log. The conversion rules are in
-[docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
+- **Buyers:**
+  - Catalog: keyword search, filters for category, seller, price range (in the shopper's currency) and listing currency, best sellers.
+  - Product pages: images, reviews from verified buyers, wishlist.
+  - Checkout: session cart with products from several sellers in one order, balance or crypto, coupons, quote refresh.
+  - After purchase: downloads with limits, subscriptions with expiry and reminders, invoices.
+  - Help: disputes on a purchased item, tickets.
+  - Account: gift cards, 2FA, email change, session management.
+- **Sellers:**
+  - Onboarding.
+  - Products with files, licence keys and images, virus-scanned and reviewed by staff.
+  - Manual delivery, sales, and responding to disputes.
+  - Ledger-based payouts (disputed earnings are held), payout address change with confirmation.
+  - The effective commission is shown per product.
+- **Platform revenue:** a commission on every sale. The rate is set per product, per seller, per category or globally (the most specific wins) and frozen on the order line.
+- **Staff:** five tiers behind 2FA: super admin, manager, finance, moderator, support.
+  - Analytics dashboard: revenue trend, order volume, top products and sellers, active sellers, gateway health.
+  - Orders: refund, cancel, deliver, retry, invoice, reset downloads.
+  - Disputes with refund, replacement or rejection.
+  - Bulk actions: approve or disable products, suspend users, export orders.
+  - Payment gateway page: methods, coins, order limits and the gateway log.
+  - Money: payments, webhooks, payouts, reconciliation, reports with charts, CSV exports, balance adjustments, coupons, gift cards, exchange rates, commission.
+  - Content: categories, product review with file inspection, seller approval, tickets with assignment and internal notes, reviews moderation, announcements.
+  - Administration: editable email templates, settings, system health, audit log.
+
+The conversion rules are in [docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
 
 ## Quick start (local)
 

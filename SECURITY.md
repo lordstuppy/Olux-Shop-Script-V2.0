@@ -34,8 +34,8 @@ Only the latest release on the default branch receives security fixes.
 |---|---|
 | Passwords | Argon2id (`HASH_DRIVER=argon2id`), rehash on login, minimum 12 characters |
 | Two-factor authentication | TOTP (RFC 6238) with single-use codes and 8 recovery codes; optional for customers, **required for staff** before `/admin` |
-| Staff roles | `admin`, `finance`, `support`, each limited by a permission map (`App\Support\Permissions`) checked on every admin route |
-| Re-authentication | A password confirmed within 15 minutes is required for refunds, payouts, role/status changes, balance adjustments, gift cards, exchange rates, settings, exports, payout address and 2FA changes |
+| Staff roles | Super admin, manager, finance, moderator, support, each limited by a permission map (`App\Support\Permissions`) checked on every admin route and in policies; staff abilities only apply with two-factor authentication on, also on pages outside `/admin`; only super admins change roles, commission, gateway and settings or suspend staff |
+| Re-authentication | A password confirmed within 15 minutes is required for refunds, payouts, role/status changes, balance adjustments, gift cards, exchange rates, settings, commission, payment gateway, dispute resolution, bulk user changes, exports, payout address and 2FA changes |
 | Email | Verified address required for checkout, payments, gift cards, reviews and seller applications; email changes confirmed by the new address and announced to the old one |
 | Sign-in alerts | Email on sign-in from a new device; users can list and end their sessions; staff can end all sessions of a user |
 | Bot protection | Registration honeypot and time trap (no JavaScript, no third party) plus rate limits |
@@ -53,7 +53,10 @@ Only the latest release on the default branch receives security fixes.
 | Downloads | Files outside the web root; signed expiring URLs plus an ownership and delivery check |
 | Secrets at rest | Licence keys and delivery payloads encrypted with the app key; gift card codes stored only as HMAC |
 | Errors | Generic error page with a request id; stack traces only in server logs |
-| Audit | `audit_log` table for money movements, role and status changes, product review, payouts, refunds; viewer at `/admin/audit` |
+| Audit | `audit_log` table for money movements, role and status changes, product review, payouts, refunds, disputes, commission, gateway settings, email templates and bulk actions; viewer at `/admin/audit` |
+| Gateway log | Every callback (including rejected signatures and source addresses) and every Shkeeper API call with outcome, duration and request id at `/admin/gateway` |
+| Disputes | Buyers, sellers and staff see only their own cases; internal notes are staff-only; resolution needs a recent password and is serialised per dispute |
+| Email templates | Plain text with whitelisted placeholders only (no markup or code); emails with confirmation links must keep them |
 | Secrets | Environment variables only; `.env` is git-ignored |
 | Proxies | Trusted proxies come from config at request time (safe with `config:cache`) |
 | Containers | Read-only root filesystems, all Linux capabilities dropped, `no-new-privileges`, unprivileged nginx |

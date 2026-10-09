@@ -3,13 +3,18 @@
 namespace Database\Seeders;
 
 use App\Enums\DeliveryType;
+use App\Enums\DisputeReason;
 use App\Enums\ProductStatus;
 use App\Enums\SellerProfileStatus;
+use App\Jobs\DeliverOrder;
 use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Product;
 use App\Models\SellerProfile;
 use App\Models\User;
+use App\Services\DisputeService;
+use App\Services\OrderService;
+use App\Services\PaymentService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -101,5 +106,14 @@ class DatabaseSeeder extends Seeder
                 $product->update(['stock' => 5]);
             }
         }
+
+        // One open dispute, from a separate demo account so the main demo
+        // buyer's balance stays as documented.
+        $disputer = User::factory()->withBalance(10000)->create(['name' => 'Demo Customer', 'email' => 'customer@example.test']);
+        $keyProduct = Product::query()->whereHas('licenseKeys')->orderBy('id')->firstOrFail();
+        $order = app(OrderService::class)->createFromCart($disputer, [$keyProduct->id => 1], 'USD', 'seed-dispute-order');
+        app(PaymentService::class)->payWithBalance($order, $disputer);
+        DeliverOrder::dispatchSync($order->id);
+        app(DisputeService::class)->open($order->items()->firstOrFail(), $disputer, DisputeReason::NotWorking, 'replacement', 'The licence key says it was already activated.');
     }
 }

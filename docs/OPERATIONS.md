@@ -18,6 +18,9 @@ Scheduled tasks (`routes/console.php`):
 | `shop:reconcile-payouts` | daily 03:15 | Seller ledger vs completed orders and payouts; exits 1 and logs errors on mismatch |
 | `shop:reconcile-shkeeper-transfers` | every 5 minutes | Polls Shkeeper for payouts and crypto refunds whose callback has not arrived |
 | `shop:subscription-reminders` | hourly | Emails buyers whose subscription access ends within `SHOP_RENEWAL_REMINDER_DAYS` |
+| `shop:escalate-disputes` | every 15 minutes | Hands disputes to staff when the seller missed the response deadline |
+| `shop:prune-gateway-logs` | daily 04:10 | Deletes gateway log entries older than 90 days |
+| health heartbeats | every minute / 5 minutes | Scheduler heartbeat, and a no-op queue job so `/admin/health` can tell an idle worker from a stopped one |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |
 | `auth:clear-resets` | hourly | Removes expired password reset tokens |
 
@@ -67,16 +70,120 @@ the Shkeeper payout wallet funded only with what you intend to pay out.
 ## Accounts and roles
 
 - Create the first admin: `php artisan shop:create-admin admin@example.com`.
-- Staff roles are `admin` (everything), `finance` (orders, refunds, payments,
-  payouts, coupons, gift cards, rates, reports, exports, balance adjustments)
-  and `support` (orders read-only, tickets, users read-only, session sign-out,
-  announcements, review moderation). Change roles at `/admin/users/{id}`.
-- Every staff account must turn on two-factor authentication before it can
-  open `/admin`.
-- Runtime settings (commission, payout hold, minimum payout, order lifetime,
-  open-order cap, download limit, quote validity, reminders, payout
-  cool-down, support email) are editable at `/admin/settings`. They override
-  `.env` and are audited.
+  The `admin` role is shown as **Super admin**.
+- Every staff account must turn on two-factor authentication. Without it, staff have no abilities anywhere, including the shared order, ticket and dispute pages.
+- Staff tiers (change them at `/admin/users/{id}`; only super admins can change roles or suspend staff):
+
+| Tier | Can |
+|---|---|
+| Super admin | Everything: settings, payment gateway, commission rates, roles, plus all below |
+| Manager | Operations: orders and refunds, products, categories, sellers, users (not staff), payouts, disputes, reports, exports, email templates, audit log, system health |
+| Finance | Money: payments, refunds, payouts, coupons, gift cards, exchange rates, balance adjustments, reports, exports, gateway log, system health |
+| Moderator | Content: product review and bulk status, categories, reviews, disputes, tickets, announcements; orders and users read-only |
+| Support | Tickets, announcements, review moderation, session sign-out; orders and users read-only |
+
+The exact map is `App\Support\Permissions`.
+
+- **Runtime settings** (super admin, `/admin/settings`):
+  - Commission default, payout hold, minimum payout, order lifetime, open-order cap, download limit, quote validity, reminders, payout cool-down, dispute window and seller response time, support email.
+  - They override `.env` and are audited.
+  - They are never baked into the config cache, and queue workers re-read them before every job.
+
+## Commission (how the platform earns)
+
+The platform keeps a commission on every sale; the seller's ledger gets
+the rest. The rate is resolved per order line, and the most specific level wins:
+
+1. A product override, set on `/admin/commission`.
+2. The seller's rate, set at approval or on `/admin/commission`.
+3. The category rate.
+4. The global default (`commission_bps` in Settings).
+
+The resolved rate is frozen on the order line, so later changes never
+touch past sales. Refunds reduce the commission proportionally. Only super
+admins change rates (password confirmation, audited). The dashboard shows
+the commission earned per period.
+
+## Disputes
+
+1. **Opening.** A buyer opens a dispute on one purchased line from the order
+   page, within `dispute_window_days` (default 14) of delivery, or of payment
+   if nothing was delivered. They give a reason and ask for a refund or a
+   replacement.
+2. **Seller response.** The seller has `dispute_response_days` (default 3)
+   to answer. After that, `shop:escalate-disputes` hands the case to staff.
+   While the case is open, the seller's earnings for the line are held from
+   payouts.
+3. **Resolution.** Staff with `disputes.manage` (super admin, manager,
+   moderator) resolve it on `/disputes/{id}`:
+   - **Refund:** of that line only, to the balance, manually, or in crypto
+     via Shkeeper (booked when Shkeeper confirms).
+   - **Replacement:** fresh licence keys from stock, fresh download links,
+     or new delivery text.
+   - **Rejection:** with a reason.
+
+Internal notes are staff-only. Every step is audited and emailed (staff
+alerts go to the support email).
+
+## Payment gateway page
+
+`/admin/gateway` (view: super admin, manager, finance; change: super admin):
+
+- **Payment methods:** switch crypto and balance payments on or off and
+  choose the accepted coins. Checkout, the payment page and the services
+  enforce these switches.
+- **Order limits:** minimum and maximum order totals in the default
+  currency. Orders in other currencies are converted with the exchange
+  rate; without a rate the limits are not applied.
+- **Connection:** the settings from `.env`, shown read-only; secrets are
+  shown only as "configured" or "missing". A button tests the connection.
+- **Gateway log:** every payment and payout callback (accepted, duplicate,
+  rejected signature or address, bad request) and every Shkeeper API call
+  (ok, error, timeout, with duration and request id). Filterable; kept 90 days.
+
+## Email templates
+
+`/admin/email-templates` (super admin, manager) edits the subject and
+plain-text body of every shop email:
+
+- **Placeholders:** texts use the `{placeholders}` listed next to the
+  editor. Unknown placeholders are refused, and emails with a confirmation
+  or action link must keep it.
+- **Preview and reset:** "Preview" fills in sample data without saving.
+  "Reset" returns to the built-in, translatable text.
+- **Scope:** an edited text is single-language and used for every
+  recipient of that email.
+
+## System health
+
+`/admin/health` (super admin, manager, finance) shows the following, each
+with an OK, Check or Problem label:
+
+- **Database:** connection, latency, size, pending migrations.
+- **Background work:** queue worker and scheduler heartbeats, waiting jobs
+  and the age of the oldest, failed jobs.
+- **Storage:** free disk space and the size of uploaded product files,
+  writability.
+- **Payments and scanning:** the last successful Shkeeper webhook and API
+  call, ClamAV reachability.
+- **Application:** debug mode, HTTPS and config cache in production.
+
+Machines should use `/health` and `/metrics` instead.
+
+## Bulk actions
+
+The product, user and order lists have a bulk form. Without JavaScript,
+the row checkboxes join it through the HTML `form` attribute.
+
+- **Scope:** an action applies to the ticked rows, or to every row
+  matching the current filter, up to 500 at a time.
+- **Products:** set to active, disabled or pending review. Approval runs
+  the same checks as a single approval.
+- **Users:** suspend or reactivate. Your own account is always skipped,
+  and staff accounts are skipped unless you are a super admin.
+- **Orders:** export the ticked or filtered orders to CSV.
+
+Skipped rows are listed with the reason, and every change is audited.
 
 ## Virus scanning
 
