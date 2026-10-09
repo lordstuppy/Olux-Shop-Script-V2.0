@@ -682,8 +682,9 @@ def scheduler_jobs():
         subprocess.run(['docker', 'start', 'shoplive-nginx'], capture_output=True)
         time.sleep(2)
     check(sql(f"select status from orders where public_id='{order2}'") == 'pending', 'paid without webhook?')
-    print('      waiting for shop:reconcile-payments (runs every 5 minutes)...', flush=True)
-    wait_for(lambda: sql(f"select status from orders where public_id='{order2}'") in ('paid', 'delivered'), 'reconciliation picked up the payment', 330)
+    # Payments younger than 2 minutes are left to the webhook; the job runs every 5 minutes.
+    print('      waiting for shop:reconcile-payments (runs every 5 minutes, skips payments under 2 minutes old)...', flush=True)
+    wait_for(lambda: sql(f"select status from orders where public_id='{order2}'") in ('paid', 'delivered'), 'reconciliation picked up the payment', 480)
 
 
 @step('commission levels, payment gateway switches and order limits')
