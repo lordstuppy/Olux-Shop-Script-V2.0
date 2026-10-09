@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/pay', [OrderController::class, 'startPayment'])->middleware(['verified', 'throttle:checkout'])->name('orders.pay.start');
     Route::post('/orders/{order}/pay-balance', [OrderController::class, 'payWithBalance'])->middleware(['verified', 'throttle:checkout'])->name('orders.pay.balance');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/reorder', [OrderController::class, 'reorder'])->name('orders.reorder');
     Route::get('/orders/{order}/result', [OrderController::class, 'result'])->name('orders.result');
     Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
     Route::get('/orders/{order}/items/{item}/files/{file}', DownloadController::class)

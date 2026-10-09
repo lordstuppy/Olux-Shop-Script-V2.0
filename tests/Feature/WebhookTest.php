@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\WebhookEventStatus;
+use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductLicenseKey;
@@ -141,5 +142,44 @@ class WebhookTest extends TestCase
 
         $this->artisan('shop:reconcile-payments')->assertSuccessful();
         $this->assertTrue($order->fresh()->status->isPaidState());
+    }
+
+    public function test_an_older_partial_callback_never_lowers_the_recorded_amount(): void
+    {
+        $order = $this->pendingShkeeperOrder();
+        $partial = fn (string $amount) => $this->paidPayload($order->public_id, $amount, extra: ['paid' => false, 'status' => 'PARTIAL',
+            'transactions' => [['txid' => 'tx-'.$amount, 'amount_fiat' => $amount, 'trigger' => true]]]);
+
+        $this->postShkeeperWebhook($partial('20.00'))->assertStatus(202);
+        $this->postShkeeperWebhook($partial('10.00'))->assertStatus(202);
+        $this->assertSame(2000, $order->payments()->first()->received_minor);
+
+        $this->postShkeeperWebhook($this->paidPayload($order->public_id, '25.00'))->assertStatus(202);
+        $this->postShkeeperWebhook($partial('12.50'))->assertStatus(202);
+        $payment = $order->payments()->first();
+        $this->assertSame(PaymentStatus::Confirmed, $payment->status);
+        $this->assertSame(2500, $payment->received_minor);
+        $this->assertTrue($order->fresh()->status->isPaidState());
+    }
+
+    public function test_forged_callbacks_are_rejected_and_audited(): void
+    {
+        $order = $this->pendingShkeeperOrder();
+        $payload = $this->paidPayload($order->public_id, '25.00');
+
+        $this->postShkeeperWebhook($payload, secret: 'attacker-secret')->assertStatus(401);
+        $this->postShkeeperWebhook($payload, timestamp: time() - 3600)->assertStatus(401);
+        $this->call('POST', '/webhooks/shkeeper', [], [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload))->assertStatus(401);
+
+        $this->assertSame(3, AuditLog::query()->where('action', 'webhook.rejected_signature')->count());
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
+    }
+
+    public function test_signed_bodies_that_are_not_json_objects_get_400(): void
+    {
+        foreach (['[1,2,3]', '[]', '{}', '42', '"text"', 'not json', '{"external_id": "abc'] as $raw) {
+            $this->postShkeeperWebhook([], raw: $raw)->assertStatus(400);
+        }
+        $this->assertSame(0, WebhookEvent::query()->count());
     }
 }

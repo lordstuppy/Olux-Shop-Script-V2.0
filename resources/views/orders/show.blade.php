@@ -20,6 +20,14 @@
         @endif
     @endif
 
+    @if (in_array($order->status, [\App\Enums\OrderStatus::Expired, \App\Enums\OrderStatus::Cancelled], true) && auth()->id() === $order->buyer_id)
+        <form method="post" action="{{ route('orders.reorder', $order) }}" class="actions">
+            @csrf
+            <button type="submit">{{ __('Buy again') }}</button>
+            <span class="hint">{{ __('Puts the items back in your cart at today\'s prices.') }}</span>
+        </form>
+    @endif
+
     <h2>{{ __('Items') }}</h2>
     <div class="table-wrap">
         <table>

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
+use App\Exceptions\UserFacingException;
 use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\CartService;
 use App\Services\DeliveryService;
 use App\Services\DisputeService;
 use App\Services\InvoiceService;
@@ -125,6 +127,46 @@ class OrderController extends Controller
         $payments->payWithBalance($order, auth()->user());
 
         return redirect()->route('orders.result', $order);
+    }
+
+    /**
+     * "Buy again" for an expired or cancelled order: puts the items that can
+     * still be bought back into the cart. Prices and stock are those of today.
+     */
+    public function reorder(Order $order, CartService $cart): RedirectResponse
+    {
+        Gate::authorize('act', $order);
+        if (! in_array($order->status, [OrderStatus::Expired, OrderStatus::Cancelled], true)) {
+            return redirect()->route('orders.show', $order);
+        }
+
+        $added = 0;
+        $skipped = [];
+        foreach ($order->items()->with('product')->get() as $item) {
+            $product = $item->product;
+            $quantity = $product?->stock === null ? $item->quantity : min($item->quantity, (int) $product->stock);
+            try {
+                if ($product === null || $quantity < 1) {
+                    throw new UserFacingException(__('":title" is sold out.', ['title' => $item->title]));
+                }
+                $inCart = $cart->rawItems()[$product->id] ?? 0;
+                $cart->update($product, max($inCart, $quantity));
+                if (! $product->isPurchasable()) {
+                    $cart->remove($product->id);
+                    throw new UserFacingException(__('":title" is not available for purchase right now.', ['title' => $item->title]));
+                }
+                $added++;
+            } catch (UserFacingException $e) {
+                $skipped[] = $e->getMessage();
+            }
+        }
+
+        $redirect = redirect()->route('cart.show');
+        if ($added > 0) {
+            $redirect->with('success', trans_choice('{1} Added :count item from order :order to your cart. Prices are today\'s prices.|[0,*] Added :count items from order :order to your cart. Prices are today\'s prices.', $added, ['order' => $order->shortId()]));
+        }
+
+        return $skipped === [] ? $redirect : $redirect->with('error', implode(' ', $skipped));
     }
 
     public function cancel(Order $order, OrderService $orders): RedirectResponse

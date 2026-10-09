@@ -227,6 +227,9 @@ class PaymentService
             } catch (InvalidArgumentException $e) {
                 return $this->reject($order, $payment, 'Payment notification carried an unreadable amount. Order has not been marked as paid.');
             }
+            // balance_fiat is cumulative, so a callback that arrives late with an
+            // older, lower amount must not lower what was already recorded.
+            $received = max($received, (int) $payment->received_minor);
             $payment->received_minor = $received;
 
             $status = strtoupper((string) ($payload['status'] ?? ''));

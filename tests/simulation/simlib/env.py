@@ -112,7 +112,10 @@ def _http(method, url, body=None, timeout=60):
     req = urllib.request.Request(url, data=data, method=method, headers={'Content-Type': 'application/json'})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         raw = r.read()
-    return json.loads(raw) if raw else None
+    try:
+        return json.loads(raw) if raw else None
+    except ValueError:
+        return raw.decode('utf-8', 'replace')
 
 
 def mails(to=None, subject=None):

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\WebhookEventStatus;
 use App\Models\WebhookEvent;
+use App\Services\AuditLogger;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Services\WebhookProcessor;
 use App\Support\GatewayLog;
@@ -28,12 +29,13 @@ use Symfony\Component\HttpFoundation\IpUtils;
  */
 class WebhookController extends Controller
 {
-    public function shkeeper(Request $request, ShkeeperClient $client, WebhookProcessor $processor): JsonResponse
+    public function shkeeper(Request $request, ShkeeperClient $client, WebhookProcessor $processor, AuditLogger $audit): JsonResponse
     {
         $allowed = array_filter(array_map('trim', explode(',', (string) config('shop.webhook_allowed_ips'))));
         if ($allowed !== [] && ! IpUtils::checkIp((string) $request->ip(), $allowed)) {
             Log::warning('Webhook from ip {ip} outside SHKEEPER_WEBHOOK_ALLOWED_IPS rejected', ['ip' => $request->ip()]);
             GatewayLog::record('webhook', 'rejected_ip', ['ip' => $request->ip(), 'http_status' => 403]);
+            $audit->log('webhook.rejected_ip', null, ['channel' => 'payment', 'ip' => $request->ip()]);
 
             return response()->json(['message' => 'Source address not allowed.'], 403);
         }
@@ -48,14 +50,17 @@ class WebhookController extends Controller
                 'has_signature' => $signature !== null,
                 'has_timestamp' => $timestamp !== null,
             ]);
-            GatewayLog::record('webhook', 'rejected_signature', ['ip' => $request->ip(), 'http_status' => 401,
-                'message' => $signature === null || $timestamp === null ? 'missing signature or timestamp' : 'signature mismatch or stale timestamp']);
+            $reason = $signature === null || $timestamp === null ? 'missing signature or timestamp' : 'signature mismatch or stale timestamp';
+            GatewayLog::record('webhook', 'rejected_signature', ['ip' => $request->ip(), 'http_status' => 401, 'message' => $reason]);
+            // A forged or replayed callback is a security event (the route is rate limited).
+            $audit->log('webhook.rejected_signature', null, ['channel' => 'payment', 'reason' => $reason, 'bytes' => strlen($raw)]);
 
             return response()->json(['message' => 'Invalid or missing signature.'], 401);
         }
 
         $payload = json_decode($raw, true);
-        if (! is_array($payload)) {
+        // Shkeeper sends a JSON object; arrays, scalars and empty objects are refused.
+        if (! is_array($payload) || array_is_list($payload)) {
             Log::warning('Webhook with signed but unparseable body from ip {ip}', ['ip' => $request->ip()]);
             GatewayLog::record('webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 400, 'message' => 'body is not a JSON object']);
 

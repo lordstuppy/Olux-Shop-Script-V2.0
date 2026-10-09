@@ -71,7 +71,8 @@ def three_vendors(rec, ctx):
     p1 = instant_product(f'seller_id={sellers[0]}')
     p2 = instant_product(f'seller_id={sellers[1]}')
     p3 = shop.product(f"""status='active' and delivery_type='instant' and currency='USD' and seller_id not in ({sellers[0]},{sellers[1]})
-        and stock >= 2 and (select count(*) from product_license_keys k where k.product_id=products.id and k.order_item_id is null) >= 2""")
+        and stock >= 2 and (select count(*) from product_license_keys k where k.product_id=products.id and k.order_item_id is null) >= 2
+        and not exists (select 1 from product_files f where f.product_id=products.id)""")
     rec.step(f"sellers {p1['seller_id']}, {p2['seller_id']}, {p3['seller_id']}")
     for p in (p1, p2, p3):
         shop.add_to_cart(c, p)
@@ -90,8 +91,9 @@ def three_vendors(rec, ctx):
     rec.check(items[p1['id']]['delivered'] and items[p2['id']]['delivered'], f'working lines not delivered: {items}')
     rec.check(not items[p3['id']]['delivered'], 'line without keys marked delivered')
     rec.check(shop.order_row(oid)['status'] == 'paid', f"order status {shop.order_row(oid)['status']}")
-    rec.check(env.scalar(f"select count(*) from audit_log where action='delivery.failed' and context::text like '%{p3['id']}%'") not in ('0', None)
-              or env.scalar("select count(*) from audit_log where action='delivery.failed'") != '0', 'delivery.failed not audited')
+    audit = env.sql(f"select metadata_json from audit_log where action='delivery.failed' and target_type='OrderItem' and target_id='{items[p3['id']]['id']}'")
+    rec.check(audit, 'delivery.failed not audited for the failing line')
+    rec.ev(f'audit delivery.failed: {audit[0][0]}')
     check_ledger(rec, oid)
     rec.check(len({i['seller_id'] for i in items.values()}) == 3, 'lines not split per seller')
 
