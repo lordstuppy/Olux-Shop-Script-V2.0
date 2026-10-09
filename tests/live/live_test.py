@@ -686,6 +686,104 @@ def scheduler_jobs():
     wait_for(lambda: sql(f"select status from orders where public_id='{order2}'") in ('paid', 'delivered'), 'reconciliation picked up the payment', 330)
 
 
+@step('commission levels, payment gateway switches and order limits')
+def commission_and_gateway():
+    a, b = STATE['admin'], STATE['buyer']
+    confirm_password(a, 'Admin-live-pass-2026')
+    cat = sql("select id from categories where slug='software'")
+    a.form('/admin/commission', f'/admin/commission/categories/{cat}', {'commission_percent': '15'})
+    a.expect_flash('15.00%')
+    a.get(f"/admin/products/{STATE['products']['manual']}")
+    check('commission 15.00% (category rate)' in text_of(a.last[2]), 'effective commission not shown: ' + text_of(a.last[2])[:300])
+    order = checkout(b, STATE['slugs']['manual'], 'balance')
+    if sql(f"select status from orders where public_id='{order}'") == 'pending':
+        b.form(f'/orders/{order}/pay', '/pay-balance')
+    check(sql(f"select oi.commission_bps from order_items oi join orders o on o.id=oi.order_id where o.public_id='{order}'") == '1500', 'category commission not frozen on the line')
+    STATE['manual_order2'] = order
+    # Switch balance payments off: checkout no longer offers it and refuses it.
+    a.form('/admin/gateway', '/admin/gateway', {'payments_balance_enabled': '0', 'order_min': '1', 'order_max': '1000'})
+    a.expect_flash('Saved')
+    b.form(f"/products/{STATE['slugs']['file']}", '/cart/items')
+    b.get('/checkout')
+    check('Shop balance (' not in b.last[2], 'balance still offered while switched off')
+    a.form('/admin/gateway', '/admin/gateway', {'payments_balance_enabled': '1', 'order_min': '0', 'order_max': '0'})
+    b.get('/checkout')
+    check('Shop balance (' in b.last[2], 'balance not offered again')
+    b.get('/cart')
+    forms = [f for f in forms_of(b.last[2]) if f['action'].endswith(f"/cart/items/{STATE['products']['file']}")]
+    b.form('/cart', f"/cart/items/{STATE['products']['file']}", index=[f['fields'] for f in forms].index([f for f in forms if ['_method', 'DELETE'] in f['fields']][0]['fields']), page=b.last[2])
+    a.get('/admin/gateway')
+    page = text_of(a.last[2])
+    check('rejected signature' in page and 'GET /api/v1/crypto' in page, 'gateway log incomplete')
+
+
+@step('dispute: buyer opens, seller answers, staff sends a replacement key; earnings held meanwhile')
+def dispute_flow():
+    b, sl, a = STATE['buyer'], STATE['seller'], STATE['admin']
+    item = sql(f"select oi.id from order_items oi join orders o on o.id=oi.order_id where oi.product_id={STATE['products']['keys']} and o.status='delivered' order by oi.id limit 1")
+    order = sql(f"select o.public_id from orders o join order_items oi on oi.order_id=o.id where oi.id={item}")
+    old_key = None
+    b.get(f'/orders/{order}')
+    old_key = re.search(r'KEY-AAAA-000\d', b.last[2]).group(0)
+    check('Report a problem with this item' in b.last[2], 'no dispute link on the order page')
+    pos = mail_pos()
+    b.form(f'/orders/{order}/items/{item}/dispute', f'/orders/{order}/items/{item}/dispute',
+           {'reason': 'not_working', 'requested_outcome': 'replacement', 'body': 'The key is rejected as already used.'})
+    dispute = sql('select id from disputes order by id desc limit 1')
+    check(dispute and sql(f'select status from disputes where id={dispute}') == 'awaiting_seller', 'dispute not opened')
+    wait_mail(pos, 'seller@live.test', 'Dispute #' + dispute)
+    sl.get('/seller/payouts')
+    check('held for open disputes' in text_of(sl.last[2]), 'disputed earnings not shown as held')
+    sl.form(f'/disputes/{dispute}', f'/disputes/{dispute}/messages', {'body': 'Sorry, please try this one instead.'})
+    check(sql(f'select status from disputes where id={dispute}') == 'awaiting_staff', 'seller reply did not hand over to staff')
+    wait_mail(pos, 'buyer.new@live.test', 'New message on dispute')
+    confirm_password(a, 'Admin-live-pass-2026')
+    a.form(f'/disputes/{dispute}', f'/admin/disputes/{dispute}/resolve', {'action': 'replacement', 'note': 'New key issued.'}, index=1)
+    a.expect_flash('replacement delivered')
+    wait_mail(pos, 'buyer.new@live.test', 'closed')
+    b.get(f'/orders/{order}')
+    new_key = re.search(r'KEY-AAAA-000\d', b.last[2]).group(0)
+    check(new_key != old_key, 'replacement key not shown')
+
+
+@step('email template edited by staff is used for the next real email')
+def email_template():
+    a, b = STATE['admin'], STATE['buyer']
+    a.form('/admin/email-templates/order_paid', '/admin/email-templates/order_paid',
+           {'subject': 'Live thanks for order {order_number}', 'body': 'Thank you!\n\n{items}\n\nYour files: {order_url}'})
+    a.expect_flash('Saved')
+    pos = mail_pos()
+    order = checkout(b, STATE['slugs']['file'], 'balance')
+    chunk = wait_mail(pos, 'buyer.new@live.test', 'Live thanks for order')
+    check('Thank you!' in chunk and order in re.sub(r'=\r?\n', '', chunk), 'custom body not used')
+    a.form('/admin/email-templates/order_paid', '/admin/email-templates/order_paid', index=1)
+    a.expect_flash('built-in text')
+
+
+@step('bulk actions, analytics dashboard and system health on the live stack')
+def bulk_dashboard_health():
+    a = STATE['admin']
+    confirm_password(a, 'Admin-live-pass-2026')
+    s, csv, h = a.form('/admin/orders', '/admin/bulk/orders/export', {'scope': 'filtered'})
+    check('text/csv' in h['Content-Type'] and csv.count('\n') >= 5, 'bulk order export')
+    pid = STATE['products']['manual']
+    a.get('/admin/products')
+    a.form('/admin/products', '/admin/bulk/products', {'action': 'disabled', 'scope': 'selected', 'ids': [str(pid)]})
+    check(sql(f'select status from products where id={pid}') == 'disabled', 'bulk disable')
+    a.form('/admin/products', '/admin/bulk/products', {'action': 'active', 'scope': 'selected', 'ids': [str(pid)]})
+    check(sql(f'select status from products where id={pid}') == 'active', 'bulk approve')
+    a.get('/admin')
+    page = text_of(a.last[2])
+    for needle in ('Net revenue', 'Platform commission', 'Revenue trend', 'Order volume', 'Top products', 'Payment gateway health'):
+        check(needle in page, f'dashboard lacks {needle}')
+    # Let both heartbeats come in (the queue heartbeat job is queued every five minutes).
+    wait_for(lambda: 'Queue worker: last job' in text_of(a.get('/admin/health')[1]) and 'Scheduler: last run' in text_of(a.last[2]), 'heartbeats', 330)
+    page = text_of(a.last[2])
+    for label in ('Queue worker', 'Scheduler', 'Connection', 'Virus scanner', 'Last successful Shkeeper webhook'):
+        m = re.search(r'(OK|Check|Problem) ' + re.escape(label) + ':', page)
+        check(m and m.group(1) == 'OK', f'health check {label}: {m.group(1) if m else "missing"}\n' + page[:1500])
+
+
 @step('backup: scripts/backup.sh against the live data, restore into a scratch database, compare')
 def backup_restore():
     dest = os.path.join(L, 'backups')
@@ -732,7 +830,7 @@ def final_health():
 
 PHASES = [infra, admin_onboarding, admin_setup, buyer_register, seller_onboarding, seller_products, crypto_purchase,
           partial_and_overpay, giftcard_coupon_manual, reviews_wishlist, tickets, refunds, payouts, account_security, admin_tour,
-          scheduler_jobs, backup_restore, final_health]
+          scheduler_jobs, commission_and_gateway, dispute_flow, email_template, bulk_dashboard_health, backup_restore, final_health]
 
 if __name__ == '__main__':
     try:
