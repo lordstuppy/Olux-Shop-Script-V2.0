@@ -88,6 +88,11 @@ Artisan::command('shop:prune-gateway-logs {--days=90}', function () {
     $this->info("Deleted {$count} gateway log entries.");
 })->purpose('Delete gateway log entries older than --days (default 90)');
 
+Artisan::command('shop:prune-saved-carts', function () {
+    $count = DB::table('saved_carts')->where('updated_at', '<', now()->subDays((int) config('shop.saved_cart_days')))->delete();
+    $this->info("Deleted {$count} saved carts.");
+})->purpose('Delete saved carts not changed for shop.saved_cart_days days (default 30)');
+
 Artisan::command('shop:create-admin {email} {--name=Administrator}', function (string $email) {
     $validator = Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255', 'unique:users,email']]);
     if ($validator->fails()) {
@@ -140,6 +145,7 @@ Schedule::command('shop:subscription-reminders')->hourly()->withoutOverlapping()
 Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->hourly();
 Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');
+Schedule::command('shop:prune-saved-carts')->dailyAt('04:20');
 // Heartbeats for the system health page.
 Schedule::call(fn () => Cache::put(SystemHealthService::SCHEDULER_HEARTBEAT, now()->timestamp, 86400))->everyMinute()->name('health:scheduler-heartbeat');
 Schedule::job(new QueueHeartbeat)->everyFiveMinutes()->name('health:queue-heartbeat');

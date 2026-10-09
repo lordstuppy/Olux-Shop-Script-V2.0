@@ -37,6 +37,8 @@ return [
     'max_quantity_per_line' => 10,
 
     'max_cart_lines' => 20,
+    // A signed-in buyer's cart is kept this many days after its last change.
+    'saved_cart_days' => (int) env('SHOP_SAVED_CART_DAYS', 30),
 
     // Lifetime of signed download links, in minutes.
     'download_link_ttl_minutes' => (int) env('SHOP_DOWNLOAD_TTL_MINUTES', 60 * 24 * 3),

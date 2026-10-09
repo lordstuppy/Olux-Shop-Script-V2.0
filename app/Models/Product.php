@@ -115,6 +115,11 @@ class Product extends Model
             && $this->seller()->where('status', UserStatus::Active->value)->exists();
     }
 
+    public function isSoldOut(): bool
+    {
+        return $this->stock !== null && $this->stock <= 0;
+    }
+
     public function hasUnlimitedStock(): bool
     {
         return $this->stock === null;

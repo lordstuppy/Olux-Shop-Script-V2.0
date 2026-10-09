@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\ProductStatus;
 use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\UserFacingException;
 use App\Mail\SellerSaleMail;
@@ -219,6 +220,9 @@ class OrderService
         foreach ($items as $productId => $quantity) {
             $quantity = (int) $quantity;
             $product = $products->get($productId);
+            if ($product !== null && $product->status === ProductStatus::Active && $product->isSoldOut()) {
+                throw new UserFacingException(__('Sorry, ":title" just sold out. Remove it from your cart to continue.', ['title' => $product->title]));
+            }
             if ($product === null || ! $product->isPurchasable()) {
                 $title = $product?->title ?? "Product #{$productId}";
                 throw new UserFacingException(__('":title" is no longer available. Remove it from your cart to continue.', ['title' => $title]));

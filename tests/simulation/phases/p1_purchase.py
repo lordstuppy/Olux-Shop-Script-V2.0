@@ -65,7 +65,9 @@ def two_same_vendor(rec, ctx):
           'order stays paid, delivery.failed audited, no ledger loss', 'critical')
 def three_vendors(rec, ctx):
     email, c = buyer(3)
-    sellers = [int(x[0]) for x in env.sql("""select distinct seller_id from products where status='active' order by seller_id""")]
+    sellers = [int(x[0]) for x in env.sql("""select distinct seller_id from products p where status='active' and delivery_type='instant' and stock is null
+        and currency='USD' and exists (select 1 from product_files f where f.product_id=p.id and f.scan_status='clean')
+        and not exists (select 1 from product_license_keys k where k.product_id=p.id) order by seller_id""")]
     p1 = instant_product(f'seller_id={sellers[0]}')
     p2 = instant_product(f'seller_id={sellers[1]}')
     p3 = shop.product(f"""status='active' and delivery_type='instant' and currency='USD' and seller_id not in ({sellers[0]},{sellers[1]})
@@ -263,6 +265,6 @@ def last_unit(rec, ctx):
     rec.check(len(orders) == 1, f'{len(orders)} orders got the last unit')
     rec.check(stock(p['id']) == 0, f"stock {stock(p['id'])}")
     loser = [r for r in results if not hasattr(r, 'path') or '/orders/' not in r.url]
-    rec.check(len(loser) == 1 and 'left in stock' in flashes(loser[0]), f'loser message: {[flashes(r) for r in loser if hasattr(r, "text")]}')
+    rec.check(len(loser) == 1 and 'sold out' in flashes(loser[0]), f'loser message: {[flashes(r) for r in loser if hasattr(r, "text")]}')
     shop.pay(orders[0][0])
     wait_status(orders[0][0], 'delivered')

@@ -4,12 +4,19 @@ namespace App\Services;
 
 use App\Exceptions\UserFacingException;
 use App\Models\Product;
+use App\Models\User;
 use App\Support\Money;
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Session-backed cart. The session only stores product ids and quantities;
  * prices are always recalculated from the database on the server.
+ *
+ * For a signed-in buyer every change is also saved to saved_carts, and the
+ * saved cart is merged back into the session at the next login, so a cart
+ * survives logout, session expiry and a change of device.
  */
 class CartService
 {
@@ -51,11 +58,42 @@ class CartService
         $items = $this->rawItems();
         unset($items[$productId]);
         $this->session->put(self::ITEMS_KEY, $items);
+        $this->save();
     }
 
     public function clear(): void
     {
         $this->session->forget(self::ITEMS_KEY);
+        $this->save();
+    }
+
+    /**
+     * Merges the buyer's saved cart into the current session cart at login.
+     * Lines already in the session (for example added before signing in)
+     * keep their quantity; saved lines are added up to the line limit.
+     * Availability and prices are checked again when the cart is shown.
+     */
+    public function restoreFor(User $user): void
+    {
+        $saved = DB::table('saved_carts')->where('user_id', $user->id)
+            ->where('updated_at', '>', now()->subDays((int) config('shop.saved_cart_days')))->first();
+        if ($saved !== null) {
+            $items = $this->rawItems();
+            foreach (json_decode((string) $saved->items, true) ?: [] as $productId => $quantity) {
+                if (count($items) >= (int) config('shop.max_cart_lines')) {
+                    break;
+                }
+                $quantity = min((int) $quantity, (int) config('shop.max_quantity_per_line'));
+                if ((int) $productId > 0 && $quantity > 0 && ! isset($items[(int) $productId])) {
+                    $items[(int) $productId] = $quantity;
+                }
+            }
+            $this->session->put(self::ITEMS_KEY, $items);
+            if (! $this->session->has(self::CURRENCY_KEY) && is_string($saved->currency) && Money::isSupported($saved->currency)) {
+                $this->session->put(self::CURRENCY_KEY, $saved->currency);
+            }
+        }
+        $this->save($user->id);
     }
 
     /** @return array<int, int> product id => quantity */
@@ -89,6 +127,7 @@ class CartService
             throw new UserFacingException(__(':currency is not a supported currency. Choose one of: :options.', ['currency' => $currency, 'options' => implode(', ', Money::supported())]));
         }
         $this->session->put(self::CURRENCY_KEY, $currency);
+        $this->save();
     }
 
     /**
@@ -113,9 +152,11 @@ class CartService
         foreach ($items as $productId => $quantity) {
             $product = $products->get($productId);
             if ($product === null || ! $product->isPurchasable()) {
-                $problems[] = $product
-                    ? __('":title" is no longer available and was removed from your cart.', ['title' => $product->title])
-                    : __('An item in your cart no longer exists and was removed.');
+                $problems[] = match (true) {
+                    $product === null => __('An item in your cart no longer exists and was removed.'),
+                    $product->isSoldOut() => __('":title" is sold out and was removed from your cart.', ['title' => $product->title]),
+                    default => __('":title" is no longer available and was removed from your cart.', ['title' => $product->title]),
+                };
                 $this->remove($productId);
 
                 continue;
@@ -145,6 +186,10 @@ class CartService
             ];
         }
 
+        if ($problems !== []) {
+            $this->save();
+        }
+
         return [
             'currency' => $currency,
             'lines' => $lines,
@@ -166,5 +211,27 @@ class CartService
         $items = $this->rawItems();
         $items[$product->id] = $quantity;
         $this->session->put(self::ITEMS_KEY, $items);
+        $this->save();
+    }
+
+    /** Mirrors the session cart of a signed-in buyer into saved_carts. */
+    private function save(?int $userId = null): void
+    {
+        $userId ??= Auth::guard('web')->id();
+        if ($userId === null) {
+            return;
+        }
+        $items = $this->rawItems();
+        if ($items === []) {
+            DB::table('saved_carts')->where('user_id', $userId)->delete();
+
+            return;
+        }
+        DB::table('saved_carts')->upsert([[
+            'user_id' => $userId,
+            'items' => json_encode((object) $items),
+            'currency' => $this->session->get(self::CURRENCY_KEY),
+            'updated_at' => now(),
+        ]], ['user_id'], ['items', 'currency', 'updated_at']);
     }
 }

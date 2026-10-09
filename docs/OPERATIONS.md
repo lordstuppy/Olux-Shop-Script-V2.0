@@ -20,6 +20,7 @@ Scheduled tasks (`routes/console.php`):
 | `shop:subscription-reminders` | hourly | Emails buyers whose subscription access ends within `SHOP_RENEWAL_REMINDER_DAYS` |
 | `shop:escalate-disputes` | every 15 minutes | Hands disputes to staff when the seller missed the response deadline |
 | `shop:prune-gateway-logs` | daily 04:10 | Deletes gateway log entries older than 90 days |
+| `shop:prune-saved-carts` | daily 04:20 | Deletes saved carts not changed for 30 days (`SHOP_SAVED_CART_DAYS`) |
 | health heartbeats | every minute / 5 minutes | Scheduler heartbeat, and a no-op queue job so `/admin/health` can tell an idle worker from a stopped one |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |
 | `auth:clear-resets` | hourly | Removes expired password reset tokens |
@@ -281,6 +282,7 @@ separately from the backups.
 |---|---|---|
 | Application logs | 30 days | `LOG_DAILY_DAYS` |
 | Failed jobs | 30 days | `routes/console.php` |
+| Saved carts of signed-in buyers | 30 days after the last change | `SHOP_SAVED_CART_DAYS` |
 | Password reset tokens | 60 minutes | `config/auth.php` |
 | Sessions | 120 minutes idle | `SESSION_LIFETIME` |
 | Orders, payments, invoices, audit log | kept (accounting) | define in your retention policy |

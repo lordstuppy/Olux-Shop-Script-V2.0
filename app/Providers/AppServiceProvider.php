@@ -13,11 +13,13 @@ use App\Services\SystemHealthService;
 use App\Support\Permissions;
 use App\Support\RequestId;
 use App\Support\Settings;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
@@ -66,6 +68,13 @@ class AppServiceProvider extends ServiceProvider
             // outside /admin (shared ticket, order and dispute pages) are covered too.
             Gate::define($ability, fn (User $user) => in_array($user->role->value, $roles, true) && $user->meetsStaffTwoFactorRule());
         }
+
+        // Bring back the buyer's saved cart (see CartService) at every sign-in.
+        Event::listen(Login::class, function (Login $event) {
+            if ($event->guard === 'web' && $event->user instanceof User && request()->hasSession()) {
+                app(CartService::class)->restoreFor($event->user);
+            }
+        });
 
         Paginator::defaultView('pagination');
         Paginator::defaultSimpleView('pagination');
