@@ -1,0 +1,1 @@
+{"external_id":"6f1b0e0c-1d2a-4b47-9a5e-2f0e2b8c9a10","crypto":"BTC","addr":"bc1qfixture","fiat":"EUR","balance_fiat":"25.00","balance_crypto":"0.0004","paid":true,"status":"PAID","transactions":[{"txid":"abc","date":"2026-10-09 12:00:00","amount_crypto":"0.0004","amount_fiat":"25.00","trigger":true,"crypto":"BTC"}],"fee_percent":"0","overpaid_fiat":"0.00"}

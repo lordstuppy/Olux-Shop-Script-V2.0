@@ -144,7 +144,8 @@ class ProductController extends Controller
     {
         Gate::authorize('update', $product);
         $data = $request->validate(['keys' => ['required', 'string', 'max:200000']]);
-        $keys = array_values(array_unique(array_filter(array_map('trim', preg_split('/\R/', $data['keys'])))));
+        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $data['keys'])), fn ($line) => $line !== ''));
+        $keys = array_values(array_unique($lines));
         if (count($keys) > 1000) {
             throw new UserFacingException('Add at most 1000 licence keys at a time.');
         }
@@ -168,7 +169,8 @@ class ProductController extends Controller
             return $added;
         });
         $this->audit->log('product.keys_added', $product, ['count' => $added]);
-        $skipped = count($keys) - $added;
+        // Duplicates within the submitted list and keys already stored.
+        $skipped = count($lines) - $added;
 
         return back()->with('success', "Added {$added} licence keys; stock increased by {$added}.".($skipped > 0 ? " Skipped {$skipped} duplicates." : ''));
     }

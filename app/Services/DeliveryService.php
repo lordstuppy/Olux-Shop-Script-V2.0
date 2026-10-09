@@ -113,7 +113,7 @@ class DeliveryService
 
         if ($product->licenseKeys()->exists()) {
             $keys = ProductLicenseKey::query()->where('product_id', $product->id)->whereNull('order_item_id')
-                ->orderBy('id')->limit($locked->quantity)->lockForUpdate()->skipLocked()->get();
+                ->orderBy('id')->limit($locked->quantity)->lock('FOR UPDATE SKIP LOCKED')->get();
             if ($keys->count() < $locked->quantity) {
                 throw new DeliveryException("only {$keys->count()} of {$locked->quantity} licence keys available");
             }

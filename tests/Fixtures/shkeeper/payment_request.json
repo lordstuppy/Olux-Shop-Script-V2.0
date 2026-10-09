@@ -1,0 +1,9 @@
+{
+    "amount": "0.0004166",
+    "display_name": "Bitcoin",
+    "exchange_rate": "60000.00",
+    "id": 77,
+    "recalculate_after": 0,
+    "status": "success",
+    "wallet": "bc1qfixturewalletaddress0000000000000000"
+}

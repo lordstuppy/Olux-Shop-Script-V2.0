@@ -1,0 +1,13 @@
+{
+    "invoices": [
+        {
+            "amount_fiat": "25.00",
+            "balance_fiat": "25.00",
+            "external_id": "6f1b0e0c-1d2a-4b47-9a5e-2f0e2b8c9a10",
+            "fiat": "EUR",
+            "status": "PAID",
+            "txs": [{"addr": "bc1qfixture", "amount": "0.0004", "crypto": "BTC", "status": "CONFIRMED", "txid": "abc"}]
+        }
+    ],
+    "status": "success"
+}

@@ -9,6 +9,7 @@ use App\Services\WebhookProcessor;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -49,14 +50,16 @@ class WebhookController extends Controller
         }
 
         try {
-            $event = WebhookEvent::create([
+            // Own transaction (a savepoint when nested) so a duplicate insert
+            // cannot poison an enclosing PostgreSQL transaction.
+            $event = DB::transaction(fn () => WebhookEvent::create([
                 'provider' => 'shkeeper',
                 'event_key' => hash('sha256', $raw),
                 'external_id' => mb_substr((string) ($payload['external_id'] ?? ''), 0, 64) ?: null,
                 'payload' => $payload,
                 'status' => WebhookEventStatus::Received,
                 'source_ip' => $request->ip(),
-            ]);
+            ]));
         } catch (UniqueConstraintViolationException) {
             Log::info('Duplicate Shkeeper webhook for {external_id} acknowledged without processing', [
                 'external_id' => $payload['external_id'] ?? null,

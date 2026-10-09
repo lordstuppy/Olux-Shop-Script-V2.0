@@ -1,0 +1,8 @@
+{
+    "crypto": ["BTC", "LTC"],
+    "crypto_list": [
+        {"display_name": "Bitcoin", "name": "BTC"},
+        {"display_name": "Litecoin", "name": "LTC"}
+    ],
+    "status": "success"
+}

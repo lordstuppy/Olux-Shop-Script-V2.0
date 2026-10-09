@@ -18,17 +18,28 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_DEBUG" value="false" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="HASH_DRIVER" value="argon2id" force="true"/>
+        <!-- Cheaper Argon2id parameters keep the suite fast; production uses the defaults. -->
+        <env name="ARGON_MEMORY" value="1024" force="true"/>
+        <env name="ARGON_TIME" value="1" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_DATABASE" value="shop_test" force="true"/>
         <env name="DB_URL" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="SESSION_SECURE_COOKIE" value="false" force="true"/>
+        <env name="LOG_CHANNEL" value="null" force="true"/>
+        <env name="SHKEEPER_BASE_URL" value="https://shkeeper.test" force="true"/>
+        <env name="SHKEEPER_API_KEY" value="test-api-key" force="true"/>
+        <env name="SHKEEPER_WEBHOOK_SECRET" value="test-webhook-secret" force="true"/>
+        <env name="SHKEEPER_CRYPTOS" value="BTC,LTC" force="true"/>
+        <env name="METRICS_TOKEN" value="test-metrics-token" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

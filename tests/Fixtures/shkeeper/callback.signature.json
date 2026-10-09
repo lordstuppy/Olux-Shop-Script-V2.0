@@ -1,0 +1,6 @@
+{
+    "comment": "Signature computed independently with: printf '1791547200.' | cat - callback.json | openssl dgst -sha256 -hmac fixture-secret",
+    "secret": "fixture-secret",
+    "timestamp": "1791547200",
+    "signature": "9e230b135457dcf38a4b5109c9da9fd3dd448d6dd4b304b96c01619e3c4a259f"
+}
