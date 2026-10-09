@@ -56,34 +56,36 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimits(): void
     {
+        $limits = config('shop.rate_limits');
+
         // Renders the 429 page with a specific explanation (works without JavaScript).
         $throttled = fn (string $message) => fn (Request $request, array $headers) => response()
             ->view('errors.429', ['reason' => $message], 429, $headers);
 
         RateLimiter::for('login', fn (Request $request) => [
-            Limit::perMinute(5)->by('login:'.Str::lower((string) $request->input('email')).'|'.$request->ip())
+            Limit::perMinute($limits['login_per_email'])->by('login:'.Str::lower((string) $request->input('email')).'|'.$request->ip())
                 ->response($throttled('Too many login attempts for this email. Wait one minute and try again.')),
-            Limit::perMinute(20)->by('login-ip:'.$request->ip())
+            Limit::perMinute($limits['login_per_ip'])->by('login-ip:'.$request->ip())
                 ->response($throttled('Too many login attempts from your network. Wait one minute and try again.')),
         ]);
 
-        RateLimiter::for('register', fn (Request $request) => Limit::perHour(10)->by('register:'.$request->ip())
+        RateLimiter::for('register', fn (Request $request) => Limit::perHour($limits['register_per_hour'])->by('register:'.$request->ip())
             ->response($throttled('Too many accounts were created from your network. Try again in an hour.')));
 
-        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(3)->by('reset:'.$request->ip())
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute($limits['password_reset'])->by('reset:'.$request->ip())
             ->response($throttled('Too many password reset requests. Wait one minute and try again.')));
 
-        RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute(10)->by('checkout:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute($limits['checkout'])->by('checkout:'.($request->user()?->id ?? $request->ip()))
             ->response($throttled('Too many checkout attempts. Wait one minute before trying again.')));
 
-        RateLimiter::for('redeem', fn (Request $request) => Limit::perMinute(5)->by('redeem:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('redeem', fn (Request $request) => Limit::perMinute($limits['redeem'])->by('redeem:'.($request->user()?->id ?? $request->ip()))
             ->response($throttled('Too many gift card attempts. Wait one minute and try again.')));
 
-        RateLimiter::for('forms', fn (Request $request) => Limit::perMinute(30)->by('forms:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('forms', fn (Request $request) => Limit::perMinute($limits['forms'])->by('forms:'.($request->user()?->id ?? $request->ip()))
             ->response($throttled('You are submitting forms too quickly. Wait a moment and try again.')));
 
-        RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute(120)->by('webhook:'.$request->ip()));
+        RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute($limits['webhook'])->by('webhook:'.$request->ip()));
 
-        RateLimiter::for('search', fn (Request $request) => Limit::perMinute(60)->by('search:'.$request->ip()));
+        RateLimiter::for('search', fn (Request $request) => Limit::perMinute($limits['search'])->by('search:'.$request->ip()));
     }
 }

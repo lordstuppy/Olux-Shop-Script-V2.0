@@ -28,3 +28,4 @@ Thumbs.db
 /tests/browser/node_modules
 /tests/browser/test-results
 /tests/browser/playwright-report
+/tests/load/webhook-orders.json

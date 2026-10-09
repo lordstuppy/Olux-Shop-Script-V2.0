@@ -52,6 +52,22 @@ return [
     // Webhook processing retries, in seconds between attempts.
     'webhook_retry_backoff' => [30, 120, 600, 1800, 7200],
 
+    /*
+    | Requests per minute (per hour for registration). Raise these only in a
+    | dedicated load-test environment; the defaults are the production values.
+    */
+    'rate_limits' => [
+        'login_per_email' => (int) env('RATE_LIMIT_LOGIN_PER_EMAIL', 5),
+        'login_per_ip' => (int) env('RATE_LIMIT_LOGIN_PER_IP', 20),
+        'register_per_hour' => (int) env('RATE_LIMIT_REGISTER_PER_HOUR', 10),
+        'password_reset' => (int) env('RATE_LIMIT_PASSWORD_RESET', 3),
+        'checkout' => (int) env('RATE_LIMIT_CHECKOUT', 10),
+        'redeem' => (int) env('RATE_LIMIT_REDEEM', 5),
+        'forms' => (int) env('RATE_LIMIT_FORMS', 30),
+        'webhook' => (int) env('RATE_LIMIT_WEBHOOK', 120),
+        'search' => (int) env('RATE_LIMIT_SEARCH', 60),
+    ],
+
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),
