@@ -19,13 +19,15 @@
         @endcan
     </div>
 
-    @can('users.manage')
     <div class="actions mt">
+        @can('roles.manage')
         <form method="post" action="{{ route('admin.users.role', $user) }}" class="actions">
             @csrf
-            <x-select name="role" :label="__('Role')" :options="collect(\App\Enums\UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all()" :value="$user->role->value" :hint="__('Support and finance are staff roles with limited admin access.')" />
+            <x-select name="role" :label="__('Role')" :options="collect(\App\Enums\UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all()" :value="$user->role->value" :hint="__('Staff tiers: super admin (everything), manager (operations, no financial settings or roles), finance (money), moderator (content, reviews, disputes), support (tickets).')" />
             <button type="submit" class="btn-secondary">{{ __('Change role') }}</button>
         </form>
+        @endcan
+        @if (auth()->user()->can('users.manage') && (! $user->isStaff() || auth()->user()->isAdmin()))
         <form method="post" action="{{ route('admin.users.status', $user) }}">
             @csrf
             @if ($user->isActive())
@@ -36,8 +38,8 @@
                 <button type="submit">{{ __('Reactivate account') }}</button>
             @endif
         </form>
+        @endif
     </div>
-    @endcan
 
     @can('balances.adjust')
         <h2>{{ __('Adjust balance') }}</h2>

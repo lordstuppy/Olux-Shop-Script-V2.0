@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\TicketService;
+use App\Support\Permissions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -66,7 +67,7 @@ class TicketController extends Controller
             'ticket' => $ticket,
             'messages' => $messages,
             'staff' => $staff,
-            'assignees' => $staff ? User::query()->whereIn('role', ['admin', 'support'])->orderBy('email')->get(['id', 'email']) : collect(),
+            'assignees' => $staff ? User::query()->whereIn('role', Permissions::rolesFor('tickets.manage'))->orderBy('email')->get(['id', 'email']) : collect(),
         ]);
     }
 

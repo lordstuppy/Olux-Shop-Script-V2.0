@@ -275,6 +275,9 @@ class UserService
         if ($user->id === $admin->id) {
             throw new UserFacingException(__('You cannot suspend your own account.'));
         }
+        if ($user->role->isStaff() && $admin->role !== UserRole::Admin) {
+            throw new UserFacingException(__('Only a super admin can change the status of a staff account.'));
+        }
         $user->forceFill(['status' => $status])->save();
         if ($status === UserStatus::Suspended) {
             DB::table('sessions')->where('user_id', $user->id)->delete();

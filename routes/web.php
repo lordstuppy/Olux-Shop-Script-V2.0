@@ -137,7 +137,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/messages', [TicketController::class, 'reply'])->middleware('throttle:forms')->name('tickets.reply');
     Route::post('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
-    Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->middleware(['role:admin,support', 'staff.2fa'])->name('tickets.assign');
+    Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->middleware('staff.2fa')->can('tickets.manage')->name('tickets.assign');
 
     Route::post('/sell', [SellerApplicationController::class, 'store'])->middleware(['verified', 'throttle:forms'])->name('seller.apply.store');
 
@@ -165,14 +165,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/payout-address/confirm/{token}', [Seller\PayoutSettingsController::class, 'confirm'])->middleware('throttle:forms');
     });
 
-    // Staff: admin, finance and support, each limited by App\Support\Permissions.
-    // Two-factor authentication is required; sensitive actions need a recent password.
-    Route::middleware(['role:admin,finance,support', 'staff.2fa'])->prefix('admin')->name('admin.')->group(function () {
+    // Staff roles, each limited by App\Support\Permissions. Two-factor
+    // authentication is required; sensitive actions need a recent password.
+    Route::middleware(['role:admin,manager,finance,moderator,support', 'staff.2fa'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', Admin\DashboardController::class)->can('staff.dashboard')->name('dashboard');
 
         Route::get('/users', [Admin\UserController::class, 'index'])->can('users.view')->name('users.index');
         Route::get('/users/{user}', [Admin\UserController::class, 'show'])->can('users.view')->name('users.show');
-        Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->can('users.manage')->middleware('password.recent')->name('users.role');
+        Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->can('roles.manage')->middleware('password.recent')->name('users.role');
         Route::post('/users/{user}/status', [Admin\UserController::class, 'status'])->can('users.manage')->middleware('password.recent')->name('users.status');
         Route::post('/users/{user}/balance', [Admin\UserController::class, 'adjustBalance'])->can('balances.adjust')->middleware('password.recent')->name('users.balance');
         Route::post('/users/{user}/sessions/revoke', [Admin\UserController::class, 'revokeSessions'])->can('sessions.revoke')->name('users.sessions.revoke');
