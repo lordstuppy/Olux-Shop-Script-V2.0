@@ -38,7 +38,8 @@ class ProductController extends Controller
     public function index(Request $request): View
     {
         return view('seller.products.index', [
-            'products' => $request->user()->products()->withCount(['files', 'licenseKeys'])->latest('id')->paginate(20),
+            'products' => $request->user()->products()->with('category')->withCount(['files', 'licenseKeys'])->latest('id')->paginate(20),
+            'profile' => $request->user()->sellerProfile,
         ]);
     }
 

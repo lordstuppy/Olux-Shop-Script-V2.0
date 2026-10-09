@@ -14,6 +14,9 @@
         @if ($product->access_days) &middot; {{ __(':days-day access', ['days' => $product->access_days]) }} @endif
         &middot; {{ __('stock :stock', ['stock' => $product->stock ?? __('unlimited')]) }}
         &middot; {{ __(':count unused licence keys', ['count' => $availableKeys]) }}
+        @php $commission = app(\App\Services\CommissionService::class)->resolve($product); @endphp
+        &middot; {{ __('commission :percent (:source)', ['percent' => \App\Services\CommissionService::percent($commission['bps']), 'source' => \App\Services\CommissionService::sourceLabel($commission['source'])]) }}
+        <span class="muted">#{{ $product->id }}</span>
     </p>
 
     <h2>{{ __('Description') }}</h2>

@@ -39,9 +39,4 @@ class SellerProfile extends Model
 
         return $until->isFuture() ? $until : null;
     }
-
-    public function effectiveCommissionBps(): int
-    {
-        return $this->commission_bps ?? (int) config('shop.commission_bps');
-    }
 }

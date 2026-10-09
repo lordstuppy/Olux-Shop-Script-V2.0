@@ -25,6 +25,7 @@ class OrderService
         private readonly CouponService $coupons,
         private readonly PayoutService $payouts,
         private readonly AuditLogger $audit,
+        private readonly CommissionService $commission,
     ) {}
 
     /**
@@ -182,6 +183,7 @@ class OrderService
         ksort($items);
         // Lock in a stable order (by id) so concurrent checkouts cannot deadlock.
         $products = Product::query()->whereIn('id', array_keys($items))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        $products->load('category');
         $profiles = SellerProfile::query()->whereIn('user_id', $products->pluck('seller_id'))->get()->keyBy('user_id');
 
         $lines = [];
@@ -242,7 +244,7 @@ class OrderService
                 'list_currency' => $product->currency,
                 'fx_rate' => $line['rate'],
                 'discount_minor' => $discounts[$i],
-                'commission_bps' => $profiles->get($product->seller_id)?->effectiveCommissionBps() ?? (int) config('shop.commission_bps'),
+                'commission_bps' => $this->commission->resolve($product, $profiles->get($product->seller_id))['bps'],
             ]);
 
             if ($product->stock !== null) {

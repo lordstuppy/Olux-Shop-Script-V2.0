@@ -10,6 +10,7 @@
         ['admin.sellers.index', __('Seller applications'), 'sellers.manage'],
         ['admin.payouts.index', __('Payouts'), 'payouts.manage'],
         ['admin.reconciliation', __('Reconciliation'), 'payouts.manage'],
+        ['admin.commission.index', __('Commission'), 'commission.manage'],
         ['admin.coupons.index', __('Coupons'), 'coupons.manage'],
         ['admin.gift-cards.index', __('Gift cards'), 'giftcards.manage'],
         ['admin.rates.index', __('Exchange rates'), 'rates.manage'],

@@ -12,7 +12,7 @@
     @else
         <div class="table-wrap">
             <table>
-                <thead><tr><th scope="col">{{ __('Title') }}</th><th scope="col" class="num">{{ __('Price') }}</th><th scope="col" class="num">{{ __('Stock') }}</th><th scope="col">{{ __('Files / keys') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>
+                <thead><tr><th scope="col">{{ __('Title') }}</th><th scope="col" class="num">{{ __('Price') }}</th><th scope="col" class="num">{{ __('Stock') }}</th><th scope="col">{{ __('Files / keys') }}</th><th scope="col" class="num">{{ __('Platform commission') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>
                 <tbody>
                     @foreach ($products as $product)
                         <tr>
@@ -20,6 +20,7 @@
                             <td class="num">{{ money($product->price_minor, $product->currency) }}</td>
                             <td class="num">{{ $product->stock ?? __('Unlimited') }}</td>
                             <td>{{ $product->files_count }} / {{ $product->license_keys_count }}</td>
+                            <td class="num">{{ \App\Services\CommissionService::percent(app(\App\Services\CommissionService::class)->resolve($product, $profile ?? null)['bps']) }}</td>
                             <td><x-status :value="$product->status" /></td>
                         </tr>
                     @endforeach

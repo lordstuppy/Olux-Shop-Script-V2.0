@@ -20,7 +20,9 @@
                 <div class="actions mt">
                     <form method="post" action="{{ route('admin.sellers.approve', $profile) }}" class="actions">
                         @csrf
+                        @can('commission.manage')
                         <x-field name="commission_bps" :id="'commission-'.$profile->id" :label="__('Commission override (basis points)')" type="number" min="0" max="10000" :hint="__('Empty uses the default of :bps.', ['bps' => config('shop.commission_bps')])" />
+                        @endcan
                         <button type="submit">{{ __('Approve') }}</button>
                     </form>
                     <form method="post" action="{{ route('admin.sellers.reject', $profile) }}" class="actions">

@@ -191,6 +191,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/categories/{category:id}', [Admin\CategoryController::class, 'update'])->can('categories.manage')->name('categories.update');
         Route::delete('/categories/{category:id}', [Admin\CategoryController::class, 'destroy'])->can('categories.manage')->name('categories.destroy');
 
+        Route::get('/commission', [Admin\CommissionController::class, 'index'])->can('commission.manage')->name('commission.index');
+        Route::put('/commission/categories/{category:id}', [Admin\CommissionController::class, 'updateCategory'])->can('commission.manage')->middleware('password.recent')->name('commission.category');
+        Route::put('/commission/sellers/{profile}', [Admin\CommissionController::class, 'updateSeller'])->can('commission.manage')->middleware('password.recent')->name('commission.seller');
+        Route::put('/commission/products', [Admin\CommissionController::class, 'updateProduct'])->can('commission.manage')->middleware('password.recent')->name('commission.product');
+
         Route::get('/orders', [Admin\OrderController::class, 'index'])->can('orders.view')->name('orders.index');
         Route::get('/orders/{order}', [Admin\OrderController::class, 'show'])->can('orders.view')->name('orders.show');
         Route::post('/orders/{order}/cancel', [Admin\OrderController::class, 'cancel'])->can('orders.manage')->name('orders.cancel');

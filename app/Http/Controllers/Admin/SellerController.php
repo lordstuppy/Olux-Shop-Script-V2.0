@@ -21,7 +21,9 @@ class SellerController extends Controller
     public function approve(Request $request, SellerProfile $profile, UserService $users): RedirectResponse
     {
         $data = $request->validate(['commission_bps' => ['nullable', 'integer', 'min:0', 'max:10000']]);
-        $users->approveSeller($profile, $request->user(), isset($data['commission_bps']) ? (int) $data['commission_bps'] : null);
+        // Only staff who manage commission can set a seller rate; others approve with the default.
+        $bps = isset($data['commission_bps']) && $request->user()->can('commission.manage') ? (int) $data['commission_bps'] : null;
+        $users->approveSeller($profile, $request->user(), $bps);
 
         return back()->with('success', __('Approved :name as a seller.', ['name' => $profile->display_name]));
     }
