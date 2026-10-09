@@ -133,6 +133,7 @@ class CatalogService
     {
         return DB::table('seller_profiles')->where('status', 'approved')
             ->whereExists(fn ($q) => $q->from('products')->whereColumn('products.seller_id', 'seller_profiles.user_id')->where('products.status', 'active'))
+            ->whereExists(fn ($q) => $q->from('users')->whereColumn('users.id', 'seller_profiles.user_id')->where('users.status', 'active'))
             ->orderBy('display_name')->pluck('display_name', 'user_id');
     }
 

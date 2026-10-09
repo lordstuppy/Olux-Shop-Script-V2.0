@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DeliveryType;
 use App\Enums\ProductStatus;
+use App\Enums\UserStatus;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -101,14 +102,17 @@ class Product extends Model
             || $this->licenseKeys()->exists();
     }
 
+    /** Listed products: active, and their seller's account is not suspended. */
     public function scopeVisible(Builder $query): Builder
     {
-        return $query->where('status', ProductStatus::Active->value);
+        return $query->where('products.status', ProductStatus::Active->value)
+            ->whereExists(fn ($q) => $q->from('users')->whereColumn('users.id', 'products.seller_id')->where('users.status', UserStatus::Active->value));
     }
 
     public function isPurchasable(): bool
     {
-        return $this->status === ProductStatus::Active && ($this->stock === null || $this->stock > 0);
+        return $this->status === ProductStatus::Active && ($this->stock === null || $this->stock > 0)
+            && $this->seller()->where('status', UserStatus::Active->value)->exists();
     }
 
     public function hasUnlimitedStock(): bool

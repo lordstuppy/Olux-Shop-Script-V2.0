@@ -132,19 +132,23 @@ class PurchaseFlowTest extends TestCase
         $this->assertDatabaseHas('balance_transactions', ['user_id' => $buyer->id, 'amount_minor' => -1999, 'type' => 'order_payment']);
     }
 
-    public function test_insufficient_balance_gives_specific_message(): void
+    public function test_insufficient_balance_creates_no_order(): void
     {
         $this->fakeShkeeper();
         $buyer = User::factory()->withBalance(1000)->create();
-        $product = Product::factory()->price(2500)->create();
+        $product = Product::factory()->price(2500)->create(['stock' => 3]);
         $this->actingAs($buyer);
         $this->postForm('/cart/items', ['product_id' => $product->id]);
+        $this->get('/checkout');
 
-        $this->postForm('/checkout', ['idempotency_key' => (string) Str::uuid(), 'payment_method' => 'balance', 'accept_terms' => '1']);
-        $order = Order::firstOrFail();
+        $this->postForm('/checkout', ['idempotency_key' => (string) Str::uuid(), 'payment_method' => 'balance', 'accept_terms' => '1'])
+            ->assertRedirect('/checkout')
+            ->assertSessionHas('error', 'Insufficient balance. Order total 25.00 USD, available 10.00 USD.');
 
-        $this->get(route('orders.pay', $order))->assertSee('Insufficient balance. Order total 25.00 USD, available 10.00 USD.');
-        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
+        // Nothing half-done: no order, stock and balance unchanged, cart kept.
+        $this->assertSame(0, Order::count());
+        $this->assertSame(3, $product->fresh()->stock);
         $this->assertSame(1000, $buyer->fresh()->balance_minor);
+        $this->get('/cart')->assertSee($product->title);
     }
 }

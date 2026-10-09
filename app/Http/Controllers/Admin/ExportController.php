@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ExportController extends Controller
 {
-    public const TYPES = ['orders', 'payments', 'payouts', 'ledger', 'balances'];
+    public const TYPES = ['orders', 'payments', 'payouts', 'ledger', 'balances', 'users'];
 
     public function index(): View
     {
@@ -28,6 +28,7 @@ class ExportController extends Controller
             'payouts' => __('Seller payouts'),
             'ledger' => __('Seller ledger entries'),
             'balances' => __('Buyer balance transactions'),
+            'users' => __('Users registered in the period'),
         ]]);
     }
 
@@ -102,6 +103,15 @@ class ExportController extends Controller
                 DB::table('balance_transactions')->join('users', 'users.id', '=', 'balance_transactions.user_id')->whereBetween('balance_transactions.created_at', [$from, $to])
                     ->select('balance_transactions.*', 'users.email as user_email'),
                 fn ($r) => [$r->id, $r->user_email, $r->type, $r->currency, $amount((int) $r->amount_minor, $r->currency), $amount((int) $r->balance_after_minor, $r->currency), $r->note, $r->created_at],
+            ],
+            // Contact and account data only: no password hashes, 2FA secrets or tokens.
+            'users' => [
+                ['id', 'email', 'name', 'role', 'status', 'email_verified', 'two_factor', 'currency', 'balance', 'paid_orders', 'created_at'],
+                DB::table('users')->whereBetween('users.created_at', [$from, $to])
+                    ->select('users.id', 'users.email', 'users.name', 'users.role', 'users.status', 'users.email_verified_at', 'users.two_factor_confirmed_at', 'users.currency', 'users.balance_minor', 'users.created_at')
+                    ->selectSub(fn ($q) => $q->from('orders')->whereColumn('orders.buyer_id', 'users.id')->whereIn('orders.status', ['paid', 'delivered', 'partially_refunded', 'refunded'])->selectRaw('COUNT(*)'), 'paid_orders'),
+                fn ($r) => [$r->id, $r->email, $r->name, $r->role, $r->status, $r->email_verified_at ? 'yes' : 'no', $r->two_factor_confirmed_at ? 'yes' : 'no', $r->currency,
+                    $amount((int) $r->balance_minor, $r->currency), $r->paid_orders, $r->created_at],
             ],
         };
     }

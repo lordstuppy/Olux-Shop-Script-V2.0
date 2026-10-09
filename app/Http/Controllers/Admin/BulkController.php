@@ -94,6 +94,10 @@ class BulkController extends Controller
             'ids.*' => ['string', 'max:36'],
             'filter_status' => ['nullable', Rule::enum(OrderStatus::class)],
             'filter_q' => ['nullable', 'string', 'max:64'],
+            'filter_buyer' => ['nullable', 'string', 'max:255'],
+            'filter_seller' => ['nullable', 'integer', 'min:1'],
+            'filter_from' => ['nullable', 'date_format:Y-m-d'],
+            'filter_to' => ['nullable', 'date_format:Y-m-d'],
         ]);
         $query = DB::table('orders')->join('users', 'users.id', '=', 'orders.buyer_id')
             ->select('orders.*', 'users.email as buyer_email')
@@ -104,8 +108,11 @@ class BulkController extends Controller
             }
             $query->whereIn(DB::raw('CAST(orders.public_id AS TEXT)'), $data['ids']);
         } else {
-            $query->when($data['filter_status'] ?? null, fn ($q, $s) => $q->where('orders.status', $s))
-                ->when($data['filter_q'] ?? null, fn ($q, $term) => $q->whereRaw('CAST(orders.public_id AS TEXT) LIKE ?', [addcslashes(strtolower($term), '%_\\').'%']));
+            $filters = [];
+            foreach (['status', 'q', 'buyer', 'seller', 'from', 'to'] as $key) {
+                $filters[$key] = $data['filter_'.$key] ?? null;
+            }
+            $query->whereIn('orders.id', OrderController::filtered($filters)->select('id'));
         }
         $audit->log('bulk.orders_exported', null, ['scope' => $data['scope'], 'count' => (clone $query)->count()]);
 

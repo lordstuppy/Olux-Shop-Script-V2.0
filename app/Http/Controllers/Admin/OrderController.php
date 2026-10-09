@@ -16,8 +16,11 @@ use App\Services\PaymentService;
 use App\Services\RefundService;
 use App\Services\ShkeeperPayoutService;
 use App\Support\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
@@ -29,16 +32,44 @@ class OrderController extends Controller
         $data = $request->validate([
             'status' => ['nullable', Rule::enum(OrderStatus::class)],
             'q' => ['nullable', 'string', 'max:64'],
+            'buyer' => ['nullable', 'string', 'max:255'],
+            'seller' => ['nullable', 'integer', 'min:1'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
-        $query = Order::with('buyer')->latest('id');
+
+        return view('admin.orders.index', [
+            'orders' => self::filtered($data)->with('buyer')->latest('id')->paginate(30)->withQueryString(),
+            'filters' => $data,
+            'sellers' => DB::table('seller_profiles')->orderBy('display_name')->pluck('display_name', 'user_id'),
+        ]);
+    }
+
+    /** Orders matching the admin list filters; also used by the bulk export. */
+    public static function filtered(array $data): Builder
+    {
+        $query = Order::query();
         if (! empty($data['status'])) {
             $query->where('status', $data['status']);
         }
         if (! empty($data['q'])) {
             $query->whereRaw('CAST(public_id AS TEXT) LIKE ?', [addcslashes(strtolower($data['q']), '%_\\').'%']);
         }
+        if (! empty($data['buyer'])) {
+            $like = '%'.addcslashes($data['buyer'], '%_\\').'%';
+            $query->whereHas('buyer', fn ($q) => $q->where('email', 'ILIKE', $like));
+        }
+        if (! empty($data['seller'])) {
+            $query->whereHas('items', fn ($q) => $q->where('seller_id', (int) $data['seller']));
+        }
+        if (! empty($data['from'])) {
+            $query->where('created_at', '>=', Carbon::parse($data['from'])->startOfDay());
+        }
+        if (! empty($data['to'])) {
+            $query->where('created_at', '<=', Carbon::parse($data['to'])->endOfDay());
+        }
 
-        return view('admin.orders.index', ['orders' => $query->paginate(30)->withQueryString(), 'filters' => $data]);
+        return $query;
     }
 
     public function show(Order $order): View

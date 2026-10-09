@@ -3,10 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
+use App\Jobs\DeliverOrder;
 use App\Mail\SellerSaleMail;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductLicenseKey;
 use App\Models\User;
+use App\Services\OrderService;
+use App\Services\PaymentService;
 use App\Services\PayoutService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -48,5 +54,27 @@ class MultiSellerOrderTest extends TestCase
         $this->postForm(route('admin.orders.refund', $order), ['amount' => '10.00', 'method' => 'balance'])->assertSessionHas('success');
         $this->assertSame([600, 400], $order->items()->orderBy('id')->pluck('refunded_minor')->all());
         $this->assertSame([], $payouts->reconcile());
+    }
+
+    public function test_one_sellers_delivery_failure_does_not_block_the_others(): void
+    {
+        Mail::fake();
+        $working = $this->instantProductWithFile(['seller_id' => User::factory()->seller()->create()->id, 'price_minor' => 1000, 'title' => 'Works fine']);
+        // A key product whose keys ran out between checkout and delivery.
+        $broken = Product::factory()->create(['seller_id' => User::factory()->seller()->create()->id, 'price_minor' => 1000, 'title' => 'Out of keys']);
+        $broken->licenseKeys()->create(['key_encrypted' => 'K-1', 'key_fingerprint' => hash('sha256', 'K-1')]);
+        $buyer = User::factory()->withBalance(5000)->create();
+        $order = app(OrderService::class)->createFromCart($buyer, [$working->id => 1, $broken->id => 1], 'USD', (string) Str::uuid());
+        ProductLicenseKey::query()->where('product_id', $broken->id)->update(['order_item_id' => null, 'assigned_at' => null]);
+        ProductLicenseKey::query()->where('product_id', $broken->id)->delete();
+        app(PaymentService::class)->payWithBalance($order, $buyer);
+        DeliverOrder::dispatchSync($order->id);
+
+        $items = $order->items()->get()->keyBy('title');
+        $this->assertNotNull($items['Works fine']->delivered_at);
+        $this->assertNull($items['Out of keys']->delivered_at);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
+        $this->assertDatabaseHas('audit_log', ['action' => 'delivery.failed']);
+        $this->assertSame(1, DB::table('seller_ledger_entries')->where('type', 'sale')->where('order_item_id', $items['Works fine']->id)->count());
     }
 }

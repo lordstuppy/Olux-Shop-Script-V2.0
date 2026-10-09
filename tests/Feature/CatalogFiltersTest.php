@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\ExchangeRate;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\SellerProfile;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CatalogFiltersTest extends TestCase
@@ -72,5 +74,27 @@ class CatalogFiltersTest extends TestCase
         $slug = 'tools';
 
         $this->get('/products?q=markdown&category='.$slug.'&price_max=20')->assertSee('Markdown converter')->assertDontSee('Markdown book')->assertDontSee('Markdown suite');
+    }
+
+    public function test_suspended_sellers_products_are_hidden_and_not_purchasable(): void
+    {
+        $seller = $this->seller('Shady Shop');
+        $product = $this->instantProductWithFile(['seller_id' => $seller->id, 'title' => 'Shady widget', 'price_minor' => 500]);
+        $buyer = User::factory()->withBalance(5000)->create();
+        $this->actingAs($buyer);
+        $this->postForm('/cart/items', ['product_id' => $product->id]);
+
+        $this->get('/cart');
+        $seller->forceFill(['status' => 'suspended'])->save();
+        $this->get('/products')->assertDontSee('Shady widget');
+        $this->get('/products')->assertDontSee('Shady Shop');
+        $this->get('/products/'.$product->slug)->assertNotFound();
+        $this->get('/sitemap.xml')->assertDontSee($product->slug);
+        $this->postForm('/checkout', ['idempotency_key' => (string) Str::uuid(), 'payment_method' => 'balance', 'accept_terms' => '1'])
+            ->assertSessionHas('error', '"Shady widget" is no longer available. Remove it from your cart to continue.');
+        $this->assertSame(0, Order::count());
+
+        $seller->forceFill(['status' => 'active'])->save();
+        $this->get('/products')->assertSee('Shady widget');
     }
 }

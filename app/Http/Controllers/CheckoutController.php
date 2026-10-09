@@ -11,6 +11,7 @@ use App\Services\PaymentService;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -86,13 +87,32 @@ class CheckoutController extends Controller
         ]);
 
         $user = $request->user();
-        $order = $orders->createFromCart(
+        $create = fn () => $orders->createFromCart(
             $user,
             $cart->rawItems(),
             $cart->currency(),
             $data['idempotency_key'],
             $request->session()->get(self::COUPON_KEY),
         );
+
+        if ($data['payment_method'] === 'balance') {
+            // All or nothing: if the balance cannot cover the order, no order is
+            // created and no stock or coupon stays reserved. The cart is kept.
+            $order = DB::transaction(function () use ($create, $payments, $user) {
+                $order = $create();
+                if (! $order->status->isPaidState()) {
+                    $payments->payWithBalance($order, $user);
+                }
+
+                return $order;
+            });
+            $cart->clear();
+            $request->session()->forget(self::COUPON_KEY);
+
+            return redirect()->route('orders.result', $order);
+        }
+
+        $order = $create();
         $cart->clear();
         $request->session()->forget(self::COUPON_KEY);
 
