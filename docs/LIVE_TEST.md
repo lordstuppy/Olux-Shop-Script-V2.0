@@ -3,7 +3,9 @@
 `tests/live/run.sh` runs the shop as it would run in production and drives
 it like real users would, through HTTP forms only (no JavaScript, no direct
 service calls). It was used to validate the release on 2026-10-09; the run
-recorded below passed all 18 scenarios.
+recorded below passed all 22 scenarios (the last four were added with
+the commission, dispute, gateway, template, bulk, dashboard and health
+features).
 
 ## Environment
 
@@ -80,15 +82,28 @@ The first administrator is created with `php artisan shop:create-admin`
 16. **Scheduler:**
     - An unpaid order expires and its stock comes back.
     - A payment whose webhook never arrived (nginx stopped during the callback) is picked up by `shop:reconcile-payments`.
-17. **Backup:**
+17. **Commission and gateway:**
+    - A seller's own rate outranks the category rate. After the seller rate is cleared, the category rate applies and is frozen on the next order line.
+    - Balance payments switched off on the gateway page disappear from checkout and come back when switched on.
+    - The gateway log shows rejected signatures and API calls.
+18. **Dispute:**
+    - A buyer opens a case on a licence-key line, and the seller is emailed.
+    - The seller's payout page shows the held earnings. The seller's answer hands the case to staff and emails the buyer.
+    - A super admin sends a replacement, and the buyer sees a new key.
+19. **Email template:** an edited "order paid" text arrives over SMTP for the next crypto purchase, then is reset.
+20. **Bulk actions, dashboard and health:**
+    - Bulk CSV export, then a bulk disable and re-approve of a product.
+    - The dashboard KPIs, charts, rankings and gateway health are shown.
+    - The system health page reports the real queue worker, scheduler, clamd, database and last webhook as OK.
+21. **Backup:**
     - `scripts/backup.sh` checksums verify.
     - The archive holds product files, images and invoices.
     - The dump restores into a scratch database with identical row counts.
-18. **Final health:**
+22. **Final health:**
     - No error-level log entries.
     - No failed jobs or webhook events.
     - The ledger reconciles.
-    - `shop_exceptions_total` is 0, with no 5xx responses (391 requests).
+    - `shop_exceptions_total` is 0, with no 5xx responses (464 requests).
 
 ## Defects found and fixed
 
@@ -104,6 +119,11 @@ The first administrator is created with `php artisan shop:create-admin`
 | Two tests reached out to the network | They only passed through the Shkeeper fallback | `Http::preventStrayRequests()` in every test |
 
 Each fix has a regression test that fails without it.
+
+The second round (new features) found no defects in the shop; three
+failures were wrong assumptions in the test script itself (the
+reconciliation grace period, commission precedence, and the buyer's spent
+balance), fixed in `tests/live/live_test.py`.
 
 ## Limitations
 
