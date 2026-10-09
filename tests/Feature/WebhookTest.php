@@ -97,6 +97,13 @@ class WebhookTest extends TestCase
         $this->assertSame(PaymentStatus::Partial, $order->payments()->first()->status);
         $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
 
+        // The buyer sees what arrived and what is still due (15/25 of the 0.0004166 BTC quote).
+        $this->actingAs($order->buyer);
+        $this->get(route('orders.pay', $order))->assertOk()
+            ->assertSee('We received 10.00 USD so far. 15.00 USD is still due.')
+            ->assertSee('0.00024996 BTC');
+        $this->get(route('orders.show', $order))->assertSee('(received 10.00 USD)');
+
         $this->postShkeeperWebhook($this->paidPayload($order->public_id, '25.00'))->assertJson(['status' => 'processed']);
         $this->assertTrue($order->fresh()->status->isPaidState());
     }

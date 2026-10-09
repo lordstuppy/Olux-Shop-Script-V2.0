@@ -97,6 +97,9 @@
                 <li>
                     {{ __(':kind via :provider', ['kind' => $payment->kind->label(), 'provider' => $payment->provider->label()]) }}{{ $payment->crypto ? ' ('.$payment->crypto.')' : '' }}:
                     {{ money($payment->amount_minor, $payment->currency) }}, <x-status :value="$payment->status" />
+                    @if ($payment->status === \App\Enums\PaymentStatus::Partial)
+                        {{ __('(received :received)', ['received' => money($payment->received_minor, $payment->currency)]) }}
+                    @endif
                     @if ($payment->failure_reason)
                         <br><span class="error-text">{{ $payment->failure_reason }}</span>
                     @endif

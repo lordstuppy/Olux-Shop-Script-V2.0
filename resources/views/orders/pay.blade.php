@@ -12,7 +12,10 @@
 
 @section('content')
     <h1>{{ __('Pay order') }} <span class="mono">{{ $order->shortId() }}</span></h1>
-    <p>{{ __('Amount due:') }} <strong>{{ money($order->total_minor, $order->currency) }}</strong>. {{ __('Unpaid orders expire at :time UTC.', ['time' => $order->expires_at?->format('Y-m-d H:i')]) }}</p>
+    <p>{{ __('Amount due:') }} <strong>{{ money($partial['due'] ?? $order->total_minor, $order->currency) }}</strong>. {{ __('Unpaid orders expire at :time UTC.', ['time' => $order->expires_at?->format('Y-m-d H:i')]) }}</p>
+    @if ($partial)
+        <div class="flash flash-info" role="status">{{ __('We received :received so far. :due is still due.', ['received' => money($partial['received'], $order->currency), 'due' => money($partial['due'], $order->currency)]) }}</div>
+    @endif
 
     @if ($payment?->wallet_address && $stale)
         <section class="card" aria-labelledby="stale-heading">
@@ -28,8 +31,13 @@
         <div class="two-col">
             <section class="card" aria-labelledby="send-heading">
                 <h2 id="send-heading">{{ __('Send :crypto', ['crypto' => $payment->crypto]) }}</h2>
-                <p>{{ __('Send exactly this amount:') }}</p>
-                <p class="price mono">{{ $payment->crypto_amount }} {{ $payment->crypto }}</p>
+                @if ($partial && $partial['crypto_due'] !== null)
+                    <p>{{ __('Send the remaining amount to the same address:') }}</p>
+                    <p class="price mono">{{ $partial['crypto_due'] }} {{ $payment->crypto }}</p>
+                @else
+                    <p>{{ __('Send exactly this amount:') }}</p>
+                    <p class="price mono">{{ $payment->crypto_amount }} {{ $payment->crypto }}</p>
+                @endif
                 <p>{{ __('To this address:') }}</p>
                 <p class="mono">{{ $payment->wallet_address }}</p>
                 @if ($qr)

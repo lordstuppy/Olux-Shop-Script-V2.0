@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentProvider;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Services\DeliveryService;
 use App\Services\InvoiceService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Support\Money;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Http\RedirectResponse;
@@ -69,11 +73,34 @@ class OrderController extends Controller
         return view('orders.pay', [
             'order' => $order,
             'payment' => $payment,
+            'partial' => $payment !== null ? $this->partialSummary($payment) : null,
             'qr' => $qr,
             'cryptos' => $payments->availableCryptos(),
             'user' => auth()->user(),
             'stale' => $payment !== null && $payments->quoteIsStale($payment),
         ]);
+    }
+
+    /**
+     * What is still due after a partial payment, in fiat and (approximately,
+     * pro rata to the current quote) in the invoice's crypto.
+     *
+     * @return array{received: int, due: int, crypto_due: ?string}|null
+     */
+    private function partialSummary(Payment $payment): ?array
+    {
+        if ($payment->status !== PaymentStatus::Partial || $payment->received_minor <= 0 || $payment->amount_minor <= 0) {
+            return null;
+        }
+        $due = max(0, $payment->amount_minor - $payment->received_minor);
+        $cryptoDue = null;
+        if ($payment->crypto_amount !== null && is_numeric($payment->crypto_amount)) {
+            $scale = max(8, strlen((string) strrchr($payment->crypto_amount, '.')) - 1);
+            $cryptoDue = (string) BigDecimal::of($payment->crypto_amount)->multipliedBy($due)
+                ->dividedBy($payment->amount_minor, $scale, RoundingMode::Up)->strippedOfTrailingZeros();
+        }
+
+        return ['received' => $payment->received_minor, 'due' => $due, 'crypto_due' => $cryptoDue];
     }
 
     public function startPayment(Request $request, Order $order, PaymentService $payments): RedirectResponse
