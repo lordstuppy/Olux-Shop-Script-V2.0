@@ -54,6 +54,9 @@ class ProductController extends Controller
         $data = $request->validate(['status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value])]]);
         $old = $product->status;
         if ($data['status'] === ProductStatus::Active->value) {
+            if (! $product->hasDeliverableContent()) {
+                throw new UserFacingException(__('":title" has nothing to deliver: it needs a file or licence keys before it can be approved.', ['title' => $product->title]));
+            }
             $unscanned = $product->currentFiles()->whereNotIn('scan_status', ['clean', 'skipped'])->count();
             if ($unscanned > 0) {
                 throw new UserFacingException(trans_choice('{1} ":title" has :count file without a clean virus scan. Approve it after the scan finishes.|[0,*] ":title" has :count files without a clean virus scan. Approve it after the scan finishes.', $unscanned, ['title' => $product->title]));

@@ -1,5 +1,6 @@
 {
     "\":name\" will not be delivered to new orders. Existing buyers keep access.": "\":name\" will not be delivered to new orders. Existing buyers keep access.",
+    "\":title\" has nothing to deliver: it needs a file or licence keys before it can be approved.": "\":title\" has nothing to deliver: it needs a file or licence keys before it can be approved.",
     "\":title\" in order :order was already delivered.": "\":title\" in order :order was already delivered.",
     "\":title\" is :status and cannot be submitted again.": "\":title\" is :status and cannot be submitted again.",
     "\":title\" is no longer available and was removed from your cart.": "\":title\" is no longer available and was removed from your cart.",

@@ -93,6 +93,14 @@ class Product extends Model
         return $this->hasMany(ProductLicenseKey::class);
     }
 
+    /** Instant products need a current file or licence keys; manual ones are delivered by the seller. */
+    public function hasDeliverableContent(): bool
+    {
+        return $this->delivery_type !== DeliveryType::Instant
+            || $this->currentFiles()->exists()
+            || $this->licenseKeys()->exists();
+    }
+
     public function scopeVisible(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active->value);

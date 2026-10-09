@@ -88,6 +88,15 @@ class FilesAndSubscriptionsTest extends TestCase
         Storage::disk('products')->assertMissing($file->storage_path);
         $this->assertSame(ProductStatus::Disabled, $product->fresh()->status);
         $this->assertDatabaseHas('audit_log', ['action' => 'product.file_infected']);
+
+        // With its only file removed there is nothing to deliver, so staff
+        // cannot approve it and the seller cannot resubmit it.
+        $this->postForm(route('seller.products.submit', $product->id))
+            ->assertSessionHas('error', 'Instant-delivery products need at least one file or licence key before review.');
+        $this->actingAs(User::factory()->admin()->create());
+        $this->postForm(route('admin.products.status', $product->id), ['status' => 'active'])
+            ->assertSessionHas('error', '"'.$product->title.'" has nothing to deliver: it needs a file or licence keys before it can be approved.');
+        $this->assertSame(ProductStatus::Disabled, $product->fresh()->status);
     }
 
     public function test_scanner_outage_blocks_approval_and_retries(): void

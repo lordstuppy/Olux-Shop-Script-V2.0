@@ -99,7 +99,7 @@ class ProductController extends Controller
         if (! in_array($product->status, [ProductStatus::Draft, ProductStatus::Disabled], true)) {
             throw new UserFacingException(__('":title" is :status and cannot be submitted again.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
         }
-        if ($product->delivery_type === DeliveryType::Instant && ! $product->currentFiles()->exists() && ! $product->licenseKeys()->exists()) {
+        if (! $product->hasDeliverableContent()) {
             throw new UserFacingException(__('Instant-delivery products need at least one file or licence key before review.'));
         }
         $product->status = ProductStatus::PendingReview;
