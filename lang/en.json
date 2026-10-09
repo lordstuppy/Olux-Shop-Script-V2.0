@@ -915,6 +915,7 @@
     "Too many incorrect codes. Wait :seconds seconds and try again.": "Too many incorrect codes. Wait :seconds seconds and try again.",
     "Too many login attempts for this email. Wait one minute and try again.": "Too many login attempts for this email. Wait one minute and try again.",
     "Too many login attempts from your network. Wait one minute and try again.": "Too many login attempts from your network. Wait one minute and try again.",
+    "Too many password attempts. Wait one minute and try again.": "Too many password attempts. Wait one minute and try again.",
     "Too many password reset requests. Wait one minute and try again.": "Too many password reset requests. Wait one minute and try again.",
     "Too many requests": "Too many requests",
     "Too many reset attempts. Wait a minute and try again.": "Too many reset attempts. Wait a minute and try again.",

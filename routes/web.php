@@ -90,7 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:verification')->name('verification.send');
 
     Route::get('/confirm-password', [ConfirmPasswordController::class, 'show'])->name('password.confirm');
-    Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->middleware('throttle:login');
+    Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->middleware('throttle:password-check');
 
     Route::get('/account/two-factor', [TwoFactorController::class, 'show'])->name('account.two-factor');
     Route::post('/account/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:two-factor')->name('account.two-factor.enable');
@@ -129,7 +129,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/account', [AccountController::class, 'show'])->name('account.settings');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
-    Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:login')->name('account.password');
+    Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:password-check')->name('account.password');
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/new', [TicketController::class, 'create'])->name('tickets.create');

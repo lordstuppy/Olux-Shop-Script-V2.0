@@ -190,6 +190,25 @@ class AccountSecurityTest extends TestCase
         $this->postForm(route('admin.orders.refund', $order), ['amount' => '1.00', 'method' => 'balance'])->assertRedirect(route('password.confirm'));
     }
 
+    public function test_password_confirmation_is_limited_per_account_not_per_address(): void
+    {
+        // Two people behind the same address: one using up their attempts
+        // must not lock the other out of re-authenticating.
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+
+        $this->actingAs($first);
+        for ($i = 0; $i < 5; $i++) {
+            $this->postForm(route('password.confirm'), ['password' => 'wrong'])->assertSessionHas('error');
+        }
+        $this->postForm(route('password.confirm'), ['password' => 'wrong'])->assertStatus(429)
+            ->assertSee('Too many password attempts. Wait one minute and try again.');
+
+        $this->actingAs($second);
+        $this->postForm(route('password.confirm'), ['password' => 'correct-horse-battery-1'])->assertRedirect();
+        $this->assertNotNull(session('auth.password_confirmed_at'));
+    }
+
     public function test_new_device_login_sends_alert(): void
     {
         Mail::fake();

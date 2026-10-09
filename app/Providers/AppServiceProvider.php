@@ -102,6 +102,13 @@ class AppServiceProvider extends ServiceProvider
                 ->response($throttled(__('Too many login attempts from your network. Wait one minute and try again.'))),
         ]);
 
+        // Re-authentication of a signed-in user (password confirmation and
+        // change). Keyed by account so people sharing an address do not
+        // block each other; these forms carry no email field.
+        RateLimiter::for('password-check', fn (Request $request) => Limit::perMinute($limits['login_per_email'])
+            ->by('password-check:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response($throttled(__('Too many password attempts. Wait one minute and try again.'))));
+
         RateLimiter::for('register', fn (Request $request) => Limit::perHour($limits['register_per_hour'])->by('register:'.$request->ip())
             ->response($throttled(__('Too many accounts were created from your network. Try again in an hour.'))));
 
