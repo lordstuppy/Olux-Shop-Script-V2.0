@@ -194,6 +194,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/{product:id}/files/{file}', [Admin\ProductController::class, 'downloadFile'])->can('products.manage')->name('products.files.download');
         Route::post('/products/{product:id}/status', [Admin\ProductController::class, 'status'])->can('products.manage')->name('products.status');
 
+        Route::post('/bulk/products', [Admin\BulkController::class, 'products'])->can('products.manage')->name('bulk.products');
+        Route::post('/bulk/users', [Admin\BulkController::class, 'users'])->can('users.manage')->middleware('password.recent')->name('bulk.users');
+        Route::post('/bulk/orders/export', [Admin\BulkController::class, 'exportOrders'])->can('orders.export')->middleware('password.recent')->name('bulk.orders.export');
+
         Route::get('/categories', [Admin\CategoryController::class, 'index'])->can('categories.manage')->name('categories.index');
         Route::post('/categories', [Admin\CategoryController::class, 'store'])->can('categories.manage')->name('categories.store');
         Route::put('/categories/{category:id}', [Admin\CategoryController::class, 'update'])->can('categories.manage')->name('categories.update');

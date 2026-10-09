@@ -4,6 +4,16 @@
 @if (session('info'))
     <div class="flash flash-info" role="status">{{ session('info') }}</div>
 @endif
+@if (session('bulk_skipped'))
+    <div class="flash flash-info" role="status">
+        <p><strong>{{ __('Skipped rows:') }}</strong></p>
+        <ul>
+            @foreach (session('bulk_skipped') as $reason)
+                <li>{{ $reason }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 @if (session('error'))
     <div class="flash flash-error" role="alert">{{ session('error') }}</div>
 @endif

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\ProductStatus;
-use App\Exceptions\UserFacingException;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductFile;
 use App\Services\AuditLogger;
+use App\Services\ProductModerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -49,22 +49,10 @@ class ProductController extends Controller
         return Storage::disk('products')->download($file->storage_path, $file->original_name);
     }
 
-    public function status(Request $request, Product $product, AuditLogger $audit): RedirectResponse
+    public function status(Request $request, Product $product, ProductModerationService $moderation): RedirectResponse
     {
-        $data = $request->validate(['status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value])]]);
-        $old = $product->status;
-        if ($data['status'] === ProductStatus::Active->value) {
-            if (! $product->hasDeliverableContent()) {
-                throw new UserFacingException(__('":title" has nothing to deliver: it needs a file or licence keys before it can be approved.', ['title' => $product->title]));
-            }
-            $unscanned = $product->currentFiles()->whereNotIn('scan_status', ['clean', 'skipped'])->count();
-            if ($unscanned > 0) {
-                throw new UserFacingException(trans_choice('{1} ":title" has :count file without a clean virus scan. Approve it after the scan finishes.|[0,*] ":title" has :count files without a clean virus scan. Approve it after the scan finishes.', $unscanned, ['title' => $product->title]));
-            }
-        }
-        $product->status = ProductStatus::from($data['status']);
-        $product->save();
-        $audit->log('product.status_changed', $product, ['from' => $old->value, 'to' => $data['status']]);
+        $data = $request->validate(['status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value, ProductStatus::PendingReview->value])]]);
+        $moderation->setStatus($product, ProductStatus::from($data['status']), $request->user());
 
         return back()->with('success', __('":title" is now :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
     }
