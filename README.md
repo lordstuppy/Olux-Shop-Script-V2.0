@@ -1,1 +1,0 @@
-# Olux-Shop-Script-V2.0
