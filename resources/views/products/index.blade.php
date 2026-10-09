@@ -9,7 +9,7 @@
     <form class="filters" method="get" action="{{ route('products.index') }}" aria-label="Filter products">
         <x-field name="q" label="Search" type="search" :value="$filters['q'] ?? ''" maxlength="100" />
         <x-select name="category" label="Category" :options="$categories->pluck('name', 'slug')->all()" :value="$filters['category'] ?? ''" placeholder="All categories" />
-        <x-select name="sort" label="Sort by" :options="['newest' => 'Newest', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low', 'title' => 'Title']" :value="$filters['sort'] ?? 'newest'" />
+        <x-select name="sort" label="Sort by" :options="['newest' => 'Newest', 'best' => 'Best selling', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low', 'title' => 'Title']" :value="$filters['sort'] ?? 'newest'" />
         <x-select name="currency" label="Listed in" :options="array_combine(\App\Support\Money::supported(), \App\Support\Money::supported())" :value="$filters['currency'] ?? ''" placeholder="Any currency" />
         <button type="submit">Apply filters</button>
     </form>

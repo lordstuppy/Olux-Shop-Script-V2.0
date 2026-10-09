@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuditLogger;
+use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,29 @@ class AccountController extends Controller
         $request->user()->update(['name' => $data['name']]);
 
         return back()->with('success', 'Display name updated.');
+    }
+
+    public function requestEmailChange(Request $request, UserService $users): RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'current_password' => ['required', 'current_password'],
+        ], ['current_password.current_password' => 'The current password is incorrect.']);
+        $users->requestEmailChange($request->user(), $data['email']);
+
+        return back()->with('success', "We sent a confirmation link to {$data['email']}. Your address changes once you open it (valid for 24 hours).");
+    }
+
+    public function showEmailConfirm(string $token): View
+    {
+        return view('account.email-confirm', ['token' => $token, 'pending' => auth()->user()->pending_email]);
+    }
+
+    public function confirmEmail(Request $request, string $token, UserService $users): RedirectResponse
+    {
+        $users->confirmEmailChange($request->user(), $token);
+
+        return redirect()->route('account.settings')->with('success', "Your email address is now {$request->user()->email}.");
     }
 
     public function updatePassword(Request $request, AuditLogger $audit): RedirectResponse

@@ -6,7 +6,10 @@ use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\UserFacingException;
+use App\Mail\EmailChangeConfirmMail;
+use App\Mail\EmailChangeNoticeMail;
 use App\Mail\NewDeviceLoginMail;
+use App\Mail\SellerApplicationMail;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -151,6 +154,53 @@ class UserService
         }
     }
 
+    /**
+     * Starts an email change. The new address must confirm through a link;
+     * the old address is told about the request.
+     */
+    public function requestEmailChange(User $user, string $newEmail): void
+    {
+        $newEmail = Str::lower(trim($newEmail));
+        if ($newEmail === $user->email) {
+            throw new UserFacingException('That is already your email address.');
+        }
+        if (User::query()->where('email', $newEmail)->exists()) {
+            throw new UserFacingException('Another account already uses that email address.');
+        }
+
+        $token = Str::random(48);
+        $user->forceFill([
+            'pending_email' => $newEmail,
+            'email_change_token_hash' => hash('sha256', $token),
+            'email_change_expires_at' => now()->addDay(),
+        ])->save();
+
+        Mail::to($newEmail)->queue(new EmailChangeConfirmMail($user, route('account.email.confirm', $token)));
+        Mail::to($user->email)->queue(new EmailChangeNoticeMail($user, $newEmail));
+        $this->audit->log('user.email_change_requested', $user, ['to_hash' => hash('sha256', $newEmail)], $user);
+    }
+
+    public function confirmEmailChange(User $user, string $token): void
+    {
+        if ($user->email_change_token_hash === null || ! hash_equals($user->email_change_token_hash, hash('sha256', $token))
+            || $user->email_change_expires_at === null || $user->email_change_expires_at->isPast()) {
+            throw new UserFacingException('This confirmation link is invalid or has expired. Request the change again from your account settings.');
+        }
+        if (User::query()->where('email', $user->pending_email)->whereKeyNot($user->id)->exists()) {
+            throw new UserFacingException('Another account now uses that email address.');
+        }
+
+        $old = $user->email;
+        $user->forceFill([
+            'email' => $user->pending_email,
+            'email_verified_at' => now(),
+            'pending_email' => null,
+            'email_change_token_hash' => null,
+            'email_change_expires_at' => null,
+        ])->save();
+        $this->audit->log('user.email_changed', $user, ['from_hash' => hash('sha256', $old)], $user);
+    }
+
     public function applyAsSeller(User $user, array $data): SellerProfile
     {
         if ($user->isSeller() || $user->isStaff()) {
@@ -194,6 +244,7 @@ class UserService
                 $user->forceFill(['role' => UserRole::Seller])->save();
             }
             $this->audit->log('seller.approved', $profile, ['commission_bps' => $commissionBps], $admin);
+            Mail::to($profile->user)->queue((new SellerApplicationMail($profile))->afterCommit());
         });
     }
 
@@ -206,6 +257,7 @@ class UserService
             'review_note' => $note,
         ])->save();
         $this->audit->log('seller.rejected', $profile, ['note' => $note], $admin);
+        Mail::to($profile->user)->queue(new SellerApplicationMail($profile));
     }
 
     public function setRole(User $user, UserRole $role, User $admin): void

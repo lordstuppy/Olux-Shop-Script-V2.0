@@ -14,6 +14,7 @@
         ['admin.gift-cards.index', 'Gift cards', 'giftcards.manage'],
         ['admin.rates.index', 'Exchange rates', 'rates.manage'],
         ['admin.tickets.index', 'Tickets', 'tickets.manage'],
+        ['admin.reviews.index', 'Reviews', 'reviews.moderate'],
         ['admin.reports', 'Reports', 'reports.view'],
         ['admin.exports.index', 'Exports', 'exports.download'],
         ['admin.announcements.index', 'Announcements', 'announcements.manage'],

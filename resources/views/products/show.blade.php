@@ -15,6 +15,7 @@
         'category' => $product->category?->name,
         'url' => route('products.show', $product->slug),
         'image' => $product->images->map(fn ($i) => $i->url())->values()->all(),
+        'aggregateRating' => $rating['count'] > 0 ? ['@type' => 'AggregateRating', 'ratingValue' => $rating['average'], 'reviewCount' => $rating['count']] : null,
         'brand' => ['@type' => 'Brand', 'name' => $product->seller->sellerProfile?->display_name ?? config('app.name')],
         'offers' => [
             '@type' => 'Offer',
@@ -37,7 +38,11 @@
     <div class="two-col">
         <div>
             <h1>{{ $product->title }}</h1>
-            <p class="muted">Sold by {{ $product->seller->sellerProfile?->display_name ?? $product->seller->name }}</p>
+            <p class="muted">Sold by {{ $product->seller->sellerProfile?->display_name ?? $product->seller->name }}
+                @if ($rating['count'] > 0)
+                    &middot; <a href="#reviews">Rated {{ number_format($rating['average'], 1) }} out of 5 ({{ $rating['count'] }} {{ $rating['count'] === 1 ? 'review' : 'reviews' }})</a>
+                @endif
+            </p>
             @if ($product->images->isNotEmpty())
                 @php $main = $product->images->first(); @endphp
                 <figure class="gallery">
@@ -79,6 +84,59 @@
                     <button type="submit">Add to cart</button>
                 </form>
             @endif
+            @auth
+                @if ($wishlisted)
+                    <form method="post" action="{{ route('wishlist.destroy', $product->id) }}" class="mt">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-secondary">Remove from wishlist</button>
+                    </form>
+                @else
+                    <form method="post" action="{{ route('wishlist.store') }}" class="mt">
+                        @csrf
+                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+                        <button type="submit" class="btn-secondary">Save to wishlist</button>
+                    </form>
+                @endif
+            @endauth
         </aside>
     </div>
+
+    <section id="reviews" aria-labelledby="reviews-heading">
+        <h2 id="reviews-heading">Reviews</h2>
+        @if ($rating['count'] > 0)
+            <p>Average {{ number_format($rating['average'], 1) }} out of 5 from {{ $rating['count'] }} verified {{ $rating['count'] === 1 ? 'buyer' : 'buyers' }}.</p>
+        @endif
+        @forelse ($reviews as $review)
+            <article class="message">
+                <h3>{{ $review->title }}</h3>
+                <p class="meta"><span aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('*', $review->rating) }}{{ str_repeat('-', 5 - $review->rating) }}</span> &middot; {{ $review->user->name }} &middot; {{ $review->created_at->format('Y-m-d') }} &middot; Verified buyer</p>
+                <div class="description">{{ $review->body }}</div>
+            </article>
+        @empty
+            <p>No reviews yet.</p>
+        @endforelse
+
+        @if ($canReview)
+            <h3>{{ $myReview ? 'Edit your review' : 'Write a review' }}</h3>
+            <form method="post" action="{{ route('products.reviews.store', $product->slug) }}" class="stack">
+                @csrf
+                <x-select name="rating" label="Rating" :options="[5 => '5 - excellent', 4 => '4 - good', 3 => '3 - okay', 2 => '2 - poor', 1 => '1 - bad']" :value="$myReview?->rating ?? 5" />
+                <x-field name="title" label="Title" :value="$myReview?->title" maxlength="120" required />
+                <x-textarea name="body" label="Your review" :value="$myReview?->body" maxlength="3000" required />
+                <button type="submit">{{ $myReview ? 'Update review' : 'Publish review' }}</button>
+            </form>
+        @endif
+    </section>
+
+    @if ($related->isNotEmpty())
+        <section aria-labelledby="related-heading">
+            <h2 id="related-heading">Related products</h2>
+            <div class="grid">
+                @foreach ($related as $item)
+                    @include('partials.product-card', ['product' => $item, 'headingLevel' => 3])
+                @endforeach
+            </div>
+        </section>
+    @endif
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\CartService;
 use App\Services\CatalogService;
 use App\Services\CurrencyConverter;
+use App\Services\ReviewService;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show(string $slug, CatalogService $catalog, CartService $cart, CurrencyConverter $converter): View
+    public function show(string $slug, CatalogService $catalog, CartService $cart, CurrencyConverter $converter, ReviewService $reviews): View
     {
         $product = $catalog->findBySlug($slug);
 
@@ -40,10 +41,18 @@ class ProductController extends Controller
             $converted = $converter->convert($product->price_minor, $product->currency, $cartCurrency)[0];
         }
 
+        $user = auth()->user();
+
         return view('products.show', [
             'product' => $product,
             'cartCurrency' => $cartCurrency,
             'convertedMinor' => $converted,
+            'related' => $catalog->related($product),
+            'reviews' => $product->visibleReviews()->with('user')->limit(20)->get(),
+            'rating' => $reviews->summary($product),
+            'canReview' => $user !== null && $reviews->eligibleItem($user, $product) !== null,
+            'myReview' => $user?->id ? $product->reviews()->where('user_id', $user->id)->first() : null,
+            'wishlisted' => $user !== null && $user->wishlistItems()->where('product_id', $product->id)->exists(),
         ]);
     }
 

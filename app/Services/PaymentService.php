@@ -10,6 +10,7 @@ use App\Exceptions\ShkeeperException;
 use App\Exceptions\UserFacingException;
 use App\Jobs\DeliverOrder;
 use App\Jobs\GenerateInvoicePdf;
+use App\Mail\OrderPlacedMail;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
@@ -18,6 +19,7 @@ use App\Support\Money;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -85,6 +87,7 @@ class PaymentService
                 throw new UserFacingException("Order {$locked->shortId()} is already paid.");
             }
 
+            $isNew = $payment === null;
             $payment ??= new Payment([
                 'order_id' => $locked->id,
                 'kind' => PaymentKind::Charge,
@@ -102,6 +105,10 @@ class PaymentService
                 'quote_recalculate_after' => $invoice->recalculateAfter,
             ]);
             $payment->save();
+
+            if ($isNew) {
+                Mail::to($locked->buyer)->queue((new OrderPlacedMail($locked, $payment))->afterCommit());
+            }
 
             Log::info('Shkeeper invoice {invoice_id} created for order {public_id} in {crypto}', [
                 'invoice_id' => $invoice->id,

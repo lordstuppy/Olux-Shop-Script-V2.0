@@ -68,6 +68,16 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderBy('position');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    public function visibleReviews(): HasMany
+    {
+        return $this->reviews()->where('status', 'visible')->latest('id');
+    }
+
     public function isSubscription(): bool
     {
         return $this->access_days !== null;

@@ -35,6 +35,7 @@
                 @auth
                     <li><a href="{{ route('account.orders') }}" @if(request()->routeIs('account.orders', 'orders.*')) aria-current="page" @endif>Orders</a></li>
                     <li><a href="{{ route('wallet.show') }}" @if(request()->routeIs('wallet.*')) aria-current="page" @endif>Wallet ({{ money(auth()->user()->balance_minor, auth()->user()->currency) }})</a></li>
+                    <li><a href="{{ route('wishlist.index') }}" @if(request()->routeIs('wishlist.*')) aria-current="page" @endif>Wishlist</a></li>
                     <li><a href="{{ route('tickets.index') }}" @if(request()->routeIs('tickets.*')) aria-current="page" @endif>Support</a></li>
                     @if (auth()->user()->isSeller())
                         <li><a href="{{ route('seller.dashboard') }}" @if(request()->routeIs('seller.*') && ! request()->routeIs('seller.apply*')) aria-current="page" @endif>Seller</a></li>

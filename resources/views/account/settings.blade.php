@@ -15,6 +15,17 @@
         <button type="submit">Save profile</button>
     </form>
 
+    <h2>Email address</h2>
+    @if ($user->pending_email && $user->email_change_expires_at?->isFuture())
+        <p class="hint">A change to {{ $user->pending_email }} is waiting for confirmation from that address.</p>
+    @endif
+    <form method="post" action="{{ route('account.email') }}" class="stack">
+        @csrf
+        <x-field name="email" id="new-email" label="New email address" type="email" autocomplete="email" required />
+        <x-field name="current_password" id="email-current-password" label="Current password" type="password" autocomplete="current-password" required />
+        <button type="submit">Send confirmation link</button>
+    </form>
+
     <h2>Change password</h2>
     <form method="post" action="{{ route('account.password') }}" class="stack">
         @csrf

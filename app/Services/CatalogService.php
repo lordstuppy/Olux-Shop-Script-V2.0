@@ -7,13 +7,14 @@ use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Read side of the catalog. Only products with status "active" are visible.
  */
 class CatalogService
 {
-    public const SORTS = ['newest', 'price_asc', 'price_desc', 'title'];
+    public const SORTS = ['newest', 'best', 'price_asc', 'price_desc', 'title'];
 
     /**
      * @param  array{q?: ?string, category?: ?string, sort?: ?string, currency?: ?string}  $filters
@@ -41,6 +42,7 @@ class CatalogService
             'price_asc' => $query->orderBy('price_minor')->orderBy('id'),
             'price_desc' => $query->orderByDesc('price_minor')->orderBy('id'),
             'title' => $query->orderBy('title')->orderBy('id'),
+            'best' => $query->orderByDesc($this->unitsSold())->orderByDesc('id'),
             default => $query->orderByDesc('created_at')->orderByDesc('id'),
         };
 
@@ -63,6 +65,32 @@ class CatalogService
     public function latest(int $limit = 6): Collection
     {
         return Product::query()->visible()->with(['category', 'images'])->latest()->limit($limit)->get();
+    }
+
+    /**
+     * Other listed products from the same category, best sellers first.
+     *
+     * @return Collection<int, Product>
+     */
+    public function related(Product $product, int $limit = 4): Collection
+    {
+        if ($product->category_id === null) {
+            return new Collection;
+        }
+
+        return Product::query()->visible()->with(['category', 'images'])
+            ->where('category_id', $product->category_id)->whereKeyNot($product->id)
+            ->orderByDesc($this->unitsSold())->orderByDesc('id')->limit($limit)->get();
+    }
+
+    /** Units sold in paid orders, as a sortable subquery. */
+    private function unitsSold(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereColumn('order_items.product_id', 'products.id')
+            ->whereIn('orders.status', ['paid', 'delivered', 'partially_refunded'])
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0)');
     }
 
     /**

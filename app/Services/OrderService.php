@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\UserFacingException;
+use App\Mail\SellerSaleMail;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\SellerProfile;
@@ -14,6 +15,7 @@ use App\Support\Money;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class OrderService
@@ -110,6 +112,13 @@ class OrderService
             $this->payouts->recordSale($item, $order->currency);
         }
         $this->audit->log('order.paid', $order, ['total' => Money::format($order->total_minor, $order->currency)], $order->buyer);
+
+        foreach ($order->items->pluck('seller_id')->unique() as $sellerId) {
+            $seller = User::find($sellerId);
+            if ($seller !== null) {
+                Mail::to($seller)->queue((new SellerSaleMail($order, $seller))->afterCommit());
+            }
+        }
 
         return true;
     }

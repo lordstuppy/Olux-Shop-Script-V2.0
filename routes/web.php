@@ -16,6 +16,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PayoutCallbackController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller;
 use App\Http\Controllers\SellerApplicationController;
 use App\Http\Controllers\SessionController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -112,6 +114,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
     Route::get('/orders/{order}/items/{item}/files/{file}', DownloadController::class)
         ->middleware('signed')->name('orders.download');
+
+    Route::post('/products/{slug}/reviews', [ReviewController::class, 'store'])->middleware(['verified', 'throttle:forms'])->name('products.reviews.store');
+    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/wishlist', [WishlistController::class, 'store'])->middleware('throttle:forms')->name('wishlist.store');
+    Route::delete('/wishlist/{product:id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+
+    Route::post('/account/email', [AccountController::class, 'requestEmailChange'])->middleware('throttle:password-reset')->name('account.email');
+    Route::get('/account/email/confirm/{token}', [AccountController::class, 'showEmailConfirm'])->name('account.email.confirm');
+    Route::post('/account/email/confirm/{token}', [AccountController::class, 'confirmEmail'])->middleware('throttle:forms');
 
     Route::get('/wallet', [WalletController::class, 'show'])->name('wallet.show');
     Route::post('/wallet/redeem', [WalletController::class, 'redeem'])->middleware(['verified', 'throttle:redeem'])->name('wallet.redeem');
@@ -209,6 +220,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/exchange-rates', [Admin\ExchangeRateController::class, 'store'])->can('rates.manage')->middleware('password.recent')->name('rates.store');
 
         Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
+        Route::get('/reviews', [Admin\ReviewController::class, 'index'])->can('reviews.moderate')->name('reviews.index');
+        Route::post('/reviews/{review}/status', [Admin\ReviewController::class, 'status'])->can('reviews.moderate')->name('reviews.status');
         Route::get('/audit', [Admin\AuditLogController::class, 'index'])->can('audit.view')->name('audit.index');
 
         Route::get('/reports', Admin\ReportController::class)->can('reports.view')->name('reports');

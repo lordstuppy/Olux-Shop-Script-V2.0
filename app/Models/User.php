@@ -20,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
  * through UserService, BalanceService and the admin controllers.
  */
 #[Fillable(['name', 'email', 'password_hash'])]
-#[Hidden(['password_hash', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+#[Hidden(['password_hash', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'email_change_token_hash'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -41,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_step' => 'integer',
+            'email_change_expires_at' => 'datetime',
         ];
     }
 
@@ -93,6 +94,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function wishlistItems(): HasMany
+    {
+        return $this->hasMany(WishlistItem::class);
     }
 
     public function balanceTransactions(): HasMany
