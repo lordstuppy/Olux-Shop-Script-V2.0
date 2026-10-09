@@ -13,7 +13,7 @@ class SellerApplicationController extends Controller
 {
     public function show(Request $request): View
     {
-        return view('seller.apply', ['profile' => $request->user()->sellerProfile, 'currencies' => Money::supported()]);
+        return view('seller.apply', ['profile' => $request->user()?->sellerProfile, 'currencies' => Money::supported()]);
     }
 
     public function store(Request $request, UserService $users): RedirectResponse

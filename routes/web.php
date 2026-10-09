@@ -36,6 +36,8 @@ Route::get('/data-retention', [PageController::class, 'retention'])->name('pages
 Route::get('/sitemap.xml', [PageController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [PageController::class, 'robots'])->name('robots');
 
+Route::get('/sell', [SellerApplicationController::class, 'show'])->name('seller.apply');
+
 Route::get('/health', [HealthController::class, 'health'])->name('health');
 Route::get('/metrics', [HealthController::class, 'metrics'])->name('metrics');
 
@@ -99,7 +101,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/messages', [TicketController::class, 'reply'])->middleware('throttle:forms')->name('tickets.reply');
     Route::post('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
 
-    Route::get('/sell', [SellerApplicationController::class, 'show'])->name('seller.apply');
     Route::post('/sell', [SellerApplicationController::class, 'store'])->middleware('throttle:forms')->name('seller.apply.store');
 
     // Sellers

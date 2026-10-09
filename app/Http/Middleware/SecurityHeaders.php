@@ -20,6 +20,11 @@ class SecurityHeaders
         $response = $next($request);
 
         $headers = $response->headers;
+        // Do not advertise the PHP version (also set expose_php=Off in php.ini).
+        $headers->remove('X-Powered-By');
+        if (! app()->runningInConsole()) {
+            header_remove('X-Powered-By');
+        }
         $headers->set('Content-Security-Policy', self::CSP);
         $headers->set('X-Content-Type-Options', 'nosniff');
         $headers->set('Referrer-Policy', 'same-origin');
