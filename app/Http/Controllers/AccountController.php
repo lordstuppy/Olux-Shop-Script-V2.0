@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\AuditLogger;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
+
+class AccountController extends Controller
+{
+    public function show(Request $request): View
+    {
+        return view('account.settings', ['user' => $request->user()]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['name' => ['required', 'string', 'max:80']]);
+        $request->user()->update(['name' => $data['name']]);
+
+        return back()->with('success', 'Display name updated.');
+    }
+
+    public function updatePassword(Request $request, AuditLogger $audit): RedirectResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'confirmed', 'max:255', Password::min(12)->letters()->numbers()],
+        ], ['current_password.current_password' => 'The current password is incorrect.']);
+
+        $user = $request->user();
+        $user->forceFill(['password_hash' => $data['password'], 'remember_token' => Str::random(60)])->save();
+        $request->session()->regenerate();
+        // Database sessions: drop every other session of this user.
+        DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        $audit->log('user.password_changed', $user, [], $user);
+
+        return back()->with('success', 'Password changed. Other sessions were signed out.');
+    }
+}
