@@ -11,6 +11,8 @@
     --danger-bg: #fdecec;
     --success: #1e6b34;
     --success-bg: #e8f5ec;
+    --warning: #7a4600;
+    --warning-bg: #fff3df;
     --info: #0b4a7a;
     --info-bg: #e7f1fa;
     --focus: #f2a900;
@@ -158,3 +160,16 @@ summary { cursor: pointer; color: var(--brand); }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: .25rem 1rem; margin: 0 0 1rem; }
 .facts dt { color: var(--text-muted); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Dashboard */
+.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); list-style: none; padding: 0; }
+.kpis li { border: 1px solid var(--border); border-radius: var(--radius); padding: .75rem 1rem; }
+.kpis strong { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.kpis .delta { color: var(--text-muted); font-size: .85rem; }
+.health { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.health li { display: grid; grid-template-columns: 7rem 1fr; gap: .25rem 1rem; align-items: baseline; border-bottom: 1px solid var(--border); padding: .4rem 0; }
+.level { display: inline-block; padding: 0 .5em; border-radius: var(--radius); border: 1px solid; font-size: .85rem; font-weight: 600; }
+.level-good { border-color: var(--success); color: var(--success); background: var(--success-bg); }
+.level-warning { border-color: var(--warning); color: var(--warning); background: var(--warning-bg); }
+.level-critical { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+.period-filter { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
