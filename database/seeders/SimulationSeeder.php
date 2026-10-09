@@ -6,6 +6,7 @@ use App\Enums\DeliveryType;
 use App\Enums\ProductStatus;
 use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Models\Category;
 use App\Models\ExchangeRate;
 use App\Models\Product;
@@ -158,7 +159,6 @@ class SimulationSeeder extends Seeder
         }
 
         mt_srand(self::SEED);
-        fake()->seed(self::SEED);
 
         DB::transaction(function () {
             $hash = Hash::make(self::PASSWORD);
@@ -180,16 +180,41 @@ class SimulationSeeder extends Seeder
     {
         $admin = null;
         foreach (self::STAFF as $email => $staff) {
-            $user = User::factory()->staff(UserRole::from($staff['role']))->create([
-                'name' => $staff['name'],
-                'email' => $email,
-                'password_hash' => $hash,
+            $user = $this->user($staff['name'], $email, $hash, UserRole::from($staff['role']), [
                 'two_factor_secret' => $staff['secret'],
+                'two_factor_recovery_codes' => [],
+                'two_factor_confirmed_at' => now(),
             ]);
             $admin ??= $user;
         }
 
         return $admin;
+    }
+
+    /**
+     * A verified, active account. Factories are not used because Faker is a
+     * development dependency and this seed also runs on production images.
+     *
+     * @param  array<string, mixed>  $extra
+     */
+    private function user(string $name, string $email, string $hash, UserRole $role, array $extra = []): User
+    {
+        $user = new User;
+        $user->forceFill([
+            'name' => $name,
+            'email' => $email,
+            'email_verified_at' => now(),
+            'password_hash' => $hash,
+            'role' => $role,
+            'status' => UserStatus::Active,
+            'balance_minor' => 0,
+            'currency' => 'USD',
+            'remember_token' => Str::random(10),
+            ...$extra,
+        ]);
+        $user->save();
+
+        return $user;
     }
 
     /** @return array<string, Category> */
@@ -214,11 +239,7 @@ class SimulationSeeder extends Seeder
         $sellers = [];
         foreach (self::SELLERS as $i => [$name, $displayName, $currency, $crypto]) {
             $n = sprintf('%02d', $i + 1);
-            $seller = User::factory()->seller()->create([
-                'name' => $name,
-                'email' => "seller{$n}@sim.test",
-                'password_hash' => $hash,
-            ]);
+            $seller = $this->user($name, "seller{$n}@sim.test", $hash, UserRole::Seller);
             SellerProfile::create([
                 'user_id' => $seller->id,
                 'display_name' => $displayName,
@@ -256,11 +277,10 @@ class SimulationSeeder extends Seeder
             $n = sprintf('%02d', $i);
             $balance = $i % 5 === 0 ? 0 : mt_rand(1, 500) * 100;
             $currency = $i % 9 === 0 ? 'EUR' : 'USD';
-            User::factory()->withBalance($balance, $currency)->create([
-                'name' => self::FIRST_NAMES[($i - 1) % count(self::FIRST_NAMES)].' '.self::LAST_NAMES[($i * 7) % count(self::LAST_NAMES)],
-                'email' => "buyer{$n}@sim.test",
-                'password_hash' => $hash,
-            ]);
+            $this->user(
+                self::FIRST_NAMES[($i - 1) % count(self::FIRST_NAMES)].' '.self::LAST_NAMES[($i * 7) % count(self::LAST_NAMES)],
+                "buyer{$n}@sim.test", $hash, UserRole::Buyer, ['balance_minor' => $balance, 'currency' => $currency],
+            );
         }
     }
 
