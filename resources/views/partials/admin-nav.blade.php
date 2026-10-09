@@ -21,6 +21,7 @@
         ['admin.reports', __('Reports'), 'reports.view'],
         ['admin.exports.index', __('Exports'), 'exports.download'],
         ['admin.announcements.index', __('Announcements'), 'announcements.manage'],
+        ['admin.email-templates.index', __('Email templates'), 'templates.manage'],
         ['admin.settings.index', __('Settings'), 'settings.manage'],
         ['admin.audit.index', __('Audit log'), 'audit.view'],
     ] as [$routeName, $label, $ability])

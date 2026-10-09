@@ -251,6 +251,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/exports/download', [Admin\ExportController::class, 'download'])->can('exports.download')->middleware('password.recent')->name('exports.download');
         Route::get('/settings', [Admin\SettingsController::class, 'index'])->can('settings.manage')->name('settings.index');
         Route::put('/settings', [Admin\SettingsController::class, 'update'])->can('settings.manage')->middleware('password.recent')->name('settings.update');
+        Route::get('/email-templates', [Admin\EmailTemplateController::class, 'index'])->can('templates.manage')->name('email-templates.index');
+        Route::get('/email-templates/{key}', [Admin\EmailTemplateController::class, 'edit'])->can('templates.manage')->name('email-templates.edit');
+        Route::put('/email-templates/{key}', [Admin\EmailTemplateController::class, 'update'])->can('templates.manage')->name('email-templates.update');
+        Route::delete('/email-templates/{key}', [Admin\EmailTemplateController::class, 'reset'])->can('templates.manage')->name('email-templates.reset');
         Route::get('/announcements', [Admin\AnnouncementController::class, 'index'])->can('announcements.manage')->name('announcements.index');
         Route::post('/announcements', [Admin\AnnouncementController::class, 'store'])->can('announcements.manage')->name('announcements.store');
         Route::post('/announcements/{announcement}/toggle', [Admin\AnnouncementController::class, 'toggle'])->can('announcements.manage')->name('announcements.toggle');

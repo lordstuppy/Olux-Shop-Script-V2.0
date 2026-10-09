@@ -173,3 +173,4 @@ summary { cursor: pointer; color: var(--brand); }
 .level-warning { border-color: var(--warning); color: var(--warning); background: var(--warning-bg); }
 .level-critical { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
 .period-filter { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+.mail-preview { white-space: pre-wrap; font-family: var(--mono, monospace); background: var(--bg-muted); padding: 1rem; border-radius: var(--radius); overflow-wrap: anywhere; }

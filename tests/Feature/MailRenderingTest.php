@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\OrderService;
 use App\Services\PaymentService;
+use App\Support\EmailTemplates;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -66,8 +67,30 @@ class MailRenderingTest extends TestCase
             $mailables[] = new Mail\DisputeResolvedMail($dispute, $role);
         }
 
+        $definitions = EmailTemplates::definitions();
+        $admin = User::factory()->admin()->create();
+        foreach ($mailables as $mailable) {
+            // Every mail is editable and provides exactly its documented placeholders.
+            $key = $mailable::templateKey();
+            $this->assertSame(array_keys($definitions[$key]['placeholders']), array_keys($mailable->templateData()), get_class($mailable));
+        }
+        foreach ([false, true] as $customised) {
+            if ($customised) {
+                foreach (array_keys($definitions) as $key) {
+                    EmailTemplates::save($key, EmailTemplates::starter($key)['subject'], EmailTemplates::starter($key)['body'], $admin);
+                }
+            }
+            $this->renderAll($mailables, $customised);
+        }
+    }
+
+    private function renderAll(array $mailables, bool $customised): void
+    {
         foreach ($mailables as $mailable) {
             $text = $mailable->render();
+            if ($customised) {
+                $this->assertDoesNotMatchRegularExpression('/\{[a-z_]+\}/', $text.$mailable->envelope()->subject, get_class($mailable).' left a placeholder unfilled');
+            }
             $this->assertNotSame('', trim($text), get_class($mailable));
             $this->assertDoesNotMatchRegularExpression('/[^\x09\x0A\x0D\x20-\x7E]/', $text, get_class($mailable).' must be ASCII');
             $this->assertStringNotContainsString('&quot;', $text, get_class($mailable).' is plain text and must not contain HTML entities');

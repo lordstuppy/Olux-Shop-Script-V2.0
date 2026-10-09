@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,17 +13,30 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderDeliveredMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use HasEditableTemplate, Queueable, SerializesModels;
 
     public function __construct(public Order $order) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Order :order: an item was delivered', ['order' => $this->order->shortId()]));
+        return $this->templatedEnvelope(__('Order :order: an item was delivered', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content
     {
-        return new Content(text: 'mail.order-delivered');
+        return $this->templatedContent('mail.order-delivered');
+    }
+
+    public static function templateKey(): string
+    {
+        return 'order_delivered';
+    }
+
+    public function templateData(): array
+    {
+        return [
+            'order_number' => $this->order->shortId(),
+            'order_url' => route('orders.show', $this->order),
+        ];
     }
 }
