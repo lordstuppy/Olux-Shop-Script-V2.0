@@ -12,6 +12,7 @@ use App\Models\OrderItem;
 use App\Models\ProductFile;
 use App\Models\ProductLicenseKey;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -70,6 +71,7 @@ class DeliveryService
 
             $locked->delivered_payload = ['type' => 'manual', 'text' => $text];
             $locked->delivered_at = now();
+            $locked->access_expires_at = $this->accessExpiry($locked);
             $locked->save();
             $this->audit->log('delivery.manual', $locked, ['order' => $order->public_id], $seller);
             Log::info('Seller {seller_id} delivered item {item_id} of order {public_id}', [
@@ -131,8 +133,17 @@ class DeliveryService
 
         $locked->delivered_payload = $payload;
         $locked->delivered_at = now();
+        $locked->access_expires_at = $this->accessExpiry($locked);
         $locked->save();
         $item->setRawAttributes($locked->getAttributes(), true);
+    }
+
+    /** Subscriptions grant access for access_days per unit bought, from delivery. */
+    private function accessExpiry(OrderItem $item): ?Carbon
+    {
+        $days = $item->product()->value('access_days');
+
+        return $days === null ? null : now()->addDays((int) $days * $item->quantity);
     }
 
     private function completeIfFullyDelivered(Order $order): void

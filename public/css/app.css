@@ -136,3 +136,10 @@ td.num, th.num { text-align: right; }
 .card-title { font-size: 1.1rem; margin: 0 0 .5rem; }
 /* Registration honeypot: off-screen for people, still in the form for bots. */
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.card-image { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: .5rem; background: var(--bg-muted); }
+.gallery { margin: 1rem 0; }
+.gallery img { border: 1px solid var(--border); border-radius: var(--radius); }
+.thumbs { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: .5rem 0 0; }
+.thumbs img { width: 6rem; height: auto; }
+.image-list { display: flex; flex-wrap: wrap; gap: 1rem; list-style: none; padding: 0; }
+.image-list img { width: 8rem; height: auto; display: block; }

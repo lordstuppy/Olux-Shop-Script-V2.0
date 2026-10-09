@@ -11,7 +11,7 @@ class ProductFile extends Model
 
     protected function casts(): array
     {
-        return ['size' => 'integer', 'retired_at' => 'datetime'];
+        return ['size' => 'integer', 'retired_at' => 'datetime', 'scanned_at' => 'datetime'];
     }
 
     public function product(): BelongsTo

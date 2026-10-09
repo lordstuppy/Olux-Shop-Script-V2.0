@@ -80,6 +80,29 @@ return [
     // Optional comma-separated IPs/CIDRs allowed to call /webhooks/shkeeper (empty = any; the signature is always required).
     'webhook_allowed_ips' => env('SHKEEPER_WEBHOOK_ALLOWED_IPS', ''),
 
+    /*
+    | Virus scanning of seller uploads with ClamAV (clamd over TCP).
+    | "required": files stay undeliverable and products cannot be approved
+    | until clamd reports them clean. "disabled": files are marked "skipped"
+    | (development only).
+    */
+    'virus_scan' => env('SHOP_VIRUS_SCAN', 'required'),
+    'clamav' => [
+        'host' => env('CLAMAV_HOST', ''),
+        'port' => (int) env('CLAMAV_PORT', 3310),
+        'timeout' => (int) env('CLAMAV_TIMEOUT', 60),
+    ],
+
+    // Downloads allowed per purchased item (products may override).
+    'max_downloads_per_item' => (int) env('SHOP_MAX_DOWNLOADS', 10),
+
+    // Images per product and maximum upload size per image (KB).
+    'max_product_images' => 6,
+    'max_image_kb' => 5120,
+
+    // Days before a subscription ends that the renewal reminder is sent.
+    'renewal_reminder_days' => (int) env('SHOP_RENEWAL_REMINDER_DAYS', 7),
+
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),

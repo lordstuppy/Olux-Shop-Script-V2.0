@@ -23,6 +23,8 @@ class Product extends Model
         return [
             'price_minor' => 'integer',
             'stock' => 'integer',
+            'access_days' => 'integer',
+            'download_limit' => 'integer',
             'status' => ProductStatus::class,
             'delivery_type' => DeliveryType::class,
         ];
@@ -49,10 +51,31 @@ class Product extends Model
         return $this->hasMany(ProductFile::class);
     }
 
-    /** Files delivered to new orders. */
+    /** Files that can be delivered to new orders: not retired and scanned clean (or scanning disabled). */
     public function activeFiles(): HasMany
     {
+        return $this->files()->whereNull('retired_at')->whereIn('scan_status', ['clean', 'skipped']);
+    }
+
+    /** Files still attached to the product, whatever their scan state. */
+    public function currentFiles(): HasMany
+    {
         return $this->files()->whereNull('retired_at');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
+
+    public function isSubscription(): bool
+    {
+        return $this->access_days !== null;
+    }
+
+    public function downloadLimit(): int
+    {
+        return $this->download_limit ?? (int) config('shop.max_downloads_per_item');
     }
 
     public function licenseKeys(): HasMany

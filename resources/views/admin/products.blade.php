@@ -16,7 +16,7 @@
             <tbody>
                 @forelse ($products as $product)
                     <tr>
-                        <td>{{ $product->title }}<br><span class="muted">{{ \Illuminate\Support\Str::limit($product->description, 160) }}</span></td>
+                        <td><a href="{{ route('admin.products.show', $product->id) }}">{{ $product->title }}</a><br><span class="muted">{{ \Illuminate\Support\Str::limit($product->description, 160) }}</span></td>
                         <td><a href="{{ route('admin.users.show', $product->seller) }}">{{ $product->seller->email }}</a></td>
                         <td class="num">{{ money($product->price_minor, $product->currency) }}</td>
                         <td>{{ $product->delivery_type->value }}</td>

@@ -41,6 +41,8 @@
         <env name="SHKEEPER_WEBHOOK_SECRET" value="test-webhook-secret" force="true"/>
         <env name="SHKEEPER_CRYPTOS" value="BTC,LTC" force="true"/>
         <env name="METRICS_TOKEN" value="test-metrics-token" force="true"/>
+        <env name="SHOP_VIRUS_SCAN" value="required" force="true"/>
+        <env name="CLAMAV_HOST" value="" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Services\CartService;
+use App\Services\Security\ClamAvScanner;
+use App\Services\Security\VirusScanner;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Support\Permissions;
 use App\Support\RequestId;
@@ -22,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(RequestId::class);
+
+        $this->app->bind(VirusScanner::class, fn () => new ClamAvScanner(
+            (string) config('shop.clamav.host'),
+            (int) config('shop.clamav.port'),
+            (int) config('shop.clamav.timeout'),
+        ));
 
         $this->app->bind(ShkeeperClient::class, fn ($app) => new ShkeeperClient(
             $app->make(HttpFactory::class),

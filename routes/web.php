@@ -14,6 +14,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\Seller;
 use App\Http\Controllers\SellerApplicationController;
 use App\Http\Controllers\SessionController;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/product-images/{image}/{size}', ProductImageController::class)->whereIn('size', ['thumb', 'large'])->name('products.image');
 Route::get('/search/suggest', [ProductController::class, 'suggest'])->middleware('throttle:search')->name('search.suggest');
 
 Route::get('/terms', [PageController::class, 'terms'])->name('pages.terms');
@@ -135,6 +137,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/products/{product:id}/files', [Seller\ProductController::class, 'uploadFile'])->name('products.files.store');
         Route::delete('/products/{product:id}/files/{file}', [Seller\ProductController::class, 'deleteFile'])->name('products.files.destroy');
         Route::post('/products/{product:id}/keys', [Seller\ProductController::class, 'addKeys'])->name('products.keys.store');
+        Route::post('/products/{product:id}/images', [Seller\ProductController::class, 'uploadImage'])->name('products.images.store');
+        Route::delete('/products/{product:id}/images/{image}', [Seller\ProductController::class, 'deleteImage'])->name('products.images.destroy');
         Route::get('/sales', [Seller\SalesController::class, 'index'])->name('sales');
         Route::post('/items/{item}/deliver', [Seller\SalesController::class, 'deliver'])->name('items.deliver');
         Route::get('/payouts', [Seller\PayoutController::class, 'index'])->name('payouts');
@@ -157,6 +161,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/sellers/{profile}/reject', [Admin\SellerController::class, 'reject'])->can('sellers.manage')->name('sellers.reject');
 
         Route::get('/products', [Admin\ProductController::class, 'index'])->can('products.manage')->name('products.index');
+        Route::get('/products/{product:id}', [Admin\ProductController::class, 'show'])->can('products.manage')->name('products.show');
+        Route::get('/products/{product:id}/files/{file}', [Admin\ProductController::class, 'downloadFile'])->can('products.manage')->name('products.files.download');
         Route::post('/products/{product:id}/status', [Admin\ProductController::class, 'status'])->can('products.manage')->name('products.status');
 
         Route::get('/categories', [Admin\CategoryController::class, 'index'])->can('categories.manage')->name('categories.index');

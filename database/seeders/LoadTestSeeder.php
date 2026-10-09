@@ -41,7 +41,7 @@ class LoadTestSeeder extends Seeder
             'status' => ProductStatus::Active,
         ]);
         Storage::disk('products')->put($product->id.'/load.txt', 'load');
-        $product->files()->create(['original_name' => 'load.txt', 'storage_path' => $product->id.'/load.txt', 'checksum' => hash('sha256', 'load'), 'size' => 4]);
+        $product->files()->create(['original_name' => 'load.txt', 'storage_path' => $product->id.'/load.txt', 'checksum' => hash('sha256', 'load'), 'size' => 4, 'scan_status' => 'skipped']);
 
         $users = (int) (getenv('LOAD_USERS') ?: 50);
         for ($i = 1; $i <= $users; $i++) {

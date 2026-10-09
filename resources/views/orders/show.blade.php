@@ -48,6 +48,12 @@
                                 Delivered {{ $item->delivered_at->format('Y-m-d H:i') }} UTC.
                             @else
                                 @php $payload = $item->delivered_payload ?? []; @endphp
+                                @if ($item->access_expires_at)
+                                    <span class="{{ $item->accessExpired() ? 'error-text' : 'muted' }}">{{ $item->accessExpired() ? 'Access ended' : 'Access until' }} {{ $item->access_expires_at->format('Y-m-d') }}.</span><br>
+                                @endif
+                                @if (! empty($payload['files']))
+                                    <span class="muted">Downloads used: {{ $item->download_count }} of {{ $item->product->downloadLimit() }}.</span><br>
+                                @endif
                                 @foreach ($downloads[$item->id] ?? [] as $download)
                                     <a href="{{ $download['url'] }}">Download {{ $download['name'] }}</a> ({{ number_format($download['size']) }} bytes)<br>
                                 @endforeach

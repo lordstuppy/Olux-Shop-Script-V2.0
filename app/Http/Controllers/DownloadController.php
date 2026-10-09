@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,21 @@ class DownloadController extends Controller
         abort_unless(in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true), 403, 'Downloads are not available for this order.');
         $delivered = collect($item->delivered_payload['files'] ?? [])->pluck('id')->all();
         abort_unless(in_array($file->id, $delivered, true), 403, 'This file has not been delivered for this order.');
+        abort_if($item->accessExpired(), 403, 'Access to this subscription ended on '.$item->access_expires_at?->format('Y-m-d').'. Renew it from the product page.');
+        abort_if($file->scan_status === 'infected', 410, 'This file was removed because it failed a security scan.');
+
+        // Count the download under a row lock so parallel requests cannot exceed the limit.
+        $limit = $item->product->downloadLimit();
+        $allowed = DB::transaction(function () use ($item, $limit) {
+            $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
+            if ($locked->download_count >= $limit) {
+                return false;
+            }
+            $locked->increment('download_count');
+
+            return true;
+        });
+        abort_unless($allowed, 403, "The download limit of {$limit} for this item has been reached. Open a support ticket if you need another copy.");
 
         Log::info('Download of file {file_id} for order {public_id} by user {user_id}', [
             'file_id' => $file->id,

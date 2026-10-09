@@ -24,6 +24,9 @@ class OrderItem extends Model
             // Licence keys and seller-provided secrets are encrypted at rest.
             'delivered_payload' => 'encrypted:array',
             'delivered_at' => 'datetime',
+            'download_count' => 'integer',
+            'access_expires_at' => 'datetime',
+            'renewal_reminded_at' => 'datetime',
         ];
     }
 
@@ -51,6 +54,11 @@ class OrderItem extends Model
     public function netMinor(): int
     {
         return $this->grossMinor() - $this->discount_minor;
+    }
+
+    public function accessExpired(): bool
+    {
+        return $this->access_expires_at !== null && $this->access_expires_at->isPast();
     }
 
     public function isDelivered(): bool

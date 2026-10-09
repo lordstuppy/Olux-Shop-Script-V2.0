@@ -20,7 +20,7 @@ class CatalogService
      */
     public function paginate(array $filters, ?int $perPage = null): LengthAwarePaginator
     {
-        $query = Product::query()->visible()->with(['category', 'seller']);
+        $query = Product::query()->visible()->with(['category', 'seller', 'images']);
 
         $term = trim((string) ($filters['q'] ?? ''));
         if ($term !== '') {
@@ -49,7 +49,7 @@ class CatalogService
 
     public function findBySlug(string $slug): Product
     {
-        return Product::query()->visible()->with(['category', 'seller.sellerProfile', 'files'])
+        return Product::query()->visible()->with(['category', 'seller.sellerProfile', 'files', 'images'])
             ->where('slug', $slug)->firstOrFail();
     }
 
@@ -62,7 +62,7 @@ class CatalogService
     /** @return Collection<int, Product> */
     public function latest(int $limit = 6): Collection
     {
-        return Product::query()->visible()->with('category')->latest()->limit($limit)->get();
+        return Product::query()->visible()->with(['category', 'images'])->latest()->limit($limit)->get();
     }
 
     /**

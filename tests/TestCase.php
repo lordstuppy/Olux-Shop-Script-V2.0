@@ -111,6 +111,7 @@ abstract class TestCase extends BaseTestCase
             'storage_path' => $product->id.'/tool.zip',
             'checksum' => hash('sha256', 'zip-bytes'),
             'size' => 9,
+            'scan_status' => 'clean',
         ]);
 
         return $product;

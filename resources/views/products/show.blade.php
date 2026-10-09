@@ -14,6 +14,7 @@
         'sku' => (string) $product->id,
         'category' => $product->category?->name,
         'url' => route('products.show', $product->slug),
+        'image' => $product->images->map(fn ($i) => $i->url())->values()->all(),
         'brand' => ['@type' => 'Brand', 'name' => $product->seller->sellerProfile?->display_name ?? config('app.name')],
         'offers' => [
             '@type' => 'Offer',
@@ -37,6 +38,19 @@
         <div>
             <h1>{{ $product->title }}</h1>
             <p class="muted">Sold by {{ $product->seller->sellerProfile?->display_name ?? $product->seller->name }}</p>
+            @if ($product->images->isNotEmpty())
+                @php $main = $product->images->first(); @endphp
+                <figure class="gallery">
+                    <a href="{{ $main->url() }}"><img src="{{ $main->url() }}" alt="{{ $main->alt_text ?? $product->title }}" width="{{ $main->width }}" height="{{ $main->height }}"></a>
+                    @if ($product->images->count() > 1)
+                        <ul class="thumbs">
+                            @foreach ($product->images->skip(1) as $image)
+                                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" alt="{{ $image->alt_text ?? 'Additional image of '.$product->title }}" loading="lazy"></a></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </figure>
+            @endif
             <div class="description">{{ $product->description }}</div>
         </div>
 
@@ -49,6 +63,12 @@
             <p>{{ $product->delivery_type === \App\Enums\DeliveryType::Instant ? 'Instant delivery after payment confirmation.' : 'Delivered by the seller after payment, usually within 24 hours.' }}</p>
             @if ($product->stock !== null)
                 <p>{{ $product->stock > 0 ? $product->stock.' in stock.' : 'Out of stock.' }}</p>
+            @endif
+            @if ($product->access_days)
+                <p>Subscription: {{ $product->access_days }} days of access per unit, starting at delivery. To renew, buy it again; we email you a reminder before access ends.</p>
+            @endif
+            @if ($product->delivery_type === \App\Enums\DeliveryType::Instant && $product->activeFiles->isNotEmpty())
+                <p class="hint">Includes {{ $product->activeFiles->count() }} {{ $product->activeFiles->count() === 1 ? 'file' : 'files' }}; up to {{ $product->downloadLimit() }} downloads per purchase.</p>
             @endif
 
             @if ($product->isPurchasable())

@@ -46,6 +46,14 @@ return [
             'throw' => true,
         ],
 
+        // Re-encoded product images, served by ProductImageController.
+        'product_images' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/product-images'),
+            'serve' => false,
+            'throw' => true,
+        ],
+
         // PDF invoices, served by OrderController::invoice after an ownership check.
         'invoices' => [
             'driver' => 'local',

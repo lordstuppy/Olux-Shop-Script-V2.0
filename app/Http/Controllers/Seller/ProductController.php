@@ -6,11 +6,14 @@ use App\Enums\DeliveryType;
 use App\Enums\ProductStatus;
 use App\Exceptions\UserFacingException;
 use App\Http\Controllers\Controller;
+use App\Jobs\ScanProductFile;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductFile;
+use App\Models\ProductImage;
 use App\Models\ProductLicenseKey;
 use App\Services\AuditLogger;
+use App\Services\ProductImageService;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,7 +31,7 @@ class ProductController extends Controller
     private const FILE_EXTENSIONS = 'zip,7z,gz,tar,pdf,epub,txt,md,mp3,mp4,png,jpg,jpeg,webp,csv,json';
 
     /** Changing these on an active product sends it back for review. */
-    private const REVIEWED_FIELDS = ['title', 'description', 'price_minor', 'currency', 'delivery_type', 'category_id'];
+    private const REVIEWED_FIELDS = ['title', 'description', 'price_minor', 'currency', 'delivery_type', 'category_id', 'access_days'];
 
     public function __construct(private readonly AuditLogger $audit) {}
 
@@ -60,7 +63,7 @@ class ProductController extends Controller
     public function edit(Product $product): View
     {
         Gate::authorize('update', $product);
-        $product->load(['files']);
+        $product->load(['files', 'images']);
 
         return view('seller.products.form', [
             'product' => $product,
@@ -96,7 +99,7 @@ class ProductController extends Controller
         if (! in_array($product->status, [ProductStatus::Draft, ProductStatus::Disabled], true)) {
             throw new UserFacingException("\"{$product->title}\" is {$product->status->value} and cannot be submitted again.");
         }
-        if ($product->delivery_type === DeliveryType::Instant && ! $product->activeFiles()->exists() && ! $product->licenseKeys()->exists()) {
+        if ($product->delivery_type === DeliveryType::Instant && ! $product->currentFiles()->exists() && ! $product->licenseKeys()->exists()) {
             throw new UserFacingException('Instant-delivery products need at least one file or licence key before review.');
         }
         $product->status = ProductStatus::PendingReview;
@@ -123,8 +126,33 @@ class ProductController extends Controller
         ]);
         $this->markForReviewIfActive($product);
         $this->audit->log('product.file_added', $product, ['file_id' => $file->id, 'checksum' => $file->checksum]);
+        ScanProductFile::dispatch($file->id);
 
-        return back()->with('success', "Uploaded \"{$file->original_name}\" (".number_format($file->size).' bytes).');
+        return back()->with('success', "Uploaded \"{$file->original_name}\" (".number_format($file->size).' bytes). It is delivered to buyers once the virus scan reports it clean.');
+    }
+
+    public function uploadImage(Request $request, Product $product, ProductImageService $images): RedirectResponse
+    {
+        Gate::authorize('update', $product);
+        $request->validate([
+            'image' => ['required', 'file', 'max:'.config('shop.max_image_kb'), 'mimes:jpg,jpeg,png,webp'],
+            'alt_text' => ['nullable', 'string', 'max:160'],
+        ]);
+        $image = $images->store($product, $request->file('image'), $request->input('alt_text'));
+        $this->markForReviewIfActive($product);
+        $this->audit->log('product.image_added', $product, ['image_id' => $image->id]);
+
+        return back()->with('success', "Image added ({$image->width} x {$image->height}).");
+    }
+
+    public function deleteImage(Product $product, ProductImage $image, ProductImageService $images): RedirectResponse
+    {
+        Gate::authorize('update', $product);
+        abort_unless($image->product_id === $product->id, 404);
+        $images->delete($image);
+        $this->audit->log('product.image_removed', $product, ['image_id' => $image->id]);
+
+        return back()->with('success', 'Image removed.');
     }
 
     public function deleteFile(Product $product, ProductFile $file): RedirectResponse
@@ -185,6 +213,8 @@ class ProductController extends Controller
             'currency' => ['required', Rule::in(Money::supported())],
             'stock' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'delivery_type' => ['required', Rule::enum(DeliveryType::class)],
+            'access_days' => ['nullable', 'integer', 'min:1', 'max:3660'],
+            'download_limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
 
         try {
@@ -204,6 +234,8 @@ class ProductController extends Controller
             'currency' => $data['currency'],
             'stock' => $data['stock'] ?? null,
             'delivery_type' => DeliveryType::from($data['delivery_type']),
+            'access_days' => $data['access_days'] ?? null,
+            'download_limit' => $data['download_limit'] ?? null,
         ];
     }
 

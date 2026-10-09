@@ -2,11 +2,14 @@
 
 use App\Enums\WebhookEventStatus;
 use App\Jobs\ProcessWebhookEvent;
+use App\Mail\SubscriptionRenewalMail;
+use App\Models\OrderItem;
 use App\Models\WebhookEvent;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('shop:expire-orders', function (OrderService $orders) {
@@ -40,9 +43,27 @@ Artisan::command('shop:reconcile-payouts', function (PayoutService $payouts) {
     return 1;
 })->purpose('Reconcile the seller payout ledger against completed orders');
 
+Artisan::command('shop:subscription-reminders', function () {
+    $days = (int) config('shop.renewal_reminder_days');
+    $sent = 0;
+    OrderItem::query()->with(['order.buyer', 'product'])
+        ->whereNull('renewal_reminded_at')->whereNotNull('access_expires_at')
+        ->whereBetween('access_expires_at', [now(), now()->addDays($days)])
+        ->whereHas('order', fn ($q) => $q->whereIn('status', ['paid', 'delivered', 'partially_refunded']))
+        ->chunkById(200, function ($items) use (&$sent) {
+            foreach ($items as $item) {
+                Mail::to($item->order->buyer)->queue(new SubscriptionRenewalMail($item));
+                $item->forceFill(['renewal_reminded_at' => now()])->save();
+                $sent++;
+            }
+        });
+    $this->info("Queued {$sent} renewal reminders.");
+})->purpose('Email buyers whose subscription access ends soon');
+
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('shop:retry-webhooks')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payouts')->dailyAt('03:15');
 Schedule::command('queue:prune-failed --hours=720')->daily();
+Schedule::command('shop:subscription-reminders')->hourly()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->hourly();

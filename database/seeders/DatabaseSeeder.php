@@ -87,6 +87,7 @@ class DatabaseSeeder extends Seeder
                     'storage_path' => $path,
                     'checksum' => hash('sha256', $contents),
                     'size' => strlen($contents),
+                    'scan_status' => 'skipped',
                 ]);
             }
             if ($category === 'licences') {
