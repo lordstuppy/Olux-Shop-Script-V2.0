@@ -22,6 +22,8 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         Storage::fake('products');
         Storage::fake('invoices');
+        // Tests must never reach a real Shkeeper (or anything else).
+        Http::preventStrayRequests();
     }
 
     /** CSRF is enforced in tests too; forms must carry the session token. */

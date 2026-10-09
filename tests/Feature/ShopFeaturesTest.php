@@ -28,6 +28,7 @@ class ShopFeaturesTest extends TestCase
 {
     public function test_coupon_applies_at_checkout(): void
     {
+        $this->fakeShkeeper();
         Coupon::create(['code' => 'SAVE15', 'type' => CouponType::Percent, 'value' => 1500, 'active' => true]);
         $buyer = User::factory()->withBalance(10000)->create();
         $product = $this->instantProductWithFile(['price_minor' => 2000]);

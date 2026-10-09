@@ -134,6 +134,7 @@ class PurchaseFlowTest extends TestCase
 
     public function test_insufficient_balance_gives_specific_message(): void
     {
+        $this->fakeShkeeper();
         $buyer = User::factory()->withBalance(1000)->create();
         $product = Product::factory()->price(2500)->create();
         $this->actingAs($buyer);

@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\UserFacingException;
 use App\Http\Middleware\SecurityHeaders;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use RuntimeException;
 use Tests\TestCase;
+use Throwable;
 
 class SecurityTest extends TestCase
 {
@@ -63,6 +67,27 @@ class SecurityTest extends TestCase
         $response->assertSee($response->headers->get('X-Request-Id'));
         $response->assertDontSee('secret internal detail');
         $response->assertDontSee('RuntimeException');
+    }
+
+    public function test_user_facing_errors_are_not_reported_as_exceptions(): void
+    {
+        // Business rule failures are expected; reporting them would log
+        // stack traces and inflate shop_exceptions_total, which operators
+        // alert on. Unexpected errors are still reported and counted.
+        Route::middleware('web')->get('/_test/rule', fn () => throw new UserFacingException('That product is sold out.'));
+        Route::middleware('web')->get('/_test/boom', fn () => throw new RuntimeException('boom'));
+        Cache::forget('metrics:exceptions_total');
+        $reported = [];
+        $this->app->make(ExceptionHandler::class)->reportable(function (Throwable $e) use (&$reported) {
+            $reported[] = $e::class;
+        });
+
+        $this->get('/_test/rule')->assertStatus(422)->assertSee('That product is sold out.');
+        $this->assertSame([], $reported);
+        $this->assertNull(Cache::get('metrics:exceptions_total'));
+
+        $this->get('/_test/boom')->assertStatus(500);
+        $this->assertSame(1, (int) Cache::get('metrics:exceptions_total'));
     }
 
     public function test_login_is_rate_limited(): void

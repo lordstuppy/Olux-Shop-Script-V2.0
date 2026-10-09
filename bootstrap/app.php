@@ -56,6 +56,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->report(function (Throwable $e) {
             if (! $e instanceof HttpExceptionInterface) {
                 try {
+                    // The database store does not create missing keys on increment.
+                    Cache::add('metrics:exceptions_total', 0);
                     Cache::increment('metrics:exceptions_total');
                 } catch (Throwable) {
                     // Metrics must never mask the original error.
@@ -63,7 +65,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // Business rule failures carry a message written for the user.
+        // Business rule failures carry a message written for the user. They are
+        // expected (wrong code, sold out), so they are neither logged as errors
+        // nor counted in shop_exceptions_total; services log notices where needed.
+        $exceptions->dontReport(UserFacingException::class);
         $exceptions->render(function (UserFacingException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
