@@ -144,7 +144,7 @@ These are business concepts, not code:
 | Database transactions and row locking | None | All money and stock changes inside `DB::transaction` with `lockForUpdate()` |
 | Orders as first-class entities | `purchases` row per item, no order header | `orders` + `order_items` with a state machine |
 | Refunds and partial refunds | Balance edited in place | Separate `payments` rows of kind `refund`, linked to the original |
-| Invoices | None | PDF invoices stored in `storage/app/invoices/` |
+| Invoices | None | PDF invoices stored in `storage/invoices/` |
 | CSRF | None | Laravel CSRF middleware; every form renders `@csrf` |
 | Rate limiting | None | Named limiters on login, register, password reset, checkout, webhook |
 | Logging and audit | None | Monolog JSON lines plus an `audit_log` table with an admin viewer |

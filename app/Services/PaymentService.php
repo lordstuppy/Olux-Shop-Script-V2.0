@@ -67,7 +67,7 @@ class PaymentService
 
         // The HTTP call happens outside any transaction so no row lock is held while waiting.
         try {
-            $invoice = $this->shkeeper->createInvoice($crypto, $order->public_id, $order->total_minor, $order->currency, route('webhooks.shkeeper'));
+            $invoice = $this->shkeeper->createInvoice($crypto, $order->public_id, $order->total_minor, $order->currency, config('services.shkeeper.callback_url') ?: route('webhooks.shkeeper'));
         } catch (ShkeeperException $e) {
             Log::error('Failed to create Shkeeper invoice for order {public_id}: {reason}', ['public_id' => $order->public_id, 'reason' => $e->getMessage()]);
             throw new UserFacingException("The payment provider could not create an invoice for order {$order->shortId()}. Your order is saved; try again in a few minutes or choose another currency.");

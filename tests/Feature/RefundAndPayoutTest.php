@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class RefundAndPayoutTest extends TestCase
@@ -23,7 +24,7 @@ class RefundAndPayoutTest extends TestCase
         SellerProfile::firstOrCreate(['user_id' => $seller->id], ['display_name' => 'S', 'payout_currency' => 'USD', 'payout_address' => 'bc1qseller', 'status' => 'approved']);
         $product = $this->instantProductWithFile(['seller_id' => $seller->id, 'price_minor' => $price]);
         $buyer = User::factory()->withBalance($price * $qty)->create();
-        $order = app(OrderService::class)->createFromCart($buyer, [$product->id => $qty], 'USD', (string) \Illuminate\Support\Str::uuid());
+        $order = app(OrderService::class)->createFromCart($buyer, [$product->id => $qty], 'USD', (string) Str::uuid());
         app(PaymentService::class)->payWithBalance($order, $buyer);
 
         return $order->fresh();

@@ -1,11 +1,11 @@
 <?php
 
+use App\Exceptions\UserFacingException;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreventRequestForgery;
 use App\Http\Middleware\SecurityHeaders;
-use App\Exceptions\UserFacingException;
 use App\Support\RequestId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;

@@ -47,6 +47,10 @@ return [
         // Maximum accepted age of X-Shkeeper-Timestamp, in seconds.
         'webhook_tolerance' => (int) env('SHKEEPER_WEBHOOK_TOLERANCE', 300),
         'timeout' => (int) env('SHKEEPER_TIMEOUT', 10),
+        // Public URL Shkeeper calls back. Defaults to the webhooks.shkeeper
+        // route on the current host; set it when Shkeeper reaches the shop
+        // through a different hostname (for example inside Docker).
+        'callback_url' => env('SHKEEPER_CALLBACK_URL'),
         // Cryptocurrencies offered at checkout when the live list is unavailable.
         'fallback_cryptos' => array_filter(explode(',', (string) env('SHKEEPER_CRYPTOS', 'BTC,LTC,ETH,USDT'))),
     ],

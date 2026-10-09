@@ -9,7 +9,9 @@ use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Mail\OrderDeliveredMail;
 use App\Mail\TicketReplyMail;
+use App\Models\Category;
 use App\Models\Coupon;
+use App\Models\ExchangeRate;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\SellerProfile;
@@ -162,7 +164,7 @@ class ShopFeaturesTest extends TestCase
 
     public function test_search_and_category_filters(): void
     {
-        $cat = \App\Models\Category::create(['slug' => 'tutorials', 'name' => 'Tutorials']);
+        $cat = Category::create(['slug' => 'tutorials', 'name' => 'Tutorials']);
         Product::factory()->create(['title' => 'Learn PostgreSQL', 'category_id' => $cat->id]);
         Product::factory()->create(['title' => 'Vector icons']);
         Product::factory()->status(ProductStatus::Draft)->create(['title' => 'Hidden PostgreSQL draft']);
@@ -207,7 +209,7 @@ class ShopFeaturesTest extends TestCase
 
     public function test_currency_switch_and_conversion_snapshot(): void
     {
-        \App\Models\ExchangeRate::create(['base' => 'USD', 'quote' => 'EUR', 'rate' => '0.92']);
+        ExchangeRate::create(['base' => 'USD', 'quote' => 'EUR', 'rate' => '0.92']);
         $buyer = User::factory()->withBalance(5000, 'EUR')->create();
         $product = $this->instantProductWithFile(['price_minor' => 1000]);
         $this->actingAs($buyer);
@@ -223,7 +225,7 @@ class ShopFeaturesTest extends TestCase
         $this->assertSame(1000, $item->list_price_minor);
 
         // A later rate change does not touch the existing order.
-        \App\Models\ExchangeRate::where('base', 'USD')->update(['rate' => '0.5']);
+        ExchangeRate::where('base', 'USD')->update(['rate' => '0.5']);
         $this->assertSame(920, $order->fresh()->total_minor);
     }
 }

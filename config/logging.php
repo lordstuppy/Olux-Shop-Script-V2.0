@@ -1,5 +1,6 @@
 <?php
 
+use App\Logging\JsonFormatterTap;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -65,7 +66,7 @@ return [
             'level' => env('LOG_LEVEL', 'info'),
             'max_files' => env('LOG_DAILY_DAYS', 30),
             'replace_placeholders' => true,
-            'tap' => [App\Logging\JsonFormatterTap::class],
+            'tap' => [JsonFormatterTap::class],
         ],
 
         'single' => [

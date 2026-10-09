@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\DeliveryService;
 use App\Services\OrderService;
 use Tests\TestCase;
 
@@ -34,7 +35,7 @@ class OrderAccessTest extends TestCase
         $item->update(['delivered_payload' => ['type' => 'instant', 'files' => [['id' => $product->files->first()->id]]], 'delivered_at' => now()]);
         $order->update(['status' => 'paid']);
 
-        $url = app(\App\Services\DeliveryService::class)->downloadUrl($order, $item, $product->files->first());
+        $url = app(DeliveryService::class)->downloadUrl($order, $item, $product->files->first());
 
         $this->actingAs(User::factory()->create())->get($url)->assertForbidden();
         $this->actingAs($owner)->get($url)->assertOk();

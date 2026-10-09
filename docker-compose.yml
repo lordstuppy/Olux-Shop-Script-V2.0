@@ -1,0 +1,81 @@
+# Local and test stack: app (PHP-FPM), web (nginx), db (PostgreSQL 15),
+# queue worker, scheduler, and shkeeper-mock (Shkeeper API emulator).
+# Production: replace shkeeper-mock with a real Shkeeper instance and set
+# SHKEEPER_BASE_URL / SHKEEPER_API_KEY / SHKEEPER_WEBHOOK_SECRET in .env.
+
+x-app: &app
+  build: .
+  image: digital-goods-shop:latest
+  env_file: .env
+  environment:
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_DATABASE: ${DB_DATABASE:-shop}
+    DB_USERNAME: ${DB_USERNAME:-shop}
+    DB_PASSWORD: ${DB_PASSWORD:-shop}
+    LOG_CHANNEL: json
+    TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
+  volumes:
+    - storage:/var/www/html/storage
+  depends_on:
+    db:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *app
+
+  queue:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--tries=1", "--sleep=1", "--max-time=3600"]
+    healthcheck:
+      disable: true
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck:
+      disable: true
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-shop}
+      POSTGRES_USER: ${DB_USERNAME:-shop}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-shop}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-shop} -d ${DB_DATABASE:-shop}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  shkeeper-mock:
+    image: php:8.3-cli-alpine
+    working_dir: /mock
+    command: ["php", "-S", "0.0.0.0:8081", "server.php"]
+    environment:
+      MOCK_API_KEY: ${SHKEEPER_API_KEY:-dev-api-key}
+      MOCK_STATE_FILE: /tmp/shkeeper-mock.json
+    volumes:
+      - ./docker/shkeeper-mock:/mock:ro
+    profiles: ["mock", "test"]
+
+volumes:
+  pgdata:
+  storage:

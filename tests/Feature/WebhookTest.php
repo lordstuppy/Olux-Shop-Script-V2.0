@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Models\WebhookEvent;
 use App\Services\OrderService;
 use App\Services\PaymentService;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class WebhookTest extends TestCase
@@ -21,7 +23,7 @@ class WebhookTest extends TestCase
     {
         $this->fakeShkeeper();
         $product ??= $this->instantProductWithFile(['price_minor' => $price, 'currency' => $currency]);
-        $order = app(OrderService::class)->createFromCart(User::factory()->create(['currency' => $currency]), [$product->id => 1], $currency, (string) \Illuminate\Support\Str::uuid());
+        $order = app(OrderService::class)->createFromCart(User::factory()->create(['currency' => $currency]), [$product->id => 1], $currency, (string) Str::uuid());
         app(PaymentService::class)->startShkeeperPayment($order, 'BTC');
 
         return $order;
@@ -124,8 +126,8 @@ class WebhookTest extends TestCase
     {
         $order = $this->pendingShkeeperOrder();
         $order->payments()->update(['created_at' => now()->subMinutes(10)]);
-        \Illuminate\Support\Facades\Http::fake([
-            'shkeeper.test/api/v1/invoices/*' => \Illuminate\Support\Facades\Http::response(['status' => 'success', 'invoices' => [[
+        Http::fake([
+            'shkeeper.test/api/v1/invoices/*' => Http::response(['status' => 'success', 'invoices' => [[
                 'external_id' => $order->public_id, 'status' => 'PAID', 'fiat' => 'USD', 'amount_fiat' => '25.00', 'balance_fiat' => '25.00', 'txs' => [],
             ]]]),
         ]);

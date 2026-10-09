@@ -4,6 +4,4 @@ namespace App\Exceptions;
 
 use RuntimeException;
 
-class ShkeeperException extends RuntimeException
-{
-}
+class ShkeeperException extends RuntimeException {}

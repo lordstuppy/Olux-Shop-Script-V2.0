@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: shop
+          POSTGRES_PASSWORD: shop
+          POSTGRES_DB: shop_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shop -d shop_test" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_USERNAME: shop
+      DB_PASSWORD: shop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, gd, sodium
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: ./scripts/check-ascii.sh
+      - run: vendor/bin/pint --test
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php artisan test
+
+  browser:
+    runs-on: ubuntu-24.04
+    needs: php
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: shop
+          POSTGRES_PASSWORD: shop
+          POSTGRES_DB: shop
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shop -d shop" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, gd, sodium, curl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Configure
+        run: |
+          cp .env.example .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^DB_PASSWORD=.*/DB_PASSWORD=shop/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
+          php artisan key:generate
+      - run: cd tests/browser && npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - run: ./tests/browser/run.sh

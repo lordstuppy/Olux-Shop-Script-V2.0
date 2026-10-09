@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class AuditLogController extends Controller
@@ -36,7 +37,7 @@ class AuditLogController extends Controller
             $query->where('created_at', '>=', $data['from']);
         }
         if (! empty($data['to'])) {
-            $query->where('created_at', '<', \Illuminate\Support\Carbon::parse($data['to'])->addDay());
+            $query->where('created_at', '<', Carbon::parse($data['to'])->addDay());
         }
 
         return view('admin.audit', ['entries' => $query->paginate(50)->withQueryString(), 'filters' => $data]);
