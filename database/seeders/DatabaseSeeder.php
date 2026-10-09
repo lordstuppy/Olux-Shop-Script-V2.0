@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
 {
     public const PASSWORD = 'correct-horse-battery-1';
 
+    /** Development-only TOTP secret of the demo admin (staff must use 2FA). */
+    public const ADMIN_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
     public function run(): void
     {
         if (app()->isProduction()) {
@@ -30,7 +33,7 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $admin = User::factory()->admin()->create(['name' => 'Admin', 'email' => 'admin@example.test']);
+        $admin = User::factory()->admin()->create(['name' => 'Admin', 'email' => 'admin@example.test', 'two_factor_secret' => self::ADMIN_TOTP_SECRET]);
         $seller = User::factory()->seller()->create(['name' => 'Demo Seller', 'email' => 'seller@example.test']);
         User::factory()->withBalance(10000)->create(['name' => 'Demo Buyer', 'email' => 'buyer@example.test']);
 

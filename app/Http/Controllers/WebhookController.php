@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
  * POST /webhooks/shkeeper
@@ -28,6 +29,13 @@ class WebhookController extends Controller
 {
     public function shkeeper(Request $request, ShkeeperClient $client, WebhookProcessor $processor): JsonResponse
     {
+        $allowed = array_filter(array_map('trim', explode(',', (string) config('shop.webhook_allowed_ips'))));
+        if ($allowed !== [] && ! IpUtils::checkIp((string) $request->ip(), $allowed)) {
+            Log::warning('Webhook from ip {ip} outside SHKEEPER_WEBHOOK_ALLOWED_IPS rejected', ['ip' => $request->ip()]);
+
+            return response()->json(['message' => 'Source address not allowed.'], 403);
+        }
+
         $raw = $request->getContent();
         $signature = $request->header('X-Shkeeper-Signature');
         $timestamp = $request->header('X-Shkeeper-Timestamp');

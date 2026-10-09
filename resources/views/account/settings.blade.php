@@ -25,7 +25,46 @@
         <button type="submit">Change password</button>
     </form>
 
-    @unless ($user->isSeller() || $user->isAdmin())
+    <h2>Two-factor authentication</h2>
+    <p>{{ $user->hasTwoFactor() ? 'On.' : 'Off.' }} <a href="{{ route('account.two-factor') }}">{{ $user->hasTwoFactor() ? 'Manage two-factor authentication' : 'Turn on two-factor authentication' }}</a></p>
+
+    <h2>Signed-in sessions</h2>
+    @if ($sessions->isEmpty())
+        <p>Session details are not available.</p>
+    @else
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th scope="col">Browser</th><th scope="col">IP address</th><th scope="col">Last active</th><th scope="col"><span class="visually-hidden">Action</span></th></tr></thead>
+                <tbody>
+                    @foreach ($sessions as $session)
+                        <tr>
+                            <td>{{ \Illuminate\Support\Str::limit((string) $session->user_agent, 80) }}</td>
+                            <td class="mono">{{ $session->ip_address }}</td>
+                            <td>{{ \Illuminate\Support\Carbon::createFromTimestamp($session->last_activity)->format('Y-m-d H:i') }} UTC</td>
+                            <td>
+                                @if ($session->current)
+                                    This device
+                                @else
+                                    <form method="post" action="{{ route('account.sessions.destroy', $session->handle) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-link">Sign out<span class="visually-hidden"> session from {{ $session->ip_address }}</span></button>
+                                    </form>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <form method="post" action="{{ route('account.sessions.destroy-others') }}" class="mt">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn-secondary">Sign out all other sessions</button>
+        </form>
+    @endif
+
+    @unless ($user->isSeller() || $user->isStaff())
         <h2>Selling</h2>
         <p><a href="{{ route('seller.apply') }}">Apply to sell your own digital products</a>.</p>
     @endunless

@@ -8,7 +8,7 @@
     <h1>Users</h1>
     <form class="filters" method="get">
         <x-field name="q" label="Email or name" :value="$filters['q'] ?? ''" maxlength="100" />
-        <x-select name="role" label="Role" :options="['buyer' => 'Buyer', 'seller' => 'Seller', 'admin' => 'Admin']" :value="$filters['role'] ?? ''" placeholder="Any role" />
+        <x-select name="role" label="Role" :options="collect(\App\Enums\UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all()" :value="$filters['role'] ?? ''" placeholder="Any role" />
         <button type="submit">Filter</button>
     </form>
     <div class="table-wrap">

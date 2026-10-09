@@ -6,12 +6,17 @@ use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\UserFacingException;
+use App\Mail\NewDeviceLoginMail;
 use App\Models\SellerProfile;
 use App\Models\User;
+use App\Models\UserDevice;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
@@ -20,6 +25,8 @@ use Illuminate\Support\Str;
  */
 class UserService
 {
+    public const DEVICE_COOKIE = 'shop_device';
+
     public function __construct(
         private readonly AuditLogger $audit,
     ) {}
@@ -38,6 +45,7 @@ class UserService
             'currency' => config('shop.default_currency'),
         ])->save();
 
+        $user->sendEmailVerificationNotification();
         $this->audit->log('user.registered', $user, [], $user);
         Log::info('User {user_id} registered', ['user_id' => $user->id]);
 
@@ -45,26 +53,70 @@ class UserService
     }
 
     /**
-     * @throws UserFacingException with a specific reason when login fails
+     * Checks credentials without signing in. The caller either completes the
+     * login (completeLogin) or, for accounts with two-factor authentication,
+     * asks for a code first.
+     *
+     * @throws UserFacingException with a specific reason when the check fails
      */
-    public function login(string $email, string $password, bool $remember): User
+    public function checkCredentials(string $email, string $password): User
     {
-        if (! Auth::attempt(['email' => Str::lower($email), 'password' => $password], $remember)) {
+        $provider = Auth::getProvider();
+        $credentials = ['email' => Str::lower($email), 'password' => $password];
+        /** @var User|null $user */
+        $user = $provider->retrieveByCredentials($credentials);
+
+        if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             Log::notice('Failed login for email hash {email_hash}', ['email_hash' => hash('sha256', Str::lower($email))]);
             throw new UserFacingException('Login failed: the email or password is incorrect.');
         }
-
-        /** @var User $user */
-        $user = Auth::user();
         if (! $user->isActive()) {
-            Auth::logout();
             throw new UserFacingException('This account is suspended. Contact '.config('shop.support_email').' for help.');
         }
-
-        $user->forceFill(['last_login_at' => now()])->save();
-        $this->audit->log('user.login', $user, [], $user);
+        $provider->rehashPasswordIfRequired($user, $credentials);
 
         return $user;
+    }
+
+    /**
+     * Signs the user in and records the device. A login from a device the
+     * account has not used before triggers an email to the account owner.
+     */
+    public function completeLogin(User $user, bool $remember, Request $request): void
+    {
+        Auth::login($user, $remember);
+        $user->forceFill(['last_login_at' => now()])->save();
+        $this->audit->log('user.login', $user, ['two_factor' => $user->hasTwoFactor()], $user);
+        $this->rememberDevice($user, $request);
+    }
+
+    private function rememberDevice(User $user, Request $request): void
+    {
+        $cookie = (string) $request->cookie(self::DEVICE_COOKIE, '');
+        if (! preg_match('/^[a-f0-9]{64}$/', $cookie)) {
+            $cookie = bin2hex(random_bytes(32));
+        }
+        Cookie::queue(Cookie::forever(self::DEVICE_COOKIE, $cookie, '/', null, (bool) config('session.secure'), true, false, 'lax'));
+
+        $hash = hash('sha256', $cookie);
+        $known = UserDevice::query()->where('user_id', $user->id)->where('device_hash', $hash)->first();
+        if ($known !== null) {
+            $known->forceFill(['last_seen_at' => now(), 'ip' => $request->ip()])->save();
+
+            return;
+        }
+
+        $firstDevice = ! UserDevice::query()->where('user_id', $user->id)->exists();
+        $device = UserDevice::create([
+            'user_id' => $user->id,
+            'device_hash' => $hash,
+            'user_agent' => mb_substr((string) $request->userAgent(), 0, 255),
+            'ip' => $request->ip(),
+            'last_seen_at' => now(),
+        ]);
+        if (! $firstDevice) {
+            Mail::to($user)->queue(new NewDeviceLoginMail($user, $device));
+        }
     }
 
     /** Always reports success so the form cannot be used to discover accounts. */
@@ -101,7 +153,7 @@ class UserService
 
     public function applyAsSeller(User $user, array $data): SellerProfile
     {
-        if ($user->isSeller() || $user->isAdmin()) {
+        if ($user->isSeller() || $user->isStaff()) {
             throw new UserFacingException('Your account can already sell.');
         }
 

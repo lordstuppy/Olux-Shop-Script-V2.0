@@ -5,7 +5,9 @@ use App\Http\Controllers\Admin;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ConfirmPasswordController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
@@ -14,7 +16,9 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Seller;
 use App\Http\Controllers\SellerApplicationController;
+use App\Http\Controllers\SessionController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -65,22 +69,38 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:password-reset')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'showReset'])->name('password.reset');
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset')->name('password.update');
+    Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->middleware('throttle:two-factor');
 });
 
 // Signed-in users
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
-    Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])->middleware('throttle:forms')->name('checkout.coupon');
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:verification'])->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:verification')->name('verification.send');
+
+    Route::get('/confirm-password', [ConfirmPasswordController::class, 'show'])->name('password.confirm');
+    Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->middleware('throttle:login');
+
+    Route::get('/account/two-factor', [TwoFactorController::class, 'show'])->name('account.two-factor');
+    Route::post('/account/two-factor', [TwoFactorController::class, 'enable'])->middleware('throttle:two-factor')->name('account.two-factor.enable');
+    Route::delete('/account/two-factor', [TwoFactorController::class, 'disable'])->middleware(['password.recent', 'throttle:two-factor'])->name('account.two-factor.disable');
+    Route::post('/account/two-factor/recovery-codes', [TwoFactorController::class, 'regenerate'])->middleware('password.recent')->name('account.two-factor.recovery');
+    Route::delete('/account/sessions/{handle}', [SessionController::class, 'destroy'])->name('account.sessions.destroy');
+    Route::delete('/account/sessions', [SessionController::class, 'destroyOthers'])->middleware('password.recent')->name('account.sessions.destroy-others');
+
+    Route::get('/checkout', [CheckoutController::class, 'show'])->middleware('verified')->name('checkout.show');
+    Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])->middleware(['verified', 'throttle:forms'])->name('checkout.coupon');
     Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon'])->name('checkout.coupon.remove');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:checkout')->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware(['verified', 'throttle:checkout'])->name('checkout.store');
 
     Route::get('/orders', [OrderController::class, 'index'])->name('account.orders');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
-    Route::post('/orders/{order}/pay', [OrderController::class, 'startPayment'])->middleware('throttle:checkout')->name('orders.pay.start');
-    Route::post('/orders/{order}/pay-balance', [OrderController::class, 'payWithBalance'])->middleware('throttle:checkout')->name('orders.pay.balance');
+    Route::post('/orders/{order}/pay', [OrderController::class, 'startPayment'])->middleware(['verified', 'throttle:checkout'])->name('orders.pay.start');
+    Route::post('/orders/{order}/pay-balance', [OrderController::class, 'payWithBalance'])->middleware(['verified', 'throttle:checkout'])->name('orders.pay.balance');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::get('/orders/{order}/result', [OrderController::class, 'result'])->name('orders.result');
     Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
@@ -88,7 +108,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('signed')->name('orders.download');
 
     Route::get('/wallet', [WalletController::class, 'show'])->name('wallet.show');
-    Route::post('/wallet/redeem', [WalletController::class, 'redeem'])->middleware('throttle:redeem')->name('wallet.redeem');
+    Route::post('/wallet/redeem', [WalletController::class, 'redeem'])->middleware(['verified', 'throttle:redeem'])->name('wallet.redeem');
 
     Route::get('/account', [AccountController::class, 'show'])->name('account.settings');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
@@ -101,7 +121,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/messages', [TicketController::class, 'reply'])->middleware('throttle:forms')->name('tickets.reply');
     Route::post('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
 
-    Route::post('/sell', [SellerApplicationController::class, 'store'])->middleware('throttle:forms')->name('seller.apply.store');
+    Route::post('/sell', [SellerApplicationController::class, 'store'])->middleware(['verified', 'throttle:forms'])->name('seller.apply.store');
 
     // Sellers
     Route::middleware('role:seller')->prefix('seller')->name('seller.')->group(function () {
@@ -121,39 +141,50 @@ Route::middleware('auth')->group(function () {
         Route::post('/payouts', [Seller\PayoutController::class, 'store'])->middleware('throttle:forms')->name('payouts.store');
     });
 
-    // Administrators
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', Admin\DashboardController::class)->name('dashboard');
-        Route::get('/users', [Admin\UserController::class, 'index'])->name('users.index');
-        Route::get('/users/{user}', [Admin\UserController::class, 'show'])->name('users.show');
-        Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->name('users.role');
-        Route::post('/users/{user}/status', [Admin\UserController::class, 'status'])->name('users.status');
-        Route::get('/sellers', [Admin\SellerController::class, 'index'])->name('sellers.index');
-        Route::post('/sellers/{profile}/approve', [Admin\SellerController::class, 'approve'])->name('sellers.approve');
-        Route::post('/sellers/{profile}/reject', [Admin\SellerController::class, 'reject'])->name('sellers.reject');
-        Route::get('/products', [Admin\ProductController::class, 'index'])->name('products.index');
-        Route::post('/products/{product:id}/status', [Admin\ProductController::class, 'status'])->name('products.status');
-        Route::get('/categories', [Admin\CategoryController::class, 'index'])->name('categories.index');
-        Route::post('/categories', [Admin\CategoryController::class, 'store'])->name('categories.store');
-        Route::get('/orders', [Admin\OrderController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order}', [Admin\OrderController::class, 'show'])->name('orders.show');
-        Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->name('orders.refund');
-        Route::get('/payments', [Admin\PaymentController::class, 'index'])->name('payments.index');
-        Route::get('/webhooks', [Admin\WebhookEventController::class, 'index'])->name('webhooks.index');
-        Route::post('/webhooks/{event}/retry', [Admin\WebhookEventController::class, 'retry'])->name('webhooks.retry');
-        Route::get('/payouts', [Admin\PayoutController::class, 'index'])->name('payouts.index');
-        Route::post('/payouts/{payout}/approve', [Admin\PayoutController::class, 'approve'])->name('payouts.approve');
-        Route::post('/payouts/{payout}/paid', [Admin\PayoutController::class, 'paid'])->name('payouts.paid');
-        Route::post('/payouts/{payout}/reject', [Admin\PayoutController::class, 'reject'])->name('payouts.reject');
-        Route::get('/coupons', [Admin\CouponController::class, 'index'])->name('coupons.index');
-        Route::post('/coupons', [Admin\CouponController::class, 'store'])->name('coupons.store');
-        Route::post('/coupons/{coupon}/toggle', [Admin\CouponController::class, 'toggle'])->name('coupons.toggle');
-        Route::get('/gift-cards', [Admin\GiftCardController::class, 'index'])->name('gift-cards.index');
-        Route::post('/gift-cards', [Admin\GiftCardController::class, 'store'])->name('gift-cards.store');
-        Route::get('/exchange-rates', [Admin\ExchangeRateController::class, 'index'])->name('rates.index');
-        Route::post('/exchange-rates', [Admin\ExchangeRateController::class, 'store'])->name('rates.store');
-        Route::get('/tickets', [Admin\TicketController::class, 'index'])->name('tickets.index');
-        Route::get('/audit', [Admin\AuditLogController::class, 'index'])->name('audit.index');
-        Route::get('/reconciliation', Admin\ReconciliationController::class)->name('reconciliation');
+    // Staff: admin, finance and support, each limited by App\Support\Permissions.
+    // Two-factor authentication is required; sensitive actions need a recent password.
+    Route::middleware(['role:admin,finance,support', 'staff.2fa'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', Admin\DashboardController::class)->can('staff.dashboard')->name('dashboard');
+
+        Route::get('/users', [Admin\UserController::class, 'index'])->can('users.view')->name('users.index');
+        Route::get('/users/{user}', [Admin\UserController::class, 'show'])->can('users.view')->name('users.show');
+        Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->can('users.manage')->middleware('password.recent')->name('users.role');
+        Route::post('/users/{user}/status', [Admin\UserController::class, 'status'])->can('users.manage')->middleware('password.recent')->name('users.status');
+        Route::post('/users/{user}/sessions/revoke', [Admin\UserController::class, 'revokeSessions'])->can('sessions.revoke')->name('users.sessions.revoke');
+
+        Route::get('/sellers', [Admin\SellerController::class, 'index'])->can('sellers.manage')->name('sellers.index');
+        Route::post('/sellers/{profile}/approve', [Admin\SellerController::class, 'approve'])->can('sellers.manage')->name('sellers.approve');
+        Route::post('/sellers/{profile}/reject', [Admin\SellerController::class, 'reject'])->can('sellers.manage')->name('sellers.reject');
+
+        Route::get('/products', [Admin\ProductController::class, 'index'])->can('products.manage')->name('products.index');
+        Route::post('/products/{product:id}/status', [Admin\ProductController::class, 'status'])->can('products.manage')->name('products.status');
+
+        Route::get('/categories', [Admin\CategoryController::class, 'index'])->can('categories.manage')->name('categories.index');
+        Route::post('/categories', [Admin\CategoryController::class, 'store'])->can('categories.manage')->name('categories.store');
+
+        Route::get('/orders', [Admin\OrderController::class, 'index'])->can('orders.view')->name('orders.index');
+        Route::get('/orders/{order}', [Admin\OrderController::class, 'show'])->can('orders.view')->name('orders.show');
+        Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->can('orders.manage')->middleware('password.recent')->name('orders.refund');
+
+        Route::get('/payments', [Admin\PaymentController::class, 'index'])->can('payments.view')->name('payments.index');
+        Route::get('/webhooks', [Admin\WebhookEventController::class, 'index'])->can('webhooks.manage')->name('webhooks.index');
+        Route::post('/webhooks/{event}/retry', [Admin\WebhookEventController::class, 'retry'])->can('webhooks.manage')->name('webhooks.retry');
+
+        Route::get('/payouts', [Admin\PayoutController::class, 'index'])->can('payouts.manage')->name('payouts.index');
+        Route::post('/payouts/{payout}/approve', [Admin\PayoutController::class, 'approve'])->can('payouts.manage')->middleware('password.recent')->name('payouts.approve');
+        Route::post('/payouts/{payout}/paid', [Admin\PayoutController::class, 'paid'])->can('payouts.manage')->middleware('password.recent')->name('payouts.paid');
+        Route::post('/payouts/{payout}/reject', [Admin\PayoutController::class, 'reject'])->can('payouts.manage')->middleware('password.recent')->name('payouts.reject');
+        Route::get('/reconciliation', Admin\ReconciliationController::class)->can('payouts.manage')->name('reconciliation');
+
+        Route::get('/coupons', [Admin\CouponController::class, 'index'])->can('coupons.manage')->name('coupons.index');
+        Route::post('/coupons', [Admin\CouponController::class, 'store'])->can('coupons.manage')->name('coupons.store');
+        Route::post('/coupons/{coupon}/toggle', [Admin\CouponController::class, 'toggle'])->can('coupons.manage')->name('coupons.toggle');
+        Route::get('/gift-cards', [Admin\GiftCardController::class, 'index'])->can('giftcards.manage')->name('gift-cards.index');
+        Route::post('/gift-cards', [Admin\GiftCardController::class, 'store'])->can('giftcards.manage')->middleware('password.recent')->name('gift-cards.store');
+        Route::get('/exchange-rates', [Admin\ExchangeRateController::class, 'index'])->can('rates.manage')->name('rates.index');
+        Route::post('/exchange-rates', [Admin\ExchangeRateController::class, 'store'])->can('rates.manage')->middleware('password.recent')->name('rates.store');
+
+        Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
+        Route::get('/audit', [Admin\AuditLogController::class, 'index'])->can('audit.view')->name('audit.index');
     });
 });

@@ -6,9 +6,12 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -40,6 +43,7 @@ class UserController extends Controller
             'user' => $user,
             'orders' => $user->orders()->latest('id')->limit(20)->get(),
             'transactions' => $user->balanceTransactions()->latest('id')->limit(20)->get(),
+            'sessionCount' => DB::table('sessions')->where('user_id', $user->id)->count(),
         ]);
     }
 
@@ -49,6 +53,15 @@ class UserController extends Controller
         $users->setRole($user, UserRole::from($data['role']), $request->user());
 
         return back()->with('success', "{$user->email} is now {$data['role']}.");
+    }
+
+    public function revokeSessions(Request $request, User $user, AuditLogger $audit): RedirectResponse
+    {
+        $count = DB::table('sessions')->where('user_id', $user->id)->delete();
+        $user->forceFill(['remember_token' => Str::random(60)])->save();
+        $audit->log('user.sessions_revoked_by_staff', $user, ['count' => $count], $request->user());
+
+        return back()->with('success', "Signed out {$count} ".($count === 1 ? 'session' : 'sessions')." of {$user->email}.");
     }
 
     public function status(Request $request, User $user, UserService $users): RedirectResponse

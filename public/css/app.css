@@ -134,3 +134,5 @@ td.num, th.num { text-align: right; }
 .qty-input { width: 5rem; }
 .mt { margin-top: 1.25rem; }
 .card-title { font-size: 1.1rem; margin: 0 0 .5rem; }
+/* Registration honeypot: off-screen for people, still in the form for bots. */
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

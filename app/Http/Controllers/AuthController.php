@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\UserFacingException;
 use App\Services\UserService;
+use App\Support\FormTrap;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +25,21 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $user = $users->login($data['email'], $data['password'], $request->boolean('remember'));
+        $user = $users->checkCredentials($data['email'], $data['password']);
+
+        if ($user->hasTwoFactor()) {
+            // Not signed in yet: the second factor is checked first.
+            $request->session()->regenerate();
+            $request->session()->put('login.two_factor', [
+                'id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'expires' => time() + 300,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        $users->completeLogin($user, $request->boolean('remember'), $request);
         // New session id after login prevents session fixation.
         $request->session()->regenerate();
 
@@ -32,11 +48,15 @@ class AuthController extends Controller
 
     public function showRegister(): View
     {
-        return view('auth.register');
+        return view('auth.register', ['formToken' => FormTrap::token()]);
     }
 
     public function register(Request $request, UserService $users): RedirectResponse
     {
+        if (! FormTrap::passes($request)) {
+            throw new UserFacingException('Registration could not be completed. Wait a few seconds, then submit the form again.');
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -48,10 +68,10 @@ class AuthController extends Controller
         ]);
 
         $user = $users->register($data['name'], $data['email'], $data['password']);
-        Auth::login($user);
+        $users->completeLogin($user, false, $request);
         $request->session()->regenerate();
 
-        return redirect()->route('products.index')->with('success', "Welcome, {$user->name}. Your account {$user->email} is ready.");
+        return redirect()->route('verification.notice')->with('success', "Welcome, {$user->name}. We sent a confirmation link to {$user->email}.");
     }
 
     public function logout(Request $request): RedirectResponse

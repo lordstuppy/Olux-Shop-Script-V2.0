@@ -34,14 +34,36 @@ class UserFactory extends Factory
         ];
     }
 
+    public function unverified(): static
+    {
+        return $this->state(fn () => ['email_verified_at' => null]);
+    }
+
     public function seller(): static
     {
         return $this->state(fn () => ['role' => UserRole::Seller]);
     }
 
+    /** Admins and other staff come with two-factor authentication enabled, as required in production. */
     public function admin(): static
     {
-        return $this->state(fn () => ['role' => UserRole::Admin]);
+        return $this->staff(UserRole::Admin);
+    }
+
+    public function staff(UserRole $role): static
+    {
+        return $this->state(fn () => ['role' => $role])->withTwoFactor();
+    }
+
+    public const TWO_FACTOR_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
+    public function withTwoFactor(): static
+    {
+        return $this->state(fn () => [
+            'two_factor_secret' => self::TWO_FACTOR_SECRET,
+            'two_factor_recovery_codes' => [],
+            'two_factor_confirmed_at' => now(),
+        ]);
     }
 
     public function suspended(): static

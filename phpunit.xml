@@ -20,6 +20,7 @@
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_DEBUG" value="false" force="true"/>
+        <env name="APP_URL" value="http://localhost" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="HASH_DRIVER" value="argon2id" force="true"/>
         <!-- Cheaper Argon2id parameters keep the suite fast; production uses the defaults. -->

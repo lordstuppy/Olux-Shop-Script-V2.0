@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Notifications\VerifyEmailQueued;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,8 +20,8 @@ use Illuminate\Notifications\Notifiable;
  * through UserService, BalanceService and the admin controllers.
  */
 #[Fillable(['name', 'email', 'password_hash'])]
-#[Hidden(['password_hash', 'remember_token'])]
-class User extends Authenticatable
+#[Hidden(['password_hash', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -35,12 +37,32 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'status' => UserStatus::class,
             'balance_minor' => 'integer',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_last_step' => 'integer',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role->isStaff();
+    }
+
+    public function hasTwoFactor(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;
+    }
+
+    /** Queued, so registration does not wait for the mail server. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailQueued);
     }
 
     public function isSeller(): bool

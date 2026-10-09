@@ -39,9 +39,9 @@
                     @if (auth()->user()->isSeller())
                         <li><a href="{{ route('seller.dashboard') }}" @if(request()->routeIs('seller.*') && ! request()->routeIs('seller.apply*')) aria-current="page" @endif>Seller</a></li>
                     @endif
-                    @if (auth()->user()->isAdmin())
+                    @can('staff.dashboard')
                         <li><a href="{{ route('admin.dashboard') }}" @if(request()->routeIs('admin.*')) aria-current="page" @endif>Admin</a></li>
-                    @endif
+                    @endcan
                     <li><a href="{{ route('account.settings') }}" @if(request()->routeIs('account.settings')) aria-current="page" @endif>Account</a></li>
                     <li>
                         <form class="inline" method="post" action="{{ route('logout') }}">

@@ -68,6 +68,18 @@ return [
         'search' => (int) env('RATE_LIMIT_SEARCH', 60),
     ],
 
+    // Comma-separated IPs/CIDRs of reverse proxies whose X-Forwarded-* headers are trusted, or "*".
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
+    // Staff (admin, finance, support) must enable two-factor authentication before using /admin.
+    'require_staff_two_factor' => (bool) env('SHOP_REQUIRE_STAFF_2FA', true),
+
+    // Unpaid orders a buyer may have open at once; stops stock and coupon hoarding.
+    'max_open_orders' => (int) env('SHOP_MAX_OPEN_ORDERS', 3),
+
+    // Optional comma-separated IPs/CIDRs allowed to call /webhooks/shkeeper (empty = any; the signature is always required).
+    'webhook_allowed_ips' => env('SHKEEPER_WEBHOOK_ALLOWED_IPS', ''),
+
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),

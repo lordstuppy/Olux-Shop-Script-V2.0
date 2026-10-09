@@ -45,7 +45,7 @@ class TicketService
             throw new UserFacingException("Ticket #{$ticket->id} is closed. Open a new ticket if you still need help.");
         }
 
-        $staffReply = $author->isAdmin() && $author->id !== $ticket->user_id;
+        $staffReply = $author->can('tickets.manage') && $author->id !== $ticket->user_id;
 
         DB::transaction(function () use ($ticket, $author, $body, $staffReply) {
             $ticket->messages()->create(['author_id' => $author->id, 'body' => $body]);

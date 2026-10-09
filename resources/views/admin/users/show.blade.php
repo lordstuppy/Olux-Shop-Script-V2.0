@@ -8,10 +8,22 @@
     <h1>{{ $user->email }}</h1>
     <p>{{ $user->name }} &middot; {{ $user->role->value }} &middot; <x-status :value="$user->status" /> &middot; Balance {{ money($user->balance_minor, $user->currency) }} &middot; Last login {{ $user->last_login_at?->format('Y-m-d H:i') ?? 'never' }}</p>
 
+    <p>Email {{ $user->hasVerifiedEmail() ? 'confirmed' : 'not confirmed' }} &middot; Two-factor {{ $user->hasTwoFactor() ? 'on' : 'off' }} &middot; {{ $sessionCount }} active {{ $sessionCount === 1 ? 'session' : 'sessions' }}</p>
+
     <div class="actions">
+        @can('sessions.revoke')
+            <form method="post" action="{{ route('admin.users.sessions.revoke', $user) }}">
+                @csrf
+                <button type="submit" class="btn-secondary">Sign out all sessions</button>
+            </form>
+        @endcan
+    </div>
+
+    @can('users.manage')
+    <div class="actions mt">
         <form method="post" action="{{ route('admin.users.role', $user) }}" class="actions">
             @csrf
-            <x-select name="role" label="Role" :options="['buyer' => 'Buyer', 'seller' => 'Seller', 'admin' => 'Admin']" :value="$user->role->value" />
+            <x-select name="role" label="Role" :options="collect(\App\Enums\UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all()" :value="$user->role->value" hint="Support and finance are staff roles with limited admin access." />
             <button type="submit" class="btn-secondary">Change role</button>
         </form>
         <form method="post" action="{{ route('admin.users.status', $user) }}">
@@ -25,6 +37,7 @@
             @endif
         </form>
     </div>
+    @endcan
 
     @if ($user->sellerProfile)
         <h2>Seller profile</h2>

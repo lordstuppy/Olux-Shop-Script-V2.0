@@ -13,8 +13,11 @@ use Throwable;
 
 class HealthController extends Controller
 {
-    /** Liveness and readiness: database reachable, queue backlog visible. */
-    public function health(): JsonResponse
+    /**
+     * Liveness and readiness. Anonymous callers get only "ok"/"fail"; the
+     * details (latency, queue backlog) need the metrics bearer token.
+     */
+    public function health(Request $request): JsonResponse
     {
         $checks = [];
         $healthy = true;
@@ -36,8 +39,11 @@ class HealthController extends Controller
             ];
         }
 
-        return response()->json(['status' => $healthy ? 'ok' : 'fail', 'checks' => $checks], $healthy ? 200 : 503)
-            ->header('Cache-Control', 'no-store');
+        $token = (string) config('shop.metrics_token');
+        $detailed = $token !== '' && hash_equals($token, (string) $request->bearerToken());
+        $body = ['status' => $healthy ? 'ok' : 'fail'] + ($detailed ? ['checks' => $checks] : []);
+
+        return response()->json($body, $healthy ? 200 : 503)->header('Cache-Control', 'no-store');
     }
 
     /** Prometheus text exposition, protected by a bearer token. */

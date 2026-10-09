@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\Shkeeper\ShkeeperClient;
+use App\Support\Permissions;
 use App\Support\RequestId;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -36,7 +37,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureRateLimits();
 
-        Gate::define('admin', fn (User $user) => $user->isAdmin());
+        foreach (Permissions::MAP as $ability => $roles) {
+            Gate::define($ability, fn (User $user) => in_array($user->role->value, $roles, true));
+        }
 
         Paginator::defaultView('pagination');
         Paginator::defaultSimpleView('pagination');
@@ -85,6 +88,12 @@ class AppServiceProvider extends ServiceProvider
             ->response($throttled('You are submitting forms too quickly. Wait a moment and try again.')));
 
         RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute($limits['webhook'])->by('webhook:'.$request->ip()));
+
+        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute($limits['login_per_ip'])->by('2fa-ip:'.$request->ip())
+            ->response($throttled('Too many verification attempts from your network. Wait one minute and try again.')));
+
+        RateLimiter::for('verification', fn (Request $request) => Limit::perMinute(6)->by('verify:'.($request->user()?->id ?? $request->ip()))
+            ->response($throttled('Too many confirmation emails requested. Wait one minute and try again.')));
 
         RateLimiter::for('search', fn (Request $request) => Limit::perMinute($limits['search'])->by('search:'.$request->ip()));
     }

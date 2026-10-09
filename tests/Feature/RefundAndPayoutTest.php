@@ -34,7 +34,7 @@ class RefundAndPayoutTest extends TestCase
     {
         $order = $this->paidOrder(5000);
         $admin = User::factory()->admin()->create();
-        $this->actingAs($admin);
+        $this->actingAs($admin)->confirmPassword();
 
         $this->postForm(route('admin.orders.refund', $order), ['amount' => '20.00', 'method' => 'balance', 'reason' => 'Partly broken'])
             ->assertRedirect()->assertSessionHas('success', 'Refunded 20.00 USD on order '.$order->shortId().' via balance.');
@@ -80,7 +80,7 @@ class RefundAndPayoutTest extends TestCase
         $this->assertSame(4000, app(PayoutService::class)->balances($seller)['USD']['available']);
 
         $payout = Payout::firstOrFail();
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->create())->confirmPassword();
         $this->postForm(route('admin.payouts.reject', $payout), ['note' => 'Address invalid'])->assertSessionHas('success');
 
         $this->assertSame(PayoutStatus::Rejected, $payout->fresh()->status);
@@ -96,7 +96,7 @@ class RefundAndPayoutTest extends TestCase
         $this->travel(8)->days();
         $payout = app(PayoutService::class)->requestPayout($seller, 9000, 'USD');
 
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->create())->confirmPassword();
         $this->postForm(route('admin.payouts.paid', $payout), ['reference' => 'tx-abc'])->assertSessionHas('success');
         $this->assertSame('tx-abc', $payout->fresh()->reference);
         $this->assertSame(0, app(PayoutService::class)->balances($seller)['USD']['total']);

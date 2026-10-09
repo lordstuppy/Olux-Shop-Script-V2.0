@@ -8,9 +8,9 @@
     <p>
         Status: <x-status :value="$ticket->status" />
         @if ($ticket->order)
-            &middot; Order <a href="{{ auth()->user()->isAdmin() ? route('admin.orders.show', $ticket->order) : route('orders.show', $ticket->order) }}" class="mono">{{ $ticket->order->shortId() }}</a>
+            &middot; Order <a href="{{ auth()->user()->can('orders.view') ? route('admin.orders.show', $ticket->order) : route('orders.show', $ticket->order) }}" class="mono">{{ $ticket->order->shortId() }}</a>
         @endif
-        @if (auth()->user()->isAdmin())
+        @if (auth()->user()->can('users.view'))
             &middot; Opened by <a href="{{ route('admin.users.show', $ticket->user) }}">{{ $ticket->user->email }}</a>
         @endif
     </p>

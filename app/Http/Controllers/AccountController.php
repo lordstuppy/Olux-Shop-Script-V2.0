@@ -14,7 +14,18 @@ class AccountController extends Controller
 {
     public function show(Request $request): View
     {
-        return view('account.settings', ['user' => $request->user()]);
+        $current = $request->session()->getId();
+        $sessions = config('session.driver') !== 'database' ? collect() : DB::table('sessions')
+            ->where('user_id', $request->user()->id)->orderByDesc('last_activity')->get()
+            ->map(fn ($row) => (object) [
+                'handle' => SessionController::handle($row->id),
+                'current' => $row->id === $current,
+                'ip_address' => $row->ip_address,
+                'user_agent' => $row->user_agent,
+                'last_activity' => $row->last_activity,
+            ]);
+
+        return view('account.settings', ['user' => $request->user(), 'sessions' => $sessions]);
     }
 
     public function updateProfile(Request $request): RedirectResponse

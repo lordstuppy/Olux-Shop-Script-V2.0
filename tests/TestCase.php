@@ -8,6 +8,7 @@ use App\Services\Shkeeper\ShkeeperClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -44,6 +45,18 @@ abstract class TestCase extends BaseTestCase
     protected function deleteForm(string $uri, array $data = []): TestResponse
     {
         return $this->delete($uri, $data + ['_token' => $this->csrfToken()]);
+    }
+
+    /** Marks the password as recently confirmed, as the confirm-password page would. */
+    protected function confirmPassword(): static
+    {
+        return $this->withSession(['auth.password_confirmed_at' => now()->getTimestamp()]);
+    }
+
+    /** A valid registration form token (rendered 10 seconds ago). */
+    protected function formToken(): string
+    {
+        return Crypt::encryptString((string) (time() - 10));
     }
 
     /** Sends a webhook signed the way Shkeeper signs it. */

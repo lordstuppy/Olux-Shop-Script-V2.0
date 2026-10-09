@@ -78,7 +78,7 @@ class SecurityTest extends TestCase
     public function test_registration_is_rate_limited(): void
     {
         for ($i = 0; $i < 10; $i++) {
-            $this->postForm('/register', ['name' => 'x', 'email' => "u{$i}@example.test", 'password' => 'short', 'password_confirmation' => 'short']);
+            $this->postForm('/register', ['name' => 'x', 'email' => "u{$i}@example.test", 'password' => 'short', 'password_confirmation' => 'short', 'form_token' => $this->formToken()]);
         }
         $this->postForm('/register', ['name' => 'x', 'email' => 'u99@example.test'])->assertStatus(429);
     }

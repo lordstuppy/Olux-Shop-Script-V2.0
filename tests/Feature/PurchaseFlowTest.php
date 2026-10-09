@@ -30,7 +30,9 @@ class PurchaseFlowTest extends TestCase
             'password' => 'long-password-123',
             'password_confirmation' => 'long-password-123',
             'accept_terms' => '1',
-        ])->assertRedirect(route('products.index'));
+            'form_token' => $this->formToken(),
+        ])->assertRedirect(route('verification.notice'));
+        User::where('email', 'ada@example.test')->update(['email_verified_at' => now()]);
         $this->postForm('/logout')->assertRedirect(route('home'));
 
         // Log in.

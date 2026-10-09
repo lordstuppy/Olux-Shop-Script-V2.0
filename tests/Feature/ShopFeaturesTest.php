@@ -189,7 +189,8 @@ class ShopFeaturesTest extends TestCase
 
     public function test_health_and_metrics(): void
     {
-        $this->getJson('/health')->assertOk()->assertJsonPath('status', 'ok')->assertJsonPath('checks.database.status', 'ok');
+        $this->getJson('/health')->assertOk()->assertExactJson(['status' => 'ok']);
+        $this->getJson('/health', ['Authorization' => 'Bearer test-metrics-token'])->assertOk()->assertJsonPath('checks.database.status', 'ok');
 
         $this->get('/metrics')->assertUnauthorized();
         $this->get('/metrics', ['Authorization' => 'Bearer test-metrics-token'])
@@ -200,7 +201,7 @@ class ShopFeaturesTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $buyer = User::factory()->create();
-        $this->actingAs($admin);
+        $this->actingAs($admin)->confirmPassword();
         $this->postForm(route('admin.users.status', $buyer), ['status' => 'suspended'])->assertSessionHas('success');
 
         $this->get('/admin/audit?action=user.status')->assertOk()->assertSee('user.status_changed')->assertSee($admin->email);

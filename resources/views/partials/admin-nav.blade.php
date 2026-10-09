@@ -1,21 +1,23 @@
 <ul class="nav">
     @foreach ([
-        'admin.dashboard' => 'Overview',
-        'admin.orders.index' => 'Orders',
-        'admin.payments.index' => 'Payments',
-        'admin.webhooks.index' => 'Webhooks',
-        'admin.products.index' => 'Products',
-        'admin.categories.index' => 'Categories',
-        'admin.users.index' => 'Users',
-        'admin.sellers.index' => 'Seller applications',
-        'admin.payouts.index' => 'Payouts',
-        'admin.reconciliation' => 'Reconciliation',
-        'admin.coupons.index' => 'Coupons',
-        'admin.gift-cards.index' => 'Gift cards',
-        'admin.rates.index' => 'Exchange rates',
-        'admin.tickets.index' => 'Tickets',
-        'admin.audit.index' => 'Audit log',
-    ] as $routeName => $label)
-        <li><a href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>{{ $label }}</a></li>
+        ['admin.dashboard', 'Overview', 'staff.dashboard'],
+        ['admin.orders.index', 'Orders', 'orders.view'],
+        ['admin.payments.index', 'Payments', 'payments.view'],
+        ['admin.webhooks.index', 'Webhooks', 'webhooks.manage'],
+        ['admin.products.index', 'Products', 'products.manage'],
+        ['admin.categories.index', 'Categories', 'categories.manage'],
+        ['admin.users.index', 'Users', 'users.view'],
+        ['admin.sellers.index', 'Seller applications', 'sellers.manage'],
+        ['admin.payouts.index', 'Payouts', 'payouts.manage'],
+        ['admin.reconciliation', 'Reconciliation', 'payouts.manage'],
+        ['admin.coupons.index', 'Coupons', 'coupons.manage'],
+        ['admin.gift-cards.index', 'Gift cards', 'giftcards.manage'],
+        ['admin.rates.index', 'Exchange rates', 'rates.manage'],
+        ['admin.tickets.index', 'Tickets', 'tickets.manage'],
+        ['admin.audit.index', 'Audit log', 'audit.view'],
+    ] as [$routeName, $label, $ability])
+        @can($ability)
+            <li><a href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>{{ $label }}</a></li>
+        @endcan
     @endforeach
 </ul>

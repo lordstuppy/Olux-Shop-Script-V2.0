@@ -3,9 +3,12 @@
 use App\Exceptions\UserFacingException;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\EnsureStaffTwoFactor;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PreventRequestForgery;
+use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrustProxies;
 use App\Support\RequestId;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,13 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // Shkeeper callbacks are authenticated by their HMAC signature instead.
         $middleware->preventRequestForgery(except: ['webhooks/shkeeper']);
 
-        $middleware->alias(['role' => EnsureRole::class]);
+        $middleware->alias([
+            'role' => EnsureRole::class,
+            'staff.2fa' => EnsureStaffTwoFactor::class,
+            'password.recent' => RequireRecentPassword::class,
+        ]);
 
-        // Comma-separated proxy IPs/CIDRs (for example the nginx container network).
-        $proxies = env('TRUSTED_PROXIES');
-        if ($proxies) {
-            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
-        }
+        // Proxy IPs/CIDRs come from config (shop.trusted_proxies) so they work with config:cache.
+        $middleware->replace(Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
 
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('account.orders'));

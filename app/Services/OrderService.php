@@ -161,6 +161,15 @@ class OrderService
 
     private function createLocked(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode): Order
     {
+        // Serialise checkouts per buyer, then cap unpaid orders so nobody can
+        // hoard stock or coupon redemptions with orders they never pay.
+        User::query()->whereKey($buyer->id)->lockForUpdate()->first();
+        $maxOpen = (int) config('shop.max_open_orders');
+        $open = Order::query()->where('buyer_id', $buyer->id)->where('status', OrderStatus::Pending->value)->count();
+        if ($open >= $maxOpen) {
+            throw new UserFacingException("You have {$open} unpaid ".($open === 1 ? 'order' : 'orders').'. Pay or cancel one in Your orders before placing a new one.');
+        }
+
         ksort($items);
         // Lock in a stable order (by id) so concurrent checkouts cannot deadlock.
         $products = Product::query()->whereIn('id', array_keys($items))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
