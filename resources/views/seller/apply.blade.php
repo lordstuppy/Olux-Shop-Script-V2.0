@@ -19,6 +19,7 @@
                 @csrf
                 <x-field name="display_name" label="Shop name shown to buyers" :value="$profile?->display_name" maxlength="80" required />
                 <x-select name="payout_currency" label="Payout currency" :options="array_combine($currencies, $currencies)" :value="$profile?->payout_currency" />
+                <x-select name="payout_crypto" label="Payout cryptocurrency" :options="collect($cryptos)->pluck('display_name', 'name')->all()" :value="$profile?->payout_crypto" />
                 <x-field name="payout_address" label="Payout address" :value="$profile?->payout_address" hint="The crypto wallet address where approved payouts are sent." maxlength="255" required />
                 <x-textarea name="about" label="What will you sell?" :value="$profile?->about" maxlength="2000" />
                 <label class="check">

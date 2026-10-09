@@ -13,6 +13,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PayoutCallbackController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\Seller;
@@ -60,6 +61,9 @@ Route::middleware('throttle:forms')->group(function () {
 Route::post('/webhooks/shkeeper', [WebhookController::class, 'shkeeper'])
     ->middleware('throttle:webhook')
     ->name('webhooks.shkeeper');
+Route::post('/webhooks/shkeeper/payouts', PayoutCallbackController::class)
+    ->middleware('throttle:webhook')
+    ->name('webhooks.shkeeper.payouts');
 
 // Guests
 Route::middleware('guest')->group(function () {
@@ -143,6 +147,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/items/{item}/deliver', [Seller\SalesController::class, 'deliver'])->name('items.deliver');
         Route::get('/payouts', [Seller\PayoutController::class, 'index'])->name('payouts');
         Route::post('/payouts', [Seller\PayoutController::class, 'store'])->middleware('throttle:forms')->name('payouts.store');
+        Route::get('/payout-settings', [Seller\PayoutSettingsController::class, 'show'])->name('payout-settings');
+        Route::post('/payout-settings', [Seller\PayoutSettingsController::class, 'requestChange'])->middleware(['password.recent', 'throttle:forms'])->name('payout-settings.store');
+        Route::get('/payout-address/confirm/{token}', [Seller\PayoutSettingsController::class, 'showConfirm'])->name('payout-address.confirm');
+        Route::post('/payout-address/confirm/{token}', [Seller\PayoutSettingsController::class, 'confirm'])->middleware('throttle:forms');
     });
 
     // Staff: admin, finance and support, each limited by App\Support\Permissions.
@@ -178,6 +186,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/payouts', [Admin\PayoutController::class, 'index'])->can('payouts.manage')->name('payouts.index');
         Route::post('/payouts/{payout}/approve', [Admin\PayoutController::class, 'approve'])->can('payouts.manage')->middleware('password.recent')->name('payouts.approve');
+        Route::post('/payouts/{payout}/send', [Admin\PayoutController::class, 'send'])->can('payouts.manage')->middleware('password.recent')->name('payouts.send');
         Route::post('/payouts/{payout}/paid', [Admin\PayoutController::class, 'paid'])->can('payouts.manage')->middleware('password.recent')->name('payouts.paid');
         Route::post('/payouts/{payout}/reject', [Admin\PayoutController::class, 'reject'])->can('payouts.manage')->middleware('password.recent')->name('payouts.reject');
         Route::get('/reconciliation', Admin\ReconciliationController::class)->can('payouts.manage')->name('reconciliation');

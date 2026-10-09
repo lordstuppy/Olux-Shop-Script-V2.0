@@ -22,6 +22,7 @@ class Payment extends Model
             'received_minor' => 'integer',
             'raw_payload_json' => 'array',
             'confirmed_at' => 'datetime',
+            'quoted_at' => 'datetime',
         ];
     }
 

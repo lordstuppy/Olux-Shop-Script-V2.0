@@ -123,7 +123,7 @@ class ShopFeaturesTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user);
-        $this->postForm('/sell', ['display_name' => 'Tools Ltd', 'payout_currency' => 'USD', 'payout_address' => 'bc1qpayout', 'accept_seller_terms' => '1'])->assertSessionHas('success');
+        $this->postForm('/sell', ['display_name' => 'Tools Ltd', 'payout_currency' => 'USD', 'payout_crypto' => 'BTC', 'payout_address' => 'bc1qpayoutaddress', 'accept_seller_terms' => '1'])->assertSessionHas('success');
 
         $profile = SellerProfile::firstOrFail();
         $this->actingAs(User::factory()->admin()->create());

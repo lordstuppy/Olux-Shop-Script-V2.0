@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\WebhookEventStatus;
+use App\Models\WebhookEvent;
+use App\Services\Shkeeper\ShkeeperClient;
+use App\Services\ShkeeperPayoutService;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * POST /webhooks/shkeeper/payouts: Shkeeper's payout callback, signed the
+ * same way as payment callbacks. Body: payout_id, external_id, tx_hash,
+ * status, amount, crypto, amount_fiat, currency_fiat, timestamp.
+ */
+class PayoutCallbackController extends Controller
+{
+    public function __invoke(Request $request, ShkeeperClient $client, ShkeeperPayoutService $payouts): JsonResponse
+    {
+        $raw = $request->getContent();
+        if (! $client->verifyWebhookSignature($raw, $request->header('X-Shkeeper-Signature'), $request->header('X-Shkeeper-Timestamp'))) {
+            Log::warning('Payout webhook signature mismatch from ip {ip}', ['ip' => $request->ip()]);
+
+            return response()->json(['message' => 'Invalid or missing signature.'], 401);
+        }
+        $payload = json_decode($raw, true);
+        if (! is_array($payload) || ! is_string($payload['external_id'] ?? null)) {
+            return response()->json(['message' => 'Body is not a payout callback.'], 400);
+        }
+
+        try {
+            $event = DB::transaction(fn () => WebhookEvent::create([
+                'provider' => 'shkeeper-payout',
+                'event_key' => hash('sha256', $raw),
+                'external_id' => mb_substr($payload['external_id'], 0, 64),
+                'payload' => $payload,
+                'status' => WebhookEventStatus::Received,
+                'source_ip' => $request->ip(),
+            ]));
+        } catch (UniqueConstraintViolationException) {
+            return response()->json(['message' => 'Duplicate event ignored.'], 202);
+        }
+
+        $outcome = $payouts->handleResult($payload['external_id'], (string) ($payload['status'] ?? ''), isset($payload['tx_hash']) ? (string) $payload['tx_hash'] : null);
+        $event->forceFill([
+            'status' => $outcome === 'processed' ? WebhookEventStatus::Processed : WebhookEventStatus::Ignored,
+            'attempts' => 1,
+            'processed_at' => now(),
+        ])->save();
+
+        return response()->json(['message' => 'Accepted.', 'status' => $outcome], 202);
+    }
+}

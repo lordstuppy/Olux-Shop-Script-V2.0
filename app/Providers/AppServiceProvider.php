@@ -38,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             config('services.shkeeper.webhook_secret'),
             (int) config('services.shkeeper.webhook_tolerance'),
             (int) config('services.shkeeper.timeout'),
+            config('services.shkeeper.payout_username'),
+            config('services.shkeeper.payout_password'),
         ));
     }
 

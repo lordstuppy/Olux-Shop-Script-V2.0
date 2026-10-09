@@ -8,9 +8,14 @@
  *   GET  /api/v1/crypto
  *   POST /api/v1/{crypto}/payment_request      (X-Shkeeper-Api-Key required)
  *   GET  /api/v1/invoices/{external_id}         (X-Shkeeper-Api-Key required)
+ *   POST /api/v1/{crypto}/quote                 (X-Shkeeper-Api-Key required)
+ *   POST /api/v1/{crypto}/payout                (HTTP Basic auth, MOCK_PAYOUT_USER / MOCK_PAYOUT_PASSWORD)
+ *   GET  /api/v1/{crypto}/payout/status?external_id=...  (X-Shkeeper-Api-Key required)
  * Test controls (not part of Shkeeper):
  *   POST /__mock/pay/{external_id}   body: {"amount": "25.00", "status": "PAID"}
  *        Records a payment and sends a signed callback to the invoice callback_url.
+ *   POST /__mock/payout-result/{external_id}   body: {"status": "SUCCESS"|"FAIL"}
+ *        Completes a payout and sends a signed payout callback.
  *   POST /__mock/reset
  *
  * Environment: MOCK_API_KEY (default dev-api-key), MOCK_STATE_FILE.
@@ -18,6 +23,8 @@
  */
 
 $apiKey = getenv('MOCK_API_KEY') ?: 'dev-api-key';
+$payoutUser = getenv('MOCK_PAYOUT_USER') ?: 'payout-user';
+$payoutPassword = getenv('MOCK_PAYOUT_PASSWORD') ?: 'payout-password';
 $stateFile = getenv('MOCK_STATE_FILE') ?: sys_get_temp_dir().'/shkeeper-mock-state.json';
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -81,7 +88,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payment_request
         }
     }
     $state = load($stateFile);
-    $id = $state[$req['external_id']]['id'] ?? (count($state) + 1);
+    $id = $state[$req['external_id']]['id'] ?? (count($state) - (isset($state['payouts']) ? 1 : 0) + 1);
     $cryptoAmount = number_format((float) $req['amount'] / (float) $rates[$crypto], 8, '.', '');
     $state[$req['external_id']] = [
         'id' => $id,
@@ -167,6 +174,104 @@ if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $
     $response = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     respond(200, ['status' => 'success', 'callback_http_status' => $code, 'callback_response' => json_decode((string) $response, true)]);
+
+    return;
+}
+
+if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/quote$#', $path, $m)) {
+    if (! authorised($apiKey)) {
+        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+
+        return;
+    }
+    $req = json_decode($body, true) ?: [];
+    $rate = $rates[$m[1]] ?? null;
+    if ($rate === null || empty($req['amount'])) {
+        respond(200, ['status' => 'error', 'message' => 'bad quote request']);
+
+        return;
+    }
+    respond(200, ['status' => 'success', 'crypto_amount' => number_format((float) $req['amount'] / (float) $rate, 8, '.', ''), 'exchange_rate' => $rate]);
+
+    return;
+}
+
+if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout$#', $path, $m)) {
+    $auth = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+    if (! hash_equals('Basic '.base64_encode($payoutUser.':'.$payoutPassword), $auth)) {
+        respond(401, ['status' => 'error', 'msg' => 'Basic auth failed']);
+
+        return;
+    }
+    $req = json_decode($body, true) ?: [];
+    foreach (['amount', 'destination', 'fee'] as $field) {
+        if (! isset($req[$field]) || $req[$field] === '') {
+            respond(400, ['status' => 'error', 'msg' => "missing {$field}"]);
+
+            return;
+        }
+    }
+    $state = load($stateFile);
+    $externalId = (string) ($req['external_id'] ?? bin2hex(random_bytes(6)));
+    $taskId = bin2hex(random_bytes(8));
+    $state['payouts'][$externalId] = [
+        'task_id' => $taskId, 'external_id' => $externalId, 'crypto' => $m[1], 'amount' => (string) $req['amount'],
+        'destination' => $req['destination'], 'status' => 'IN_PROGRESS', 'txid' => null, 'callback_url' => $req['callback_url'] ?? null,
+    ];
+    save($stateFile, $state);
+    respond(200, ['task_id' => $taskId, 'external_id' => $externalId]);
+
+    return;
+}
+
+if ($method === 'GET' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout/status$#', $path, $m)) {
+    if (! authorised($apiKey)) {
+        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+
+        return;
+    }
+    $payout = load($stateFile)['payouts'][(string) ($_GET['external_id'] ?? '')] ?? null;
+    if ($payout === null) {
+        respond(404, ['status' => 'error', 'message' => 'payout not found']);
+
+        return;
+    }
+    respond(200, ['id' => 1, 'external_id' => $payout['external_id'], 'crypto' => $payout['crypto'], 'status' => $payout['status'],
+        'amount' => $payout['amount'], 'destination' => $payout['destination'], 'txid' => $payout['txid']]);
+
+    return;
+}
+
+if ($method === 'POST' && preg_match('#^/__mock/payout-result/([A-Za-z0-9_-]+)$#', $path, $m)) {
+    $state = load($stateFile);
+    $payout = $state['payouts'][$m[1]] ?? null;
+    if ($payout === null) {
+        respond(404, ['status' => 'error', 'message' => 'unknown payout']);
+
+        return;
+    }
+    $req = json_decode($body, true) ?: [];
+    $payout['status'] = ($req['status'] ?? 'SUCCESS') === 'FAIL' ? 'FAIL' : 'SUCCESS';
+    $payout['txid'] = $payout['status'] === 'SUCCESS' ? bin2hex(random_bytes(32)) : null;
+    $state['payouts'][$m[1]] = $payout;
+    save($stateFile, $state);
+
+    $code = null;
+    if ($payout['callback_url']) {
+        $payload = json_encode([
+            'payout_id' => 1, 'external_id' => $payout['external_id'], 'tx_hash' => $payout['txid'], 'status' => $payout['status'],
+            'amount' => $payout['amount'], 'crypto' => $payout['crypto'], 'timestamp' => time(),
+        ], JSON_UNESCAPED_SLASHES);
+        $ts = (string) time();
+        $ch = curl_init($payout['callback_url']);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true, CURLOPT_POSTFIELDS => $payload, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'X-Shkeeper-Timestamp: '.$ts, 'X-Shkeeper-Signature: '.hash_hmac('sha256', $ts.'.'.$payload, $apiKey)],
+        ]);
+        curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    }
+    respond(200, ['status' => 'success', 'payout_status' => $payout['status'], 'callback_http_status' => $code]);
 
     return;
 }

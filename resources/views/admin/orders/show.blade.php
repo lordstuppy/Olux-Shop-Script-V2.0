@@ -66,8 +66,15 @@
         <form method="post" action="{{ route('admin.orders.refund', $order) }}" class="stack" data-once>
             @csrf
             <x-field name="amount" label="Amount ({{ $order->currency }})" :value="\App\Support\Money::toDecimal($order->refundableMinor(), $order->currency)" inputmode="decimal" required />
-            <x-select name="method" label="Method" :options="['balance' => 'Credit buyer balance', 'manual' => 'Paid back outside the shop']" />
+            <x-select name="method" label="Method" :options="array_merge(['balance' => 'Credit buyer balance', 'manual' => 'Paid back outside the shop'], $shkeeperEnabled ? ['shkeeper' => 'Send crypto via Shkeeper'] : [])" />
             <x-field name="reference" label="Outgoing transaction reference (manual only)" maxlength="128" />
+            @if ($shkeeperEnabled)
+                <fieldset>
+                    <legend>Crypto refund via Shkeeper</legend>
+                    <x-select name="crypto" label="Cryptocurrency" :options="collect($cryptos)->pluck('display_name', 'name')->all()" placeholder="Choose" />
+                    <x-field name="destination" label="Buyer's destination address" maxlength="255" autocomplete="off" />
+                </fieldset>
+            @endif
             <x-field name="reason" label="Reason" maxlength="500" />
             <button type="submit" class="btn-danger">Record refund</button>
         </form>

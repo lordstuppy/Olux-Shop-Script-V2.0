@@ -19,6 +19,11 @@ class Payout extends Model
         ];
     }
 
+    public function externalId(): string
+    {
+        return 'payout-'.$this->id;
+    }
+
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');

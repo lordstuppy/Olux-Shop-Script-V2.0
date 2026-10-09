@@ -33,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // Shkeeper callbacks are authenticated by their HMAC signature instead.
-        $middleware->preventRequestForgery(except: ['webhooks/shkeeper']);
+        $middleware->preventRequestForgery(except: ['webhooks/shkeeper', 'webhooks/shkeeper/payouts']);
 
         $middleware->alias([
             'role' => EnsureRole::class,

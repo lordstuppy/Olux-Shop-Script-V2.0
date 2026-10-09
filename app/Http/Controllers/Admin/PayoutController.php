@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use App\Services\PayoutService;
+use App\Services\ShkeeperPayoutService;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,8 @@ class PayoutController extends Controller
     public function index(): View
     {
         return view('admin.payouts', [
-            'payouts' => Payout::with('seller')->orderByRaw("CASE status WHEN 'requested' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")->latest('id')->paginate(30),
+            'payouts' => Payout::with('seller.sellerProfile')->orderByRaw("CASE status WHEN 'requested' THEN 0 WHEN 'approved' THEN 1 WHEN 'failed' THEN 2 WHEN 'processing' THEN 3 ELSE 4 END")->latest('id')->paginate(30),
+            'shkeeperEnabled' => ShkeeperPayoutService::enabled(),
         ]);
     }
 
@@ -32,6 +34,13 @@ class PayoutController extends Controller
         $payouts->markPaid($payout, $request->user(), $data['reference']);
 
         return back()->with('success', "Payout #{$payout->id} of ".Money::format($payout->amount_minor, $payout->currency).' marked paid.');
+    }
+
+    public function send(Request $request, Payout $payout, ShkeeperPayoutService $shkeeper): RedirectResponse
+    {
+        $shkeeper->sendPayout($payout->load('seller.sellerProfile'), $request->user());
+
+        return back()->with('success', "Payout #{$payout->id} sent to Shkeeper as {$payout->fresh()->crypto_amount} {$payout->fresh()->crypto}. It is marked paid when Shkeeper confirms the transfer.");
     }
 
     public function reject(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse

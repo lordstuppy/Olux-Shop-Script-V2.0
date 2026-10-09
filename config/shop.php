@@ -103,6 +103,12 @@ return [
     // Days before a subscription ends that the renewal reminder is sent.
     'renewal_reminder_days' => (int) env('SHOP_RENEWAL_REMINDER_DAYS', 7),
 
+    // A crypto quote older than this must be refreshed before the buyer sends funds.
+    'quote_ttl_minutes' => (int) env('SHOP_QUOTE_TTL_MINUTES', 15),
+
+    // Payouts are blocked for this long after a seller changes the payout address.
+    'payout_address_cooldown_hours' => (int) env('SHOP_PAYOUT_ADDRESS_COOLDOWN_HOURS', 48),
+
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),

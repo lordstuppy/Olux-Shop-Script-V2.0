@@ -72,6 +72,7 @@ class OrderController extends Controller
             'qr' => $qr,
             'cryptos' => $payments->availableCryptos(),
             'user' => auth()->user(),
+            'stale' => $payment !== null && $payments->quoteIsStale($payment),
         ]);
     }
 

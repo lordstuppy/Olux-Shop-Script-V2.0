@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Enums\PayoutStatus;
 use App\Exceptions\UserFacingException;
+use App\Mail\PayoutStatusMail;
 use App\Models\OrderItem;
 use App\Models\Payout;
 use App\Models\SellerLedgerEntry;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Seller earnings ledger, payout requests and reconciliation.
@@ -91,6 +93,9 @@ class PayoutService
         if ($profile === null || ! $seller->isSeller()) {
             throw new UserFacingException('Only approved sellers can request payouts.');
         }
+        if ($until = $profile->payoutsBlockedUntil()) {
+            throw new UserFacingException('Your payout address changed recently. For your security, payouts are possible again after '.$until->format('Y-m-d H:i').' UTC.');
+        }
         $minimum = (int) config('shop.min_payout_minor');
         if ($amountMinor < $minimum) {
             throw new UserFacingException('The minimum payout is '.Money::format($minimum, $currency).'.');
@@ -130,13 +135,13 @@ class PayoutService
 
     public function markPaid(Payout $payout, User $admin, string $reference): void
     {
-        $this->transition($payout, PayoutStatus::Paid, $admin, [PayoutStatus::Requested, PayoutStatus::Approved], $reference);
+        $this->transition($payout, PayoutStatus::Paid, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Processing, PayoutStatus::Failed], $reference);
     }
 
     public function reject(Payout $payout, User $admin, string $note): void
     {
         DB::transaction(function () use ($payout, $admin, $note) {
-            $this->transition($payout, PayoutStatus::Rejected, $admin, [PayoutStatus::Requested, PayoutStatus::Approved], null, $note);
+            $this->transition($payout, PayoutStatus::Rejected, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Failed], null, $note);
             $this->entry($payout->seller_id, 'payout_reversal', $payout->amount_minor, $payout->currency, null, $payout->id);
         });
     }
@@ -203,6 +208,27 @@ class PayoutService
         return $out;
     }
 
+    /** Used by ShkeeperPayoutService; $admin is null for callbacks and status polls. */
+    public function transitionAutomated(Payout $payout, PayoutStatus $to, array $from, ?User $actor, array $fields = []): bool
+    {
+        return DB::transaction(function () use ($payout, $to, $from, $actor, $fields) {
+            $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($locked->status, $from, true)) {
+                return false;
+            }
+            $locked->forceFill($fields + ['status' => $to]);
+            if ($actor !== null) {
+                $locked->processed_by = $actor->id;
+            }
+            $locked->processed_at = now();
+            $locked->save();
+            $payout->setRawAttributes($locked->getAttributes(), true);
+            $this->audit->log('payout.'.$to->value, $locked, array_filter($fields, fn ($v) => $v !== null && $v !== ''), $actor);
+
+            return true;
+        });
+    }
+
     private function transition(Payout $payout, PayoutStatus $to, User $admin, array $from, ?string $reference = null, ?string $note = null): void
     {
         DB::transaction(function () use ($payout, $to, $admin, $from, $reference, $note) {
@@ -222,6 +248,9 @@ class PayoutService
             $locked->save();
             $payout->setRawAttributes($locked->getAttributes(), true);
             $this->audit->log('payout.'.$to->value, $locked, array_filter(['reference' => $reference, 'note' => $note]), $admin);
+            if (in_array($to, [PayoutStatus::Paid, PayoutStatus::Rejected], true)) {
+                Mail::to($locked->seller)->queue((new PayoutStatusMail($locked))->afterCommit());
+            }
         });
     }
 

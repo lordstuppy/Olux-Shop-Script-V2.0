@@ -98,6 +98,8 @@ class PaymentService
                 'crypto' => $invoice->crypto,
                 'crypto_amount' => $invoice->cryptoAmount,
                 'wallet_address' => $invoice->wallet,
+                'quoted_at' => now(),
+                'quote_recalculate_after' => $invoice->recalculateAfter,
             ]);
             $payment->save();
 
@@ -222,6 +224,9 @@ class PaymentService
 
             if ($order->status === OrderStatus::Pending) {
                 $paidNow = $this->orders->markPaid($order);
+                if ($received > $order->total_minor) {
+                    $this->creditOverpayment($order, $payment, $received - $order->total_minor);
+                }
 
                 return ['status' => 'processed', 'message' => "order {$order->public_id} paid"];
             }
@@ -301,6 +306,30 @@ class PaymentService
         $this->audit->log('payment.late_credited', $payment, ['order' => $order->public_id, 'amount' => Money::format($received, $order->currency)]);
 
         return ['status' => 'processed', 'message' => 'late payment credited to balance'];
+    }
+
+    /**
+     * The buyer sent more than the order total. The difference goes to the
+     * buyer's balance when the currency rules allow it, otherwise staff
+     * resolve it manually (recorded on the payment and in the audit log).
+     */
+    private function creditOverpayment(Order $order, Payment $payment, int $overpaid): void
+    {
+        try {
+            $this->balances->credit($order->buyer, $overpaid, $order->currency, 'overpayment_credit', $payment,
+                "Overpayment on order {$order->shortId()}");
+            $this->audit->log('payment.overpayment_credited', $payment, ['order' => $order->public_id, 'amount' => Money::format($overpaid, $order->currency)]);
+            Log::info('Overpayment of {amount} on order {public_id} credited to buyer balance', ['amount' => Money::format($overpaid, $order->currency), 'public_id' => $order->public_id]);
+        } catch (UserFacingException $e) {
+            $payment->failure_reason = 'Overpayment of '.Money::format($overpaid, $order->currency).' needs manual handling: '.$e->getMessage();
+            $payment->save();
+            $this->audit->log('payment.overpayment_unresolved', $payment, ['order' => $order->public_id, 'amount' => Money::format($overpaid, $order->currency)]);
+        }
+    }
+
+    public function quoteIsStale(Payment $payment): bool
+    {
+        return $payment->quoted_at === null || $payment->quoted_at->lt(now()->subMinutes((int) config('shop.quote_ttl_minutes')));
     }
 
     private function reject(Order $order, Payment $payment, string $reason): array

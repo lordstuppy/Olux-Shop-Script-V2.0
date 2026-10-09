@@ -26,6 +26,8 @@ class ShkeeperClient
         private readonly ?string $webhookSecret,
         private readonly int $webhookTolerance = 300,
         private readonly int $timeout = 10,
+        private readonly ?string $payoutUsername = null,
+        private readonly ?string $payoutPassword = null,
     ) {}
 
     /**
@@ -110,6 +112,87 @@ class ShkeeperClient
     }
 
     /**
+     * Converts a fiat amount to crypto at Shkeeper's current rate
+     * (POST /api/v1/{crypto}/quote). Returns the crypto amount as a string.
+     */
+    public function quote(string $crypto, int $amountMinor, string $currency): string
+    {
+        $this->assertCrypto($crypto);
+        $response = $this->send('POST', '/api/v1/'.rawurlencode($crypto).'/quote', [
+            'fiat' => $currency,
+            'amount' => Money::toDecimal($amountMinor, $currency),
+        ]);
+        $amount = (string) $response->json('crypto_amount');
+        if (! preg_match('/^\d+(\.\d+)?$/', $amount)) {
+            throw new ShkeeperException('Shkeeper quote response has no valid crypto_amount.');
+        }
+
+        return $amount;
+    }
+
+    /**
+     * Starts a payout (POST /api/v1/{crypto}/payout, HTTP Basic auth).
+     * Asynchronous: returns the task id; the result arrives by callback or
+     * via payoutStatus().
+     */
+    public function createPayout(string $crypto, string $cryptoAmount, string $destination, string $fee, string $externalId, string $callbackUrl): string
+    {
+        $this->assertCrypto($crypto);
+        if ($this->payoutUsername === null || $this->payoutUsername === '' || $this->payoutPassword === null) {
+            throw new ShkeeperException('SHKEEPER_PAYOUT_USERNAME / SHKEEPER_PAYOUT_PASSWORD are not configured.');
+        }
+
+        Log::info('ShkeeperClient: createPayout {external_id} of {amount} {crypto}', ['external_id' => $externalId, 'amount' => $cryptoAmount, 'crypto' => $crypto]);
+
+        try {
+            $response = $this->http->acceptJson()->timeout($this->timeout)->connectTimeout(5)
+                ->withBasicAuth($this->payoutUsername, $this->payoutPassword)
+                ->post($this->baseUrl.'/api/v1/'.rawurlencode($crypto).'/payout', [
+                    'amount' => $cryptoAmount,
+                    'destination' => $destination,
+                    'fee' => $fee,
+                    'external_id' => $externalId,
+                    'callback_url' => $callbackUrl,
+                ]);
+        } catch (ConnectionException $e) {
+            throw new ShkeeperException("Shkeeper is unreachable: {$e->getMessage()}", 0, $e);
+        }
+        if (! $response->successful() || $response->json('status') === 'error') {
+            throw new ShkeeperException('Shkeeper payout request failed: HTTP '.$response->status().' '.mb_substr((string) ($response->json('msg') ?? $response->json('message')), 0, 200));
+        }
+        $taskId = (string) $response->json('task_id');
+        if ($taskId === '') {
+            throw new ShkeeperException('Shkeeper payout response has no task_id.');
+        }
+
+        return $taskId;
+    }
+
+    /**
+     * GET /api/v1/{crypto}/payout/status?external_id=... (API key).
+     *
+     * @return array{status: string, txid: ?string}|null null when Shkeeper does not know the payout
+     */
+    public function payoutStatus(string $crypto, string $externalId): ?array
+    {
+        $this->assertCrypto($crypto);
+        $response = $this->send('GET', '/api/v1/'.rawurlencode($crypto).'/payout/status?external_id='.rawurlencode($externalId));
+        // Shkeeper answers with the payout record: id, external_id, crypto, status (SUCCESS, IN_PROGRESS, FAIL), amount, destination, txid.
+        if ($response->json('external_id') === null) {
+            return null;
+        }
+
+        return ['status' => strtoupper((string) $response->json('status')), 'txid' => $response->json('txid') ? (string) $response->json('txid') : null];
+    }
+
+    private function assertCrypto(string $crypto): void
+    {
+        if (! self::isValidCryptoName($crypto)) {
+            throw new ShkeeperException("Invalid crypto name \"{$crypto}\".");
+        }
+    }
+
+    /**
      * Verifies X-Shkeeper-Signature: lowercase hex HMAC-SHA256 over
      * "{timestamp}.{raw body}", keyed with the webhook secret, compared in
      * constant time. Requests outside the timestamp tolerance are rejected
@@ -168,7 +251,7 @@ class ShkeeperClient
             throw new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.");
         }
         if ($response->json('status') === 'error') {
-            throw new ShkeeperException('Shkeeper error: '.mb_substr((string) $response->json('message'), 0, 200));
+            throw new ShkeeperException('Shkeeper error: '.mb_substr((string) ($response->json('message') ?? $response->json('msg')), 0, 200));
         }
 
         return $response;

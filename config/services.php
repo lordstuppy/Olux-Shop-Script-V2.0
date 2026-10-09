@@ -51,6 +51,21 @@ return [
         // route on the current host; set it when Shkeeper reaches the shop
         // through a different hostname (for example inside Docker).
         'callback_url' => env('SHKEEPER_CALLBACK_URL'),
+        // Automatic payouts and crypto refunds through Shkeeper's payout API.
+        // The payout endpoints use HTTP Basic auth with a Shkeeper login.
+        'payouts_enabled' => (bool) env('SHKEEPER_PAYOUTS_ENABLED', false),
+        'payout_username' => env('SHKEEPER_PAYOUT_USERNAME'),
+        'payout_password' => env('SHKEEPER_PAYOUT_PASSWORD'),
+        // Network fee per crypto as Shkeeper expects it (BTC sat/vByte, LTC/DOGE sat/Byte, XMR 1-4), e.g. "BTC:10,LTC:10".
+        'payout_fees' => collect(explode(',', (string) env('SHKEEPER_PAYOUT_FEES', '')))
+            ->filter(fn ($pair) => str_contains($pair, ':'))
+            ->mapWithKeys(function ($pair) {
+                [$crypto, $fee] = array_map('trim', explode(':', $pair, 2));
+
+                return [$crypto => $fee];
+            })->all(),
+        'payout_callback_url' => env('SHKEEPER_PAYOUT_CALLBACK_URL'),
+
         // Cryptocurrencies offered at checkout when the live list is unavailable.
         'fallback_cryptos' => array_filter(explode(',', (string) env('SHKEEPER_CRYPTOS', 'BTC,LTC,ETH,USDT'))),
     ],

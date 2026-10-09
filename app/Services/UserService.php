@@ -167,6 +167,7 @@ class UserService
             'display_name' => $data['display_name'],
             'payout_currency' => $data['payout_currency'],
             'payout_address' => $data['payout_address'],
+            'payout_crypto' => $data['payout_crypto'] ?? null,
             'about' => $data['about'] ?? null,
             'status' => SellerProfileStatus::Pending,
             'reviewed_by' => null,

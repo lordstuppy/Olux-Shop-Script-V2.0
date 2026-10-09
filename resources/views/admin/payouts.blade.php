@@ -16,8 +16,12 @@
                         <td>{{ $payout->id }}</td>
                         <td><a href="{{ route('admin.users.show', $payout->seller) }}">{{ $payout->seller->email }}</a></td>
                         <td class="num">{{ money($payout->amount_minor, $payout->currency) }}</td>
-                        <td class="mono">{{ $payout->destination }}</td>
-                        <td><x-status :value="$payout->status" /> <span class="mono">{{ $payout->reference }}</span> {{ $payout->note }}</td>
+                        <td class="mono">{{ $payout->destination }}<br>{{ $payout->seller->sellerProfile?->payout_crypto }}</td>
+                        <td>
+                            <x-status :value="$payout->status" /> <span class="mono">{{ $payout->reference }}</span> {{ $payout->note }}
+                            @if ($payout->crypto_amount)<br>{{ $payout->crypto_amount }} {{ $payout->crypto }} via Shkeeper @endif
+                            @if ($payout->failure_reason)<br><span class="error-text">{{ $payout->failure_reason }}</span>@endif
+                        </td>
                         <td>
                             @if ($payout->status === \App\Enums\PayoutStatus::Requested)
                                 <form method="post" action="{{ route('admin.payouts.approve', $payout) }}" class="inline">
@@ -25,7 +29,13 @@
                                     <button type="submit" class="btn-secondary">Approve #{{ $payout->id }}</button>
                                 </form>
                             @endif
-                            @if (in_array($payout->status, [\App\Enums\PayoutStatus::Requested, \App\Enums\PayoutStatus::Approved], true))
+                            @if ($shkeeperEnabled && in_array($payout->status, [\App\Enums\PayoutStatus::Approved, \App\Enums\PayoutStatus::Failed], true))
+                                <form method="post" action="{{ route('admin.payouts.send', $payout) }}" class="mt" data-once>
+                                    @csrf
+                                    <button type="submit">Send #{{ $payout->id }} via Shkeeper</button>
+                                </form>
+                            @endif
+                            @if (in_array($payout->status, [\App\Enums\PayoutStatus::Requested, \App\Enums\PayoutStatus::Approved, \App\Enums\PayoutStatus::Failed], true))
                                 <form method="post" action="{{ route('admin.payouts.paid', $payout) }}" class="actions mt">
                                     @csrf
                                     <x-field name="reference" :id="'ref-'.$payout->id" label="Transaction reference" maxlength="255" required />

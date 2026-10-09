@@ -8,6 +8,7 @@ use App\Models\WebhookEvent;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
+use App\Services\ShkeeperPayoutService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
@@ -60,8 +61,14 @@ Artisan::command('shop:subscription-reminders', function () {
     $this->info("Queued {$sent} renewal reminders.");
 })->purpose('Email buyers whose subscription access ends soon');
 
+Artisan::command('shop:reconcile-shkeeper-transfers', function (ShkeeperPayoutService $transfers) {
+    $count = $transfers->reconcile();
+    $this->info("Updated {$count} payouts or refunds from Shkeeper status polling.");
+})->purpose('Poll Shkeeper for payouts and crypto refunds whose callback has not arrived');
+
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('shop:reconcile-shkeeper-transfers')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('shop:retry-webhooks')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payouts')->dailyAt('03:15');
 Schedule::command('queue:prune-failed --hours=720')->daily();
