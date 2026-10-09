@@ -694,8 +694,14 @@ def commission_and_gateway():
     cat = sql("select id from categories where slug='software'")
     a.form('/admin/commission', f'/admin/commission/categories/{cat}', {'commission_percent': '15'})
     a.expect_flash('15.00%')
+    # The seller was approved with their own 10% rate, which outranks the category.
     a.get(f"/admin/products/{STATE['products']['manual']}")
-    check('commission 15.00% (category rate)' in text_of(a.last[2]), 'effective commission not shown: ' + text_of(a.last[2])[:300])
+    check('commission 10.00% (seller rate)' in text_of(a.last[2]), 'seller rate should win: ' + re.search(r'commission [^)]*\)', text_of(a.last[2])).group(0))
+    profile = sql("select id from seller_profiles where user_id=(select id from users where email='seller@live.test')")
+    a.form('/admin/commission', f'/admin/commission/sellers/{profile}', {'commission_percent': ''})
+    a.expect_flash('the next level applies')
+    a.get(f"/admin/products/{STATE['products']['manual']}")
+    check('commission 15.00% (category rate)' in text_of(a.last[2]), 'category rate not applied: ' + re.search(r'commission [^)]*\)', text_of(a.last[2])).group(0))
     order = checkout(b, STATE['slugs']['manual'], 'balance')
     if sql(f"select status from orders where public_id='{order}'") == 'pending':
         b.form(f'/orders/{order}/pay', '/pay-balance')
