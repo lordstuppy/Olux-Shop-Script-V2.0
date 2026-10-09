@@ -109,6 +109,14 @@ return [
     // Payouts are blocked for this long after a seller changes the payout address.
     'payout_address_cooldown_hours' => (int) env('SHOP_PAYOUT_ADDRESS_COOLDOWN_HOURS', 48),
 
+    /*
+    | Disputes: buyers can open one within this many days of delivery (or of
+    | payment when nothing was delivered); sellers must answer within
+    | dispute_response_days before the case escalates to staff.
+    */
+    'dispute_window_days' => (int) env('SHOP_DISPUTE_WINDOW_DAYS', 14),
+    'dispute_response_days' => (int) env('SHOP_DISPUTE_RESPONSE_DAYS', 3),
+
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),

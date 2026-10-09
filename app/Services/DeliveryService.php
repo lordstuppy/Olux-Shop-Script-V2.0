@@ -142,6 +142,76 @@ class DeliveryService
         $item->setRawAttributes($locked->getAttributes(), true);
     }
 
+    /**
+     * Replacement after a dispute: fresh licence keys from stock (the old ones
+     * stay assigned and are recorded as replaced), the current product files
+     * with the download counter reset, and/or new delivery text. Also
+     * completes a line that was never delivered. Returns a summary.
+     */
+    public function replace(OrderItem $item, ?string $text, User $actor): string
+    {
+        $text = $text !== null && trim($text) !== '' ? trim($text) : null;
+        $done = DB::transaction(function () use ($item, $text, $actor) {
+            $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
+            $order = $locked->order;
+            if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {
+                throw new UserFacingException(__('Order :order is :status; it cannot be delivered.', ['order' => $order->shortId(), 'status' => mb_strtolower($order->status->label())]));
+            }
+            $product = $locked->product()->with('activeFiles')->first();
+            $payload = $locked->delivered_payload ?? ['type' => $product->delivery_type->value];
+            $done = [];
+
+            if ($product->delivery_type === DeliveryType::Instant) {
+                if ($product->licenseKeys()->exists()) {
+                    $keys = ProductLicenseKey::query()->where('product_id', $product->id)->whereNull('order_item_id')
+                        ->orderBy('id')->limit($locked->quantity)->lock('FOR UPDATE SKIP LOCKED')->get();
+                    if ($keys->count() < $locked->quantity) {
+                        throw new UserFacingException(__('Only :count unused licence keys are left for ":title". Ask the seller to add keys, then send the replacement.', ['count' => $keys->count(), 'title' => $product->title]));
+                    }
+                    $payload['replaced_license_keys'] = array_merge($payload['replaced_license_keys'] ?? [], $payload['license_keys'] ?? []);
+                    $payload['license_keys'] = [];
+                    foreach ($keys as $key) {
+                        $key->forceFill(['order_item_id' => $locked->id, 'assigned_at' => now()])->save();
+                        $payload['license_keys'][] = $key->key_encrypted;
+                    }
+                    $done[] = trans_choice('{1} :count new licence key|[0,*] :count new licence keys', $keys->count());
+                }
+                $payload['files'] = $product->activeFiles->map(fn ($f) => ['id' => $f->id, 'name' => $f->original_name, 'size' => $f->size])->all();
+                if ($payload['files'] !== []) {
+                    $locked->download_count = 0;
+                    $done[] = __('fresh download links');
+                }
+                if ($text !== null) {
+                    $payload['note'] = $text;
+                    $done[] = __('a note');
+                }
+            } else {
+                if ($text === null) {
+                    throw new UserFacingException(__('Enter the replacement delivery details for ":title".', ['title' => $locked->title]));
+                }
+                $payload = ['type' => 'manual', 'text' => $text];
+                $done[] = __('new delivery details');
+            }
+            if ($done === []) {
+                throw new UserFacingException(__('":title" has no files or licence keys to replace. Add a note with the replacement details.', ['title' => $locked->title]));
+            }
+
+            $locked->delivered_payload = $payload;
+            $locked->access_expires_at ??= $this->accessExpiry($locked);
+            $locked->delivered_at ??= now();
+            $locked->save();
+            $this->audit->log('delivery.replaced', $locked, ['order' => $order->public_id, 'what' => $done], $actor);
+            $item->setRawAttributes($locked->getAttributes(), true);
+
+            return $done;
+        });
+
+        $this->completeIfFullyDelivered($item->order()->first());
+        Mail::to($item->order->buyer)->queue((new OrderDeliveredMail($item->order))->afterCommit());
+
+        return __('Replacement delivered: :what.', ['what' => implode(', ', $done)]);
+    }
+
     /** Subscriptions grant access for access_days per unit bought, from delivery. */
     private function accessExpiry(OrderItem $item): ?Carbon
     {

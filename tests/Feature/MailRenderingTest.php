@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PaymentProvider;
 use App\Enums\PayoutStatus;
 use App\Mail;
+use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Payout;
@@ -55,11 +56,21 @@ class MailRenderingTest extends TestCase
             new Mail\SellerApplicationMail($profile),
             new Mail\SellerSaleMail($order, $seller),
         ];
+        $dispute = Dispute::create(['order_id' => $order->id, 'order_item_id' => $order->items->first()->id, 'buyer_id' => $buyer->id, 'seller_id' => $seller->id,
+            'reason' => 'not_working', 'requested_outcome' => 'refund', 'status' => 'resolved', 'resolution' => 'refund', 'refund_minor' => 500,
+            'resolution_note' => 'Refunded "in part".', 'seller_respond_by' => now()->addDays(3)]);
+        foreach (['buyer', 'seller', 'staff'] as $role) {
+            $mailables[] = new Mail\DisputeOpenedMail($dispute, $role);
+            $mailables[] = new Mail\DisputeMessageMail($dispute, $role, 'seller');
+            $mailables[] = new Mail\DisputeEscalatedMail($dispute, $role);
+            $mailables[] = new Mail\DisputeResolvedMail($dispute, $role);
+        }
 
         foreach ($mailables as $mailable) {
             $text = $mailable->render();
             $this->assertNotSame('', trim($text), get_class($mailable));
             $this->assertDoesNotMatchRegularExpression('/[^\x09\x0A\x0D\x20-\x7E]/', $text, get_class($mailable).' must be ASCII');
+            $this->assertStringNotContainsString('&quot;', $text, get_class($mailable).' is plain text and must not contain HTML entities');
         }
     }
 }

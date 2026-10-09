@@ -63,9 +63,17 @@
                                 @if (($payload['type'] ?? '') === 'manual')
                                     <div class="description">{{ $payload['text'] ?? '' }}</div>
                                 @endif
+                                @if (! empty($payload['note']))
+                                    <div class="description">{{ $payload['note'] }}</div>
+                                @endif
                                 @if ($order->status === \App\Enums\OrderStatus::Refunded)
                                     <span class="muted">{{ __('This order was refunded; downloads are no longer available.') }}</span>
                                 @endif
+                            @endif
+                            @if ($dispute = $disputes->get($item->id))
+                                <br><a href="{{ route('disputes.show', $dispute) }}">{{ __('Dispute #:id', ['id' => $dispute->id]) }}</a>: <x-status :value="$dispute->status" />
+                            @elseif (in_array($item->id, $disputable, true))
+                                <br><a href="{{ route('disputes.create', [$order, $item]) }}">{{ __('Report a problem with this item') }}</a>
                             @endif
                         </td>
                     </tr>

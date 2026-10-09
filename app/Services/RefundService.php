@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Exceptions\UserFacingException;
 use App\Mail\RefundIssuedMail;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
@@ -37,7 +38,11 @@ class RefundService
         private readonly AuditLogger $audit,
     ) {}
 
-    public function refund(Order $order, int $amountMinor, string $method, User $admin, ?string $reference = null, ?string $reason = null): Payment
+    /**
+     * With $item the refund comes out of that order line only (disputes);
+     * otherwise it is spread over all lines in proportion to their amounts.
+     */
+    public function refund(Order $order, int $amountMinor, string $method, User $admin, ?string $reference = null, ?string $reason = null, ?OrderItem $item = null): Payment
     {
         if (! in_array($method, ['balance', 'manual'], true)) {
             throw new UserFacingException(__('Choose a refund method: balance or manual.'));
@@ -46,8 +51,8 @@ class RefundService
             throw new UserFacingException(__('A manual refund needs the transaction reference of the outgoing payment.'));
         }
 
-        $payment = DB::transaction(function () use ($order, $amountMinor, $method, $admin, $reference, $reason) {
-            [$locked, $charge] = $this->lockRefundable($order, $amountMinor);
+        $payment = DB::transaction(function () use ($order, $amountMinor, $method, $admin, $reference, $reason, $item) {
+            [$locked, $charge] = $this->lockRefundable($order, $amountMinor, $item);
 
             $payment = Payment::create([
                 'order_id' => $locked->id,
@@ -59,7 +64,7 @@ class RefundService
                 'received_minor' => 0,
                 'currency' => $locked->currency,
                 'status' => PaymentStatus::Confirmed,
-                'raw_payload_json' => $reason ? ['reason' => $reason] : null,
+                'raw_payload_json' => $this->meta($reason, $item),
                 'created_by' => $admin->id,
                 'confirmed_at' => now(),
             ]);
@@ -81,10 +86,10 @@ class RefundService
      * Reserves a refund that will be sent through Shkeeper. Returns the
      * pending refund payment; ShkeeperPayoutService performs the transfer.
      */
-    public function reservePending(Order $order, int $amountMinor, string $crypto, string $destination, User $admin, ?string $reason = null): Payment
+    public function reservePending(Order $order, int $amountMinor, string $crypto, string $destination, User $admin, ?string $reason = null, ?OrderItem $item = null): Payment
     {
-        return DB::transaction(function () use ($order, $amountMinor, $crypto, $destination, $admin, $reason) {
-            [$locked, $charge] = $this->lockRefundable($order, $amountMinor);
+        return DB::transaction(function () use ($order, $amountMinor, $crypto, $destination, $admin, $reason, $item) {
+            [$locked, $charge] = $this->lockRefundable($order, $amountMinor, $item);
 
             $payment = Payment::create([
                 'order_id' => $locked->id,
@@ -97,7 +102,7 @@ class RefundService
                 'status' => PaymentStatus::Pending,
                 'crypto' => $crypto,
                 'wallet_address' => $destination,
-                'raw_payload_json' => $reason ? ['reason' => $reason] : null,
+                'raw_payload_json' => $this->meta($reason, $item),
                 'created_by' => $admin->id,
             ]);
             $this->audit->log('refund.requested', $payment, [
@@ -158,7 +163,7 @@ class RefundService
      *
      * @return array{0: Order, 1: Payment}
      */
-    private function lockRefundable(Order $order, int $amountMinor): array
+    private function lockRefundable(Order $order, int $amountMinor, ?OrderItem $item = null): array
     {
         if ($amountMinor <= 0) {
             throw new UserFacingException(__('The refund amount must be greater than zero.'));
@@ -179,6 +184,20 @@ class RefundService
             ).($inFlight > 0 ? ' '.__(':amount is already being refunded.', ['amount' => Money::format($inFlight, $locked->currency)]) : ''));
         }
 
+        if ($item !== null) {
+            $line = OrderItem::query()->whereKey($item->id)->where('order_id', $locked->id)->lockForUpdate()->firstOrFail();
+            $lineInFlight = (int) Payment::query()->where('order_id', $locked->id)->where('kind', PaymentKind::Refund->value)
+                ->where('status', PaymentStatus::Pending->value)->whereRaw("raw_payload_json->>'order_item_id' = ?", [(string) $line->id])->sum('amount_minor');
+            $lineRefundable = $line->netMinor() - $line->refunded_minor - $lineInFlight;
+            if ($amountMinor > $lineRefundable) {
+                throw new UserFacingException(__('Refund amount :amount exceeds the refundable :refundable for ":title".', [
+                    'amount' => Money::format($amountMinor, $locked->currency),
+                    'refundable' => Money::format(max(0, $lineRefundable), $locked->currency),
+                    'title' => $line->title,
+                ]));
+            }
+        }
+
         $charge = Payment::query()->where('order_id', $locked->id)->where('kind', PaymentKind::Charge->value)
             ->where('status', PaymentStatus::Confirmed->value)->orderBy('id')->first();
         if ($charge === null) {
@@ -192,7 +211,9 @@ class RefundService
     private function applyToOrder(Order $locked, Payment $payment, User $actor, string $method, ?string $reason): void
     {
         $amountMinor = $payment->amount_minor;
-        $items = $locked->items()->orderBy('id')->lockForUpdate()->get();
+        $targetItem = $payment->raw_payload_json['order_item_id'] ?? null;
+        $items = $locked->items()->orderBy('id')->lockForUpdate()->get()
+            ->when($targetItem !== null, fn ($items) => $items->where('id', (int) $targetItem)->values());
         $weights = $items->mapWithKeys(fn ($i) => [$i->id => $i->netMinor() - $i->refunded_minor])->all();
         $shares = Money::allocate($amountMinor, $weights);
         foreach ($items as $item) {
@@ -221,6 +242,14 @@ class RefundService
             'public_id' => $locked->public_id,
             'method' => $method,
         ]);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function meta(?string $reason, ?OrderItem $item): ?array
+    {
+        $meta = array_filter(['reason' => $reason, 'order_item_id' => $item?->id], fn ($v) => $v !== null);
+
+        return $meta === [] ? null : $meta;
     }
 
     private function notifyBuyer(Order $order, Payment $payment): void

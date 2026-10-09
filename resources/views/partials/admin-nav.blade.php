@@ -14,6 +14,7 @@
         ['admin.coupons.index', __('Coupons'), 'coupons.manage'],
         ['admin.gift-cards.index', __('Gift cards'), 'giftcards.manage'],
         ['admin.rates.index', __('Exchange rates'), 'rates.manage'],
+        ['admin.disputes.index', __('Disputes'), 'disputes.manage'],
         ['admin.tickets.index', __('Tickets'), 'tickets.manage'],
         ['admin.reviews.index', __('Reviews'), 'reviews.moderate'],
         ['admin.reports', __('Reports'), 'reports.view'],

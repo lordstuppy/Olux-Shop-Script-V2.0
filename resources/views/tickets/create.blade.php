@@ -5,6 +5,7 @@
 
 @section('content')
     <h1>{{ __('Open a support ticket') }}</h1>
+    <p class="hint">{{ __('A key that does not work or an item that never arrived? Open a dispute from the order page instead: the seller must answer and our team decides on a refund or replacement.') }} <a href="{{ route('disputes.index') }}">{{ __('Disputes') }}</a></p>
     <form method="post" action="{{ route('tickets.store') }}" class="stack">
         @csrf
         @if ($order)

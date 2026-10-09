@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
+use App\Services\DisputeService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
@@ -73,6 +74,11 @@ Artisan::command('shop:reconcile-shkeeper-transfers', function (ShkeeperPayoutSe
     $this->info("Updated {$count} payouts or refunds from Shkeeper status polling.");
 })->purpose('Poll Shkeeper for payouts and crypto refunds whose callback has not arrived');
 
+Artisan::command('shop:escalate-disputes', function (DisputeService $disputes) {
+    $count = $disputes->escalateOverdue();
+    $this->info("Escalated {$count} disputes whose seller did not respond in time.");
+})->purpose('Hand disputes to staff when the seller missed the response deadline');
+
 Artisan::command('shop:create-admin {email} {--name=Administrator}', function (string $email) {
     $validator = Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255', 'unique:users,email']]);
     if ($validator->fails()) {
@@ -122,4 +128,5 @@ Schedule::command('shop:retry-webhooks')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payouts')->dailyAt('03:15');
 Schedule::command('queue:prune-failed --hours=720')->daily();
 Schedule::command('shop:subscription-reminders')->hourly()->withoutOverlapping();
+Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->hourly();

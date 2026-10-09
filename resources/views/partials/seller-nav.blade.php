@@ -5,6 +5,7 @@
         'seller.sales' => __('Sales'),
         'seller.payouts' => __('Payouts'),
         'seller.payout-settings' => __('Payout settings'),
+        'disputes.index' => __('Disputes'),
     ] as $routeName => $label)
         <li><a href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>{{ $label }}</a></li>
     @endforeach

@@ -25,6 +25,8 @@ final class Settings
         'quote_ttl_minutes' => ['integer', 'min:5', 'max:120'],
         'renewal_reminder_days' => ['integer', 'min:1', 'max:60'],
         'payout_address_cooldown_hours' => ['integer', 'min:0', 'max:720'],
+        'dispute_window_days' => ['integer', 'min:1', 'max:365'],
+        'dispute_response_days' => ['integer', 'min:1', 'max:30'],
         'support_email' => ['email', 'max:255'],
     ];
 
@@ -47,6 +49,8 @@ final class Settings
             'quote_ttl_minutes' => [__('Crypto quote validity (minutes)'), __('Older quotes must be refreshed before paying.')],
             'renewal_reminder_days' => [__('Subscription reminder (days before end)'), ''],
             'payout_address_cooldown_hours' => [__('Payout pause after address change (hours)'), ''],
+            'dispute_window_days' => [__('Dispute window (days)'), __('How long after delivery a buyer can open a dispute.')],
+            'dispute_response_days' => [__('Seller response time for disputes (days)'), __('After this the dispute goes to staff.')],
             'support_email' => [__('Support email address'), __('Shown in the footer and in emails.')],
         ];
     }

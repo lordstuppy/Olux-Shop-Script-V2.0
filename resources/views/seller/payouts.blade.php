@@ -13,7 +13,7 @@
     @else
         <ul class="stats">
             @foreach ($balances as $currency => $b)
-                <li><span>{{ __('Available (:currency)', ['currency' => $currency]) }}</span><strong>{{ money($b['available'], $currency) }}</strong><span class="muted">{{ __('Total :total, on hold :pending', ['total' => money($b['total'], $currency), 'pending' => money($b['pending'], $currency)]) }}</span></li>
+                <li><span>{{ __('Available (:currency)', ['currency' => $currency]) }}</span><strong>{{ money($b['available'], $currency) }}</strong><span class="muted">{{ __('Total :total, on hold :pending', ['total' => money($b['total'], $currency), 'pending' => money($b['pending'], $currency)]) }}@if (($b['disputed'] ?? 0) > 0) {{ __(', :amount held for open disputes', ['amount' => money($b['disputed'], $currency)]) }}@endif</span></li>
             @endforeach
         </ul>
 

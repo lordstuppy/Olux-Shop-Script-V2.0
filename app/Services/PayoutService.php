@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\DisputeStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PayoutStatus;
 use App\Exceptions\UserFacingException;
@@ -62,7 +63,7 @@ class PayoutService
     }
 
     /**
-     * @return array<string, array{total: int, pending: int, available: int}> keyed by currency
+     * @return array<string, array{total: int, pending: int, disputed: int, available: int}> keyed by currency
      */
     public function balances(User $seller): array
     {
@@ -74,13 +75,21 @@ class PayoutService
             ->whereIn('type', ['sale', 'commission'])->where('created_at', '>', $cutoff)
             ->groupBy('currency')->selectRaw('currency, SUM(amount_minor) AS total')->pluck('total', 'currency');
 
+        // Earnings of lines under an open dispute stay held until it is resolved.
+        $disputed = DB::table('disputes')->join('order_items', 'order_items.id', '=', 'disputes.order_item_id')
+            ->join('orders', 'orders.id', '=', 'disputes.order_id')
+            ->where('disputes.seller_id', $seller->id)->whereIn('disputes.status', DisputeStatus::openValues())
+            ->groupBy('orders.currency')->selectRaw('orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total')->pluck('total', 'currency');
+
         $result = [];
         foreach ($totals as $currency => $total) {
             $held = max(0, (int) ($pending[$currency] ?? 0));
+            $inDispute = max(0, (int) ($disputed[$currency] ?? 0));
             $result[$currency] = [
                 'total' => (int) $total,
                 'pending' => $held,
-                'available' => max(0, (int) $total - $held),
+                'disputed' => $inDispute,
+                'available' => max(0, (int) $total - $held - $inDispute),
             ];
         }
 

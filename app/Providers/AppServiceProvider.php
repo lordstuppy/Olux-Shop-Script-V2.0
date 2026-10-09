@@ -59,7 +59,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimits();
 
         foreach (Permissions::MAP as $ability => $roles) {
-            Gate::define($ability, fn (User $user) => in_array($user->role->value, $roles, true));
+            // Every staff ability also requires two-factor authentication, so pages
+            // outside /admin (shared ticket, order and dispute pages) are covered too.
+            Gate::define($ability, fn (User $user) => in_array($user->role->value, $roles, true) && $user->meetsStaffTwoFactorRule());
         }
 
         Paginator::defaultView('pagination');

@@ -10,6 +10,7 @@ use App\Exceptions\ShkeeperException;
 use App\Exceptions\UserFacingException;
 use App\Mail\PayoutStatusMail;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Payout;
 use App\Models\User;
@@ -71,14 +72,14 @@ class ShkeeperPayoutService
         ]);
     }
 
-    public function sendRefund(Order $order, int $amountMinor, string $crypto, string $destination, User $admin, ?string $reason): Payment
+    public function sendRefund(Order $order, int $amountMinor, string $crypto, string $destination, User $admin, ?string $reason, ?OrderItem $item = null): Payment
     {
         $this->assertEnabled();
         if (! ShkeeperClient::isValidCryptoName($crypto) || trim($destination) === '') {
             throw new UserFacingException(__('A crypto refund needs a cryptocurrency and the buyer\'s destination address.'));
         }
 
-        $payment = $this->refunds->reservePending($order, $amountMinor, $crypto, trim($destination), $admin, $reason);
+        $payment = $this->refunds->reservePending($order, $amountMinor, $crypto, trim($destination), $admin, $reason, $item);
         try {
             $cryptoAmount = $this->client->quote($crypto, $amountMinor, $order->currency);
             $taskId = $this->client->createPayout($crypto, $cryptoAmount, trim($destination), $this->fee($crypto), 'refund-'.$payment->id, $this->callbackUrl());

@@ -55,6 +55,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role->isStaff();
     }
 
+    /** Staff abilities only count once the required two-factor authentication is on. */
+    public function meetsStaffTwoFactorRule(): bool
+    {
+        return ! config('shop.require_staff_two_factor') || $this->hasTwoFactor();
+    }
+
     public function hasTwoFactor(): bool
     {
         return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;

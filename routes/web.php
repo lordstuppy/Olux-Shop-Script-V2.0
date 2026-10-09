@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ConfirmPasswordController;
+use App\Http\Controllers\DisputeController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\HealthController;
@@ -131,6 +132,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:password-check')->name('account.password');
 
+    Route::get('/orders/{order}/items/{item}/dispute', [DisputeController::class, 'create'])->name('disputes.create');
+    Route::post('/orders/{order}/items/{item}/dispute', [DisputeController::class, 'store'])->middleware(['verified', 'throttle:forms'])->name('disputes.store');
+    Route::get('/disputes', [DisputeController::class, 'index'])->name('disputes.index');
+    Route::get('/disputes/{dispute}', [DisputeController::class, 'show'])->name('disputes.show');
+    Route::post('/disputes/{dispute}/messages', [DisputeController::class, 'reply'])->middleware('throttle:forms')->name('disputes.reply');
+    Route::post('/disputes/{dispute}/withdraw', [DisputeController::class, 'withdraw'])->name('disputes.withdraw');
+
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/new', [TicketController::class, 'create'])->name('tickets.create');
     Route::post('/tickets', [TicketController::class, 'store'])->middleware('throttle:forms')->name('tickets.store');
@@ -224,6 +232,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/exchange-rates', [Admin\ExchangeRateController::class, 'index'])->can('rates.manage')->name('rates.index');
         Route::post('/exchange-rates', [Admin\ExchangeRateController::class, 'store'])->can('rates.manage')->middleware('password.recent')->name('rates.store');
 
+        Route::get('/disputes', [Admin\DisputeController::class, 'index'])->can('disputes.manage')->name('disputes.index');
+        Route::post('/disputes/{dispute}/resolve', [Admin\DisputeController::class, 'resolve'])->can('disputes.manage')->middleware('password.recent')->name('disputes.resolve');
         Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
         Route::get('/reviews', [Admin\ReviewController::class, 'index'])->can('reviews.moderate')->name('reviews.index');
         Route::post('/reviews/{review}/status', [Admin\ReviewController::class, 'status'])->can('reviews.moderate')->name('reviews.status');

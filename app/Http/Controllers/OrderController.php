@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
+use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\DeliveryService;
+use App\Services\DisputeService;
 use App\Services\InvoiceService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
@@ -32,10 +34,14 @@ class OrderController extends Controller
         return view('orders.index', ['orders' => $orders]);
     }
 
-    public function show(Order $order, DeliveryService $delivery): View
+    public function show(Order $order, DeliveryService $delivery, DisputeService $disputeService): View
     {
         Gate::authorize('view', $order);
         $order->load(['items.product.files', 'payments', 'invoice']);
+        $disputes = Dispute::query()->where('order_id', $order->id)->get()->keyBy('order_item_id');
+        $disputable = auth()->id() === $order->buyer_id
+            ? $order->items->filter(fn ($item) => ! $disputes->has($item->id) && $disputeService->canOpen($item))->pluck('id')->all()
+            : [];
 
         $downloads = [];
         if (auth()->id() === $order->buyer_id && in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {
@@ -52,7 +58,7 @@ class OrderController extends Controller
             }
         }
 
-        return view('orders.show', ['order' => $order, 'downloads' => $downloads]);
+        return view('orders.show', ['order' => $order, 'downloads' => $downloads, 'disputes' => $disputes, 'disputable' => $disputable]);
     }
 
     /** Server-rendered payment page: address, amount, QR code. No JavaScript needed. */
