@@ -1,6 +1,6 @@
 <div class="table-wrap">
     <table>
-        <thead><tr><th scope="col">Order</th><th scope="col">Buyer</th><th scope="col">Created</th><th scope="col" class="num">Total</th><th scope="col">Status</th></tr></thead>
+        <thead><tr><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Buyer') }}</th><th scope="col">{{ __('Created') }}</th><th scope="col" class="num">{{ __('Total') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>
         <tbody>
             @forelse ($orders as $order)
                 <tr>
@@ -11,7 +11,7 @@
                     <td><x-status :value="$order->status" /></td>
                 </tr>
             @empty
-                <tr><td colspan="5">No orders.</td></tr>
+                <tr><td colspan="5">{{ __('No orders.') }}</td></tr>
             @endforelse
         </tbody>
     </table>
