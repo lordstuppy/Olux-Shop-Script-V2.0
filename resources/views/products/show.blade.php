@@ -38,7 +38,7 @@
     <div class="two-col">
         <div>
             <h1>{{ $product->title }}</h1>
-            <p class="muted">{{ __('Sold by :seller', ['seller' => $product->seller->sellerProfile?->display_name ?? $product->seller->name]) }}
+            <p class="muted">{{ __('Sold by :seller', ['seller' => $product->seller->sellerProfile?->display_name ?? $product->seller->name]) }} &middot; <a href="{{ route('products.index', ['seller' => $product->seller_id]) }}">{{ __('More from this seller') }}</a>
                 @if ($rating['count'] > 0)
                     &middot; <a href="#reviews">{{ trans_choice('{1} Rated :rating out of 5 (:count review)|[2,*] Rated :rating out of 5 (:count reviews)', $rating['count'], ['rating' => number_format($rating['average'], 1)]) }}</a>
                 @endif

@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\Money;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,10 +17,12 @@ use Illuminate\Support\Facades\DB;
  */
 class CatalogService
 {
+    public function __construct(private readonly CurrencyConverter $converter) {}
+
     public const SORTS = ['newest', 'best', 'price_asc', 'price_desc', 'title'];
 
     /**
-     * @param  array{q?: ?string, category?: ?string, sort?: ?string, currency?: ?string}  $filters
+     * @param  array{q?: ?string, category?: ?string, sort?: ?string, currency?: ?string, seller?: ?int, price_min?: ?string, price_max?: ?string, price_currency?: ?string}  $filters
      */
     public function paginate(array $filters, ?int $perPage = null): LengthAwarePaginator
     {
@@ -37,6 +42,12 @@ class CatalogService
         if ($currency) {
             $query->where('currency', $currency);
         }
+
+        if (! empty($filters['seller'])) {
+            $query->where('seller_id', (int) $filters['seller']);
+        }
+
+        $this->applyPriceRange($query, $filters['price_min'] ?? null, $filters['price_max'] ?? null, $filters['price_currency'] ?? (string) config('shop.default_currency'));
 
         match ($filters['sort'] ?? 'newest') {
             'price_asc' => $query->orderBy('price_minor')->orderBy('id'),
@@ -81,6 +92,48 @@ class CatalogService
         return Product::query()->visible()->with(['category', 'images'])
             ->where('category_id', $product->category_id)->whereKeyNot($product->id)
             ->orderByDesc($this->unitsSold())->orderByDesc('id')->limit($limit)->get();
+    }
+
+    /**
+     * Price range in the shopper's currency. Each listing currency gets its
+     * own bounds, converted with the configured rate (rounded so that a
+     * listing shown at exactly the bound is included); listings in a
+     * currency without a rate cannot be compared and are left out.
+     */
+    private function applyPriceRange(Builder $query, ?string $min, ?string $max, string $in): void
+    {
+        $min = $min !== null && $min !== '' ? BigDecimal::of($min) : null;
+        $max = $max !== null && $max !== '' ? BigDecimal::of($max) : null;
+        if ($min === null && $max === null) {
+            return;
+        }
+
+        $query->where(function (Builder $outer) use ($min, $max, $in) {
+            foreach (Money::supported() as $listing) {
+                $rate = $listing === $in ? '1' : $this->converter->rate($listing, $in);
+                if ($rate === null || BigDecimal::of($rate)->isZero()) {
+                    continue;
+                }
+                $scale = Money::exponent($listing);
+                $outer->orWhere(function (Builder $q) use ($listing, $rate, $min, $max, $scale) {
+                    $q->where('currency', $listing);
+                    if ($min !== null) {
+                        $q->where('price_minor', '>=', $min->dividedBy($rate, $scale, RoundingMode::Down)->withPointMovedRight($scale)->toInt());
+                    }
+                    if ($max !== null) {
+                        $q->where('price_minor', '<=', $max->dividedBy($rate, $scale, RoundingMode::Up)->withPointMovedRight($scale)->toInt());
+                    }
+                });
+            }
+        });
+    }
+
+    /** Approved sellers with at least one visible product, for the seller filter. */
+    public function sellers(): \Illuminate\Support\Collection
+    {
+        return DB::table('seller_profiles')->where('status', 'approved')
+            ->whereExists(fn ($q) => $q->from('products')->whereColumn('products.seller_id', 'seller_profiles.user_id')->where('products.status', 'active'))
+            ->orderBy('display_name')->pluck('display_name', 'user_id');
     }
 
     /** Units sold in paid orders, as a sortable subquery. */

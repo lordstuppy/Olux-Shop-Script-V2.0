@@ -14,18 +14,31 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(Request $request, CatalogService $catalog): View
+    public function index(Request $request, CatalogService $catalog, CartService $cart): View
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'category' => ['nullable', 'string', 'max:80'],
             'sort' => ['nullable', Rule::in(CatalogService::SORTS)],
             'currency' => ['nullable', Rule::in(Money::supported())],
+            'seller' => ['nullable', 'integer', 'min:1'],
+            'price_min' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+            'price_max' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+        ], [
+            'price_min.regex' => __('Enter the minimum price as a number, for example 5 or 9.99.'),
+            'price_max.regex' => __('Enter the maximum price as a number, for example 50 or 49.99.'),
         ]);
+        if (isset($filters['price_min'], $filters['price_max']) && (float) $filters['price_min'] > (float) $filters['price_max']) {
+            [$filters['price_min'], $filters['price_max']] = [$filters['price_max'], $filters['price_min']];
+        }
+        $filters['price_currency'] = $cart->currency();
+        $sellers = $catalog->sellers();
 
         return view('products.index', [
             'products' => $catalog->paginate($filters),
             'categories' => $catalog->categories(),
+            'sellers' => $sellers,
+            'sellerName' => isset($filters['seller']) ? $sellers->get((int) $filters['seller']) : null,
             'filters' => $filters,
         ]);
     }
