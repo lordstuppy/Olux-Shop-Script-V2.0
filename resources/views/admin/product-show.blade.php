@@ -10,7 +10,7 @@
         {{ __('Status') }} <x-status :value="$product->status" />
         &middot; {{ __('Seller') }} <a href="{{ route('admin.users.show', $product->seller) }}">{{ $product->seller->sellerProfile?->display_name ?? $product->seller->email }}</a>
         &middot; {{ money($product->price_minor, $product->currency) }}
-        &middot; {{ __(':type delivery', ['type' => $product->delivery_type->label()]) }}
+        &middot; {{ __(':type delivery', ['type' => mb_strtolower($product->delivery_type->label())]) }}
         @if ($product->access_days) &middot; {{ __(':days-day access', ['days' => $product->access_days]) }} @endif
         &middot; {{ __('stock :stock', ['stock' => $product->stock ?? __('unlimited')]) }}
         &middot; {{ __(':count unused licence keys', ['count' => $availableKeys]) }}
@@ -43,7 +43,7 @@
                             <td>{{ $file->original_name }}</td>
                             <td class="num">{{ number_format($file->size) }}</td>
                             <td class="mono">{{ substr($file->checksum, 0, 16) }}...</td>
-                            <td><x-status :value="$file->scan_status" /> {{ $file->scan_detail }}</td>
+                            <td><x-status :value="$file->scan_status" :label="\App\Support\Labels::scanStatus($file->scan_status)" /> {{ $file->scan_detail }}</td>
                             <td>{{ $file->retired_at ? __('Retired') : __('Delivered to new orders') }}</td>
                             <td>
                                 @if ($file->scan_status !== 'infected')

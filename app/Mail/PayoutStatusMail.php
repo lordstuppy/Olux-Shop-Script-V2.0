@@ -18,7 +18,7 @@ class PayoutStatusMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Payout #{$this->payout->id} is {$this->payout->status->value}");
+        return new Envelope(subject: __('Payout #:id is :status', ['id' => $this->payout->id, 'status' => strtolower($this->payout->status->label())]));
     }
 
     public function content(): Content

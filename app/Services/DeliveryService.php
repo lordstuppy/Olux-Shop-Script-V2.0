@@ -64,13 +64,13 @@ class DeliveryService
             $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
             $order = $locked->order;
             if (! $asStaff && $locked->seller_id !== $seller->id) {
-                throw new UserFacingException('You can only deliver items you sold.');
+                throw new UserFacingException(__('You can only deliver items you sold.'));
             }
             if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered], true)) {
-                throw new UserFacingException("Order {$order->shortId()} is {$order->status->label()}; it cannot be delivered.");
+                throw new UserFacingException(__('Order :order is :status; it cannot be delivered.', ['order' => $order->shortId(), 'status' => mb_strtolower($order->status->label())]));
             }
             if ($locked->isDelivered()) {
-                throw new UserFacingException("\"{$locked->title}\" in order {$order->shortId()} was already delivered.");
+                throw new UserFacingException(__('":title" in order :order was already delivered.', ['title' => $locked->title, 'order' => $order->shortId()]));
             }
 
             $locked->delivered_payload = ['type' => 'manual', 'text' => $text];

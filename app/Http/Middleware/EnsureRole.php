@@ -15,7 +15,7 @@ class EnsureRole
     {
         $user = $request->user();
         if ($user === null || ! in_array($user->role->value, $roles, true)) {
-            abort(403, 'Your account does not have access to this area.');
+            abort(403, __('Your account does not have access to this area.'));
         }
 
         return $next($request);

@@ -19,7 +19,7 @@ class CouponService
     {
         $coupon = Coupon::query()->where('code', Coupon::normalizeCode($code))->first();
         if ($coupon === null) {
-            throw new UserFacingException('Coupon code "'.Coupon::normalizeCode($code).'" was not found.');
+            throw new UserFacingException(__('Coupon code ":code" was not found.', ['code' => Coupon::normalizeCode($code)]));
         }
         $this->assertUsable($coupon, $currency, $subtotalMinor, $user);
 
@@ -36,7 +36,7 @@ class CouponService
     {
         $coupon = Coupon::query()->where('code', Coupon::normalizeCode($code))->lockForUpdate()->first();
         if ($coupon === null) {
-            throw new UserFacingException('Coupon code "'.Coupon::normalizeCode($code).'" was not found.');
+            throw new UserFacingException(__('Coupon code ":code" was not found.', ['code' => Coupon::normalizeCode($code)]));
         }
         $this->assertUsable($coupon, $currency, $subtotalMinor, $user);
 
@@ -68,37 +68,35 @@ class CouponService
     {
         $code = $coupon->code;
         if (! $coupon->active) {
-            throw new UserFacingException("Coupon {$code} is no longer active.");
+            throw new UserFacingException(__('Coupon :code is no longer active.', ['code' => $code]));
         }
         if ($coupon->starts_at !== null && $coupon->starts_at->isFuture()) {
-            throw new UserFacingException("Coupon {$code} is valid from {$coupon->starts_at->toDateString()}.");
+            throw new UserFacingException(__('Coupon :code is valid from :date.', ['code' => $code, 'date' => $coupon->starts_at->toDateString()]));
         }
         if ($coupon->expires_at !== null && $coupon->expires_at->isPast()) {
-            throw new UserFacingException("Coupon {$code} expired on {$coupon->expires_at->toDateString()}.");
+            throw new UserFacingException(__('Coupon :code expired on :date.', ['code' => $code, 'date' => $coupon->expires_at->toDateString()]));
         }
         if ($coupon->max_redemptions !== null && $coupon->redemptions_count >= $coupon->max_redemptions) {
-            throw new UserFacingException("Coupon {$code} has reached its redemption limit.");
+            throw new UserFacingException(__('Coupon :code has reached its redemption limit.', ['code' => $code]));
         }
         if ($user !== null && $coupon->max_per_user !== null) {
             $used = Order::query()->where('buyer_id', $user->id)->where('coupon_id', $coupon->id)
                 ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Expired->value])->count();
             if ($used >= $coupon->max_per_user) {
-                throw new UserFacingException("You have already used coupon {$coupon->code} the maximum of {$coupon->max_per_user} ".($coupon->max_per_user === 1 ? 'time' : 'times').'.');
+                throw new UserFacingException(trans_choice('{1} You have already used coupon :code the maximum of :count time.|[0,*] You have already used coupon :code the maximum of :count times.', $coupon->max_per_user, ['code' => $coupon->code]));
             }
         }
         // A coupon with a currency (always the case for fixed coupons) only
         // applies to orders in that currency.
         if ($coupon->currency !== null && $coupon->currency !== $currency) {
-            throw new UserFacingException("Coupon {$code} applies only to orders in {$coupon->currency}; your cart is in {$currency}.");
+            throw new UserFacingException(__('Coupon :code applies only to orders in :coupon_currency; your cart is in :currency.', ['code' => $code, 'coupon_currency' => $coupon->currency, 'currency' => $currency]));
         }
         // The minimum is expressed in minor units of the order currency.
         $minimum = $coupon->min_total_minor;
         if ($minimum > 0 && $subtotalMinor < $minimum) {
-            throw new UserFacingException(sprintf(
-                'Coupon %s requires a subtotal of at least %s; your subtotal is %s.',
-                $code,
-                Money::format($minimum, $currency),
-                Money::format($subtotalMinor, $currency),
+            throw new UserFacingException(__(
+                'Coupon :code requires a subtotal of at least :minimum; your subtotal is :subtotal.',
+                ['code' => $code, 'minimum' => Money::format($minimum, $currency), 'subtotal' => Money::format($subtotalMinor, $currency)],
             ));
         }
     }

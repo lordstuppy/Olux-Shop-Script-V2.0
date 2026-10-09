@@ -91,14 +91,14 @@ class PayoutService
     {
         $profile = $seller->sellerProfile;
         if ($profile === null || ! $seller->isSeller()) {
-            throw new UserFacingException('Only approved sellers can request payouts.');
+            throw new UserFacingException(__('Only approved sellers can request payouts.'));
         }
         if ($until = $profile->payoutsBlockedUntil()) {
-            throw new UserFacingException('Your payout address changed recently. For your security, payouts are possible again after '.$until->format('Y-m-d H:i').' UTC.');
+            throw new UserFacingException(__('Your payout address changed recently. For your security, payouts are possible again after :time UTC.', ['time' => $until->format('Y-m-d H:i')]));
         }
         $minimum = (int) config('shop.min_payout_minor');
         if ($amountMinor < $minimum) {
-            throw new UserFacingException('The minimum payout is '.Money::format($minimum, $currency).'.');
+            throw new UserFacingException(__('The minimum payout is :amount.', ['amount' => Money::format($minimum, $currency)]));
         }
 
         return DB::transaction(function () use ($seller, $profile, $amountMinor, $currency) {
@@ -107,10 +107,9 @@ class PayoutService
 
             $available = $this->balances($seller)[$currency]['available'] ?? 0;
             if ($amountMinor > $available) {
-                throw new UserFacingException(sprintf(
-                    'Requested %s but only %s is available for payout.',
-                    Money::format($amountMinor, $currency),
-                    Money::format($available, $currency),
+                throw new UserFacingException(__(
+                    'Requested :requested but only :available is available for payout.',
+                    ['requested' => Money::format($amountMinor, $currency), 'available' => Money::format($available, $currency)],
                 ));
             }
 
@@ -234,7 +233,7 @@ class PayoutService
         DB::transaction(function () use ($payout, $to, $admin, $from, $reference, $note) {
             $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->status, $from, true)) {
-                throw new UserFacingException("Payout #{$locked->id} is {$locked->status->value} and cannot be marked {$to->value}.");
+                throw new UserFacingException(__('Payout #:id is :status and cannot be marked :to.', ['id' => $locked->id, 'status' => mb_strtolower($locked->status->label()), 'to' => mb_strtolower($to->label())]));
             }
             $locked->status = $to;
             $locked->processed_by = $admin->id;

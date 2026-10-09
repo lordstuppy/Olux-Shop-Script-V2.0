@@ -27,14 +27,14 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'counts' => [
-                'Users' => User::count(),
-                'Orders awaiting payment' => Order::where('status', OrderStatus::Pending->value)->count(),
-                'Paid orders awaiting delivery' => Order::where('status', OrderStatus::Paid->value)->count(),
-                'Products awaiting review' => Product::where('status', ProductStatus::PendingReview->value)->count(),
-                'Seller applications' => SellerProfile::where('status', SellerProfileStatus::Pending->value)->count(),
-                'Open tickets' => Ticket::where('status', TicketStatus::Open->value)->count(),
-                'Payout requests' => Payout::where('status', PayoutStatus::Requested->value)->count(),
-                'Failed webhook events' => WebhookEvent::whereIn('status', [WebhookEventStatus::Failed->value, WebhookEventStatus::Dead->value])->count(),
+                __('Users') => User::count(),
+                __('Orders awaiting payment') => Order::where('status', OrderStatus::Pending->value)->count(),
+                __('Paid orders awaiting delivery') => Order::where('status', OrderStatus::Paid->value)->count(),
+                __('Products awaiting review') => Product::where('status', ProductStatus::PendingReview->value)->count(),
+                __('Seller applications') => SellerProfile::where('status', SellerProfileStatus::Pending->value)->count(),
+                __('Open tickets') => Ticket::where('status', TicketStatus::Open->value)->count(),
+                __('Payout requests') => Payout::where('status', PayoutStatus::Requested->value)->count(),
+                __('Failed webhook events') => WebhookEvent::whereIn('status', [WebhookEventStatus::Failed->value, WebhookEventStatus::Dead->value])->count(),
             ],
             'revenue' => DB::table('orders')->whereIn('status', $paidStates)->where('paid_at', '>=', now()->subDays(30))
                 ->groupBy('currency')->selectRaw('currency, SUM(total_minor) AS gross, SUM(refunded_minor) AS refunded, COUNT(*) AS orders')->get(),

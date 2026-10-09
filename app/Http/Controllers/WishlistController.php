@@ -24,17 +24,17 @@ class WishlistController extends Controller
         $data = $request->validate(['product_id' => ['required', 'integer']]);
         $product = Product::query()->visible()->findOrFail($data['product_id']);
         if ($request->user()->wishlistItems()->count() >= 200) {
-            return back()->with('error', 'Your wishlist is full (200 items). Remove some items first.');
+            return back()->with('error', __('Your wishlist is full (200 items). Remove some items first.'));
         }
         WishlistItem::query()->firstOrCreate(['user_id' => $request->user()->id, 'product_id' => $product->id]);
 
-        return back()->with('success', "\"{$product->title}\" saved to your wishlist.");
+        return back()->with('success', __('":title" saved to your wishlist.', ['title' => $product->title]));
     }
 
     public function destroy(Request $request, Product $product): RedirectResponse
     {
         WishlistItem::query()->where('user_id', $request->user()->id)->where('product_id', $product->id)->delete();
 
-        return back()->with('success', "\"{$product->title}\" removed from your wishlist.");
+        return back()->with('success', __('":title" removed from your wishlist.', ['title' => $product->title]));
     }
 }

@@ -24,7 +24,7 @@ class ExchangeRateController extends Controller
             'base' => ['required', Rule::in(Money::supported())],
             'quote' => ['required', Rule::in(Money::supported()), 'different:base'],
             'rate' => ['required', 'string', 'regex:/^\d{1,9}(\.\d{1,10})?$/', 'not_regex:/^0+(\.0+)?$/'],
-        ], ['rate.regex' => 'Enter the rate as a positive decimal with up to 10 decimal places, e.g. 0.9215.']);
+        ], ['rate.regex' => __('Enter the rate as a positive decimal with up to 10 decimal places, e.g. 0.9215.')]);
 
         $rate = ExchangeRate::updateOrCreate(
             ['base' => $data['base'], 'quote' => $data['quote']],
@@ -32,6 +32,6 @@ class ExchangeRateController extends Controller
         );
         $audit->log('exchange_rate.updated', $rate, ['pair' => "{$data['base']}/{$data['quote']}", 'rate' => $data['rate']]);
 
-        return back()->with('success', "1 {$data['base']} = {$data['rate']} {$data['quote']} saved. New orders use this rate; existing orders keep theirs.");
+        return back()->with('success', __('1 :base = :rate :quote saved. New orders use this rate; existing orders keep theirs.', ['base' => $data['base'], 'rate' => $data['rate'], 'quote' => $data['quote']]));
     }
 }

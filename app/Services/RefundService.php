@@ -40,10 +40,10 @@ class RefundService
     public function refund(Order $order, int $amountMinor, string $method, User $admin, ?string $reference = null, ?string $reason = null): Payment
     {
         if (! in_array($method, ['balance', 'manual'], true)) {
-            throw new UserFacingException('Choose a refund method: balance or manual.');
+            throw new UserFacingException(__('Choose a refund method: balance or manual.'));
         }
         if ($method === 'manual' && ($reference === null || trim($reference) === '')) {
-            throw new UserFacingException('A manual refund needs the transaction reference of the outgoing payment.');
+            throw new UserFacingException(__('A manual refund needs the transaction reference of the outgoing payment.'));
         }
 
         $payment = DB::transaction(function () use ($order, $amountMinor, $method, $admin, $reference, $reason) {
@@ -161,30 +161,28 @@ class RefundService
     private function lockRefundable(Order $order, int $amountMinor): array
     {
         if ($amountMinor <= 0) {
-            throw new UserFacingException('The refund amount must be greater than zero.');
+            throw new UserFacingException(__('The refund amount must be greater than zero.'));
         }
 
         $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
         if (! $locked->status->isPaidState() || $locked->status === OrderStatus::Refunded) {
-            throw new UserFacingException("Order {$locked->shortId()} is {$locked->status->label()} and cannot be refunded.");
+            throw new UserFacingException(__('Order :order is :status and cannot be refunded.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
         }
 
         $inFlight = (int) Payment::query()->where('order_id', $locked->id)->where('kind', PaymentKind::Refund->value)
             ->where('status', PaymentStatus::Pending->value)->sum('amount_minor');
         $refundable = $locked->refundableMinor() - $inFlight;
         if ($amountMinor > $refundable) {
-            throw new UserFacingException(sprintf(
-                'Refund amount %s exceeds the refundable %s for order %s.',
-                Money::format($amountMinor, $locked->currency),
-                Money::format(max(0, $refundable), $locked->currency),
-                $locked->shortId(),
-            ).($inFlight > 0 ? ' '.Money::format($inFlight, $locked->currency).' is already being refunded.' : ''));
+            throw new UserFacingException(__(
+                'Refund amount :amount exceeds the refundable :refundable for order :order.',
+                ['amount' => Money::format($amountMinor, $locked->currency), 'refundable' => Money::format(max(0, $refundable), $locked->currency), 'order' => $locked->shortId()],
+            ).($inFlight > 0 ? ' '.__(':amount is already being refunded.', ['amount' => Money::format($inFlight, $locked->currency)]) : ''));
         }
 
         $charge = Payment::query()->where('order_id', $locked->id)->where('kind', PaymentKind::Charge->value)
             ->where('status', PaymentStatus::Confirmed->value)->orderBy('id')->first();
         if ($charge === null) {
-            throw new UserFacingException("Order {$locked->shortId()} has no confirmed charge to refund.");
+            throw new UserFacingException(__('Order :order has no confirmed charge to refund.', ['order' => $locked->shortId()]));
         }
 
         return [$locked, $charge];

@@ -18,7 +18,7 @@ class PayoutAddressChangedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your payout address was changed');
+        return new Envelope(subject: __('Your payout address was changed'));
     }
 
     public function content(): Content

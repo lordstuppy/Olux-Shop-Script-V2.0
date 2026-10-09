@@ -45,7 +45,7 @@ class CurrencyConverter
     {
         $rate = $this->rate($from, $to);
         if ($rate === null) {
-            throw new UserFacingException("Prices in {$from} cannot be shown in {$to} because no exchange rate is configured. Switch the shop currency to {$from}.");
+            throw new UserFacingException(__('Prices in :from cannot be shown in :to because no exchange rate is configured. Switch the shop currency to :from.', ['from' => $from, 'to' => $to]));
         }
         if ($from === $to) {
             return [$minor, '1'];

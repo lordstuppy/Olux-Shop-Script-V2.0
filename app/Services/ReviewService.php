@@ -28,7 +28,7 @@ class ReviewService
     {
         $item = $this->eligibleItem($user, $product);
         if ($item === null) {
-            throw new UserFacingException('Only buyers of "'.$product->title.'" can review it.');
+            throw new UserFacingException(__('Only buyers of ":title" can review it.', ['title' => $product->title]));
         }
 
         $review = ProductReview::query()->updateOrCreate(

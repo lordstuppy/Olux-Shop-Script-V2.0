@@ -17,7 +17,7 @@ class EnsureStaffTwoFactor
         $user = $request->user();
         if ($user !== null && $user->isStaff() && config('shop.require_staff_two_factor') && ! $user->hasTwoFactor()) {
             return redirect()->route('account.two-factor')
-                ->with('error', 'Staff accounts must turn on two-factor authentication before using the admin area.');
+                ->with('error', __('Staff accounts must turn on two-factor authentication before using the admin area.'));
         }
 
         return $next($request);

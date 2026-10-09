@@ -28,15 +28,7 @@
                     @foreach ($transactions as $tx)
                         <tr>
                             <td>{{ $tx->created_at->format('Y-m-d H:i') }}</td>
-                            <td>{{ match ($tx->type) {
-                                'gift_card' => __('gift card'),
-                                'refund' => __('refund'),
-                                'order_payment' => __('order payment'),
-                                'late_payment_credit' => __('late payment credit'),
-                                'overpayment_credit' => __('overpayment credit'),
-                                'admin_adjustment' => __('admin adjustment'),
-                                default => str_replace('_', ' ', $tx->type),
-                            } }}</td>
+                            <td>{{ \App\Support\Labels::balanceType($tx->type) }}</td>
                             <td>{{ $tx->note }}</td>
                             <td class="num">{{ $tx->amount_minor > 0 ? '+' : '-' }}{{ money(abs($tx->amount_minor), $tx->currency) }}</td>
                             <td class="num">{{ money($tx->balance_after_minor, $tx->currency) }}</td>

@@ -12,7 +12,7 @@
             <thead><tr><th scope="col">{{ __('Pair') }}</th><th scope="col">{{ __('Rate') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col">{{ __('Updated') }}</th></tr></thead>
             <tbody>
                 @forelse ($rates as $rate)
-                    <tr><td>1 {{ $rate->base }} =</td><td class="mono">{{ $rate->rate }} {{ $rate->quote }}</td><td>{{ $rate->source }}</td><td>{{ $rate->updated_at->format('Y-m-d H:i') }}</td></tr>
+                    <tr><td>1 {{ $rate->base }} =</td><td class="mono">{{ $rate->rate }} {{ $rate->quote }}</td><td>{{ \App\Support\Labels::rateSource($rate->source) }}</td><td>{{ $rate->updated_at->format('Y-m-d H:i') }}</td></tr>
                 @empty
                     <tr><td colspan="4">{{ __('No rates configured; only same-currency purchases are possible.') }}</td></tr>
                 @endforelse

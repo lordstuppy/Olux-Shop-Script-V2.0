@@ -52,7 +52,7 @@ class TicketController extends Controller
 
         $ticket = $tickets->open($request->user(), $data['subject'], $data['body'], TicketCategory::from($data['category']), $order);
 
-        return redirect()->route('tickets.show', $ticket)->with('success', "Ticket #{$ticket->id} opened. We usually reply within one business day.");
+        return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket #:id opened. We usually reply within one business day.', ['id' => $ticket->id]));
     }
 
     public function show(Ticket $ticket): View
@@ -77,7 +77,7 @@ class TicketController extends Controller
         $internal = $request->boolean('internal');
         $tickets->reply($ticket, $request->user(), $data['body'], $internal);
 
-        return redirect()->route('tickets.show', $ticket)->with('success', $internal ? "Internal note added to ticket #{$ticket->id}." : "Reply added to ticket #{$ticket->id}.");
+        return redirect()->route('tickets.show', $ticket)->with('success', $internal ? __('Internal note added to ticket #:id.', ['id' => $ticket->id]) : __('Reply added to ticket #:id.', ['id' => $ticket->id]));
     }
 
     public function assign(Request $request, Ticket $ticket, TicketService $tickets): RedirectResponse
@@ -87,7 +87,7 @@ class TicketController extends Controller
         $assignee = isset($data['assigned_to']) ? User::find($data['assigned_to']) : null;
         $tickets->assign($ticket, $assignee, $request->user());
 
-        return back()->with('success', $assignee ? "Ticket #{$ticket->id} assigned to {$assignee->email}." : "Ticket #{$ticket->id} unassigned.");
+        return back()->with('success', $assignee ? __('Ticket #:id assigned to :email.', ['id' => $ticket->id, 'email' => $assignee->email]) : __('Ticket #:id unassigned.', ['id' => $ticket->id]));
     }
 
     public function close(Request $request, Ticket $ticket, TicketService $tickets): RedirectResponse
@@ -95,6 +95,6 @@ class TicketController extends Controller
         Gate::authorize('view', $ticket);
         $tickets->close($ticket, $request->user());
 
-        return redirect()->route('tickets.show', $ticket)->with('success', "Ticket #{$ticket->id} closed.");
+        return redirect()->route('tickets.show', $ticket)->with('success', __('Ticket #:id closed.', ['id' => $ticket->id]));
     }
 }

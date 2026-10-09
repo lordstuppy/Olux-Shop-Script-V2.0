@@ -71,10 +71,10 @@ class UserService
 
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             Log::notice('Failed login for email hash {email_hash}', ['email_hash' => hash('sha256', Str::lower($email))]);
-            throw new UserFacingException('Login failed: the email or password is incorrect.');
+            throw new UserFacingException(__('Login failed: the email or password is incorrect.'));
         }
         if (! $user->isActive()) {
-            throw new UserFacingException('This account is suspended. Contact '.config('shop.support_email').' for help.');
+            throw new UserFacingException(__('This account is suspended. Contact :email for help.', ['email' => config('shop.support_email')]));
         }
         $provider->rehashPasswordIfRequired($user, $credentials);
 
@@ -147,9 +147,9 @@ class UserService
 
         if ($status !== Password::PASSWORD_RESET) {
             throw new UserFacingException(match ($status) {
-                Password::INVALID_TOKEN => 'This password reset link is invalid or has expired. Request a new one.',
-                Password::RESET_THROTTLED => 'Too many reset attempts. Wait a minute and try again.',
-                default => 'The password could not be reset. Request a new reset link.',
+                Password::INVALID_TOKEN => __('This password reset link is invalid or has expired. Request a new one.'),
+                Password::RESET_THROTTLED => __('Too many reset attempts. Wait a minute and try again.'),
+                default => __('The password could not be reset. Request a new reset link.'),
             });
         }
     }
@@ -162,10 +162,10 @@ class UserService
     {
         $newEmail = Str::lower(trim($newEmail));
         if ($newEmail === $user->email) {
-            throw new UserFacingException('That is already your email address.');
+            throw new UserFacingException(__('That is already your email address.'));
         }
         if (User::query()->where('email', $newEmail)->exists()) {
-            throw new UserFacingException('Another account already uses that email address.');
+            throw new UserFacingException(__('Another account already uses that email address.'));
         }
 
         $token = Str::random(48);
@@ -184,10 +184,10 @@ class UserService
     {
         if ($user->email_change_token_hash === null || ! hash_equals($user->email_change_token_hash, hash('sha256', $token))
             || $user->email_change_expires_at === null || $user->email_change_expires_at->isPast()) {
-            throw new UserFacingException('This confirmation link is invalid or has expired. Request the change again from your account settings.');
+            throw new UserFacingException(__('This confirmation link is invalid or has expired. Request the change again from your account settings.'));
         }
         if (User::query()->where('email', $user->pending_email)->whereKeyNot($user->id)->exists()) {
-            throw new UserFacingException('Another account now uses that email address.');
+            throw new UserFacingException(__('Another account now uses that email address.'));
         }
 
         $old = $user->email;
@@ -204,12 +204,12 @@ class UserService
     public function applyAsSeller(User $user, array $data): SellerProfile
     {
         if ($user->isSeller() || $user->isStaff()) {
-            throw new UserFacingException('Your account can already sell.');
+            throw new UserFacingException(__('Your account can already sell.'));
         }
 
         $profile = $user->sellerProfile;
         if ($profile?->status === SellerProfileStatus::Pending) {
-            throw new UserFacingException('Your seller application is already waiting for review.');
+            throw new UserFacingException(__('Your seller application is already waiting for review.'));
         }
 
         $profile ??= new SellerProfile(['user_id' => $user->id]);
@@ -263,7 +263,7 @@ class UserService
     public function setRole(User $user, UserRole $role, User $admin): void
     {
         if ($user->id === $admin->id) {
-            throw new UserFacingException('You cannot change your own role.');
+            throw new UserFacingException(__('You cannot change your own role.'));
         }
         $old = $user->role;
         $user->forceFill(['role' => $role])->save();
@@ -273,7 +273,7 @@ class UserService
     public function setStatus(User $user, UserStatus $status, User $admin): void
     {
         if ($user->id === $admin->id) {
-            throw new UserFacingException('You cannot suspend your own account.');
+            throw new UserFacingException(__('You cannot suspend your own account.'));
         }
         $user->forceFill(['status' => $status])->save();
         if ($status === UserStatus::Suspended) {

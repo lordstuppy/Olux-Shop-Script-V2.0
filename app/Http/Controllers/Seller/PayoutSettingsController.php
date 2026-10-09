@@ -39,7 +39,7 @@ class PayoutSettingsController extends Controller
         $data = $request->validate([
             'payout_crypto' => ['required', 'string', 'in:'.implode(',', $allowed)],
             'payout_address' => ['required', 'string', 'min:10', 'max:255', 'regex:/^[A-Za-z0-9:_.-]+$/'],
-        ], ['payout_address.regex' => 'The address may contain only letters, digits and : _ . -']);
+        ], ['payout_address.regex' => __('The address may contain only letters, digits and : _ . -')]);
 
         $user = $request->user();
         $profile = $user->sellerProfile;
@@ -53,7 +53,7 @@ class PayoutSettingsController extends Controller
         Mail::to($user)->queue(new PayoutAddressChangeMail($profile, route('seller.payout-address.confirm', $token)));
         $audit->log('seller.payout_address_change_requested', $profile, ['crypto' => $data['payout_crypto']], $user);
 
-        return back()->with('success', "We emailed a confirmation link to {$user->email}. The new address takes effect after you confirm it (valid for 24 hours).");
+        return back()->with('success', __('We emailed a confirmation link to :email. The new address takes effect after you confirm it (valid for 24 hours).', ['email' => $user->email]));
     }
 
     public function showConfirm(Request $request, string $token): View
@@ -82,7 +82,7 @@ class PayoutSettingsController extends Controller
             Mail::to($user)->queue((new PayoutAddressChangedMail($profile))->afterCommit());
         });
 
-        return redirect()->route('seller.payout-settings')->with('success', 'Payout address updated. Payouts resume after '.config('shop.payout_address_cooldown_hours').' hours.');
+        return redirect()->route('seller.payout-settings')->with('success', __('Payout address updated. Payouts resume after :hours hours.', ['hours' => config('shop.payout_address_cooldown_hours')]));
     }
 
     private function profileForToken(Request $request, string $token)
@@ -91,7 +91,7 @@ class PayoutSettingsController extends Controller
         if ($profile === null || $profile->payout_change_token_hash === null
             || ! hash_equals($profile->payout_change_token_hash, hash('sha256', $token))
             || $profile->payout_change_expires_at === null || $profile->payout_change_expires_at->isPast()) {
-            throw new UserFacingException('This confirmation link is invalid or has expired. Request the change again from your payout settings.');
+            throw new UserFacingException(__('This confirmation link is invalid or has expired. Request the change again from your payout settings.'));
         }
 
         return $profile;

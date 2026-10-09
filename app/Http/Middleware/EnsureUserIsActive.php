@@ -20,7 +20,7 @@ class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('error', 'This account is suspended. Contact '.config('shop.support_email').' for help.');
+            return redirect()->route('login')->with('error', __('This account is suspended. Contact :email for help.', ['email' => config('shop.support_email')]));
         }
 
         return $next($request);

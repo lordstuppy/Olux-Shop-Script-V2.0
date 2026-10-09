@@ -28,18 +28,18 @@ class CategoryController extends Controller
         $category->update($data);
         $audit->log('category.updated', $category);
 
-        return back()->with('success', "Category \"{$category->name}\" updated. Its address (/{$category->slug}) stays the same.");
+        return back()->with('success', __('Category ":name" updated. Its address (/:slug) stays the same.', ['name' => $category->name, 'slug' => $category->slug]));
     }
 
     public function destroy(Category $category, AuditLogger $audit): RedirectResponse
     {
         if ($category->products()->exists()) {
-            throw new UserFacingException("Category \"{$category->name}\" still has products. Move them to another category first.");
+            throw new UserFacingException(__('Category ":name" still has products. Move them to another category first.', ['name' => $category->name]));
         }
         $category->delete();
         $audit->log('category.deleted', null, ['name' => $category->name]);
 
-        return back()->with('success', "Category \"{$category->name}\" deleted.");
+        return back()->with('success', __('Category ":name" deleted.', ['name' => $category->name]));
     }
 
     public function store(Request $request, AuditLogger $audit): RedirectResponse
@@ -55,6 +55,6 @@ class CategoryController extends Controller
         ]);
         $audit->log('category.created', $category);
 
-        return back()->with('success', "Category \"{$category->name}\" created.");
+        return back()->with('success', __('Category ":name" created.', ['name' => $category->name]));
     }
 }

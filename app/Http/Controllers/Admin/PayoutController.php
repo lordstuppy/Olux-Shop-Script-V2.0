@@ -25,7 +25,7 @@ class PayoutController extends Controller
     {
         $payouts->approve($payout, $request->user());
 
-        return back()->with('success', "Payout #{$payout->id} approved.");
+        return back()->with('success', __('Payout #:id approved.', ['id' => $payout->id]));
     }
 
     public function paid(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse
@@ -33,14 +33,14 @@ class PayoutController extends Controller
         $data = $request->validate(['reference' => ['required', 'string', 'max:255']]);
         $payouts->markPaid($payout, $request->user(), $data['reference']);
 
-        return back()->with('success', "Payout #{$payout->id} of ".Money::format($payout->amount_minor, $payout->currency).' marked paid.');
+        return back()->with('success', __('Payout #:id of :amount marked paid.', ['id' => $payout->id, 'amount' => Money::format($payout->amount_minor, $payout->currency)]));
     }
 
     public function send(Request $request, Payout $payout, ShkeeperPayoutService $shkeeper): RedirectResponse
     {
         $shkeeper->sendPayout($payout->load('seller.sellerProfile'), $request->user());
 
-        return back()->with('success', "Payout #{$payout->id} sent to Shkeeper as {$payout->fresh()->crypto_amount} {$payout->fresh()->crypto}. It is marked paid when Shkeeper confirms the transfer.");
+        return back()->with('success', __('Payout #:id sent to Shkeeper as :crypto_amount :crypto. It is marked paid when Shkeeper confirms the transfer.', ['id' => $payout->id, 'crypto_amount' => $payout->fresh()->crypto_amount, 'crypto' => $payout->fresh()->crypto]));
     }
 
     public function reject(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse
@@ -48,6 +48,6 @@ class PayoutController extends Controller
         $data = $request->validate(['note' => ['required', 'string', 'max:500']]);
         $payouts->reject($payout, $request->user(), $data['note']);
 
-        return back()->with('success', "Payout #{$payout->id} rejected; the amount was returned to the seller balance.");
+        return back()->with('success', __('Payout #:id rejected; the amount was returned to the seller balance.', ['id' => $payout->id]));
     }
 }

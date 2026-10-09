@@ -21,7 +21,7 @@ class TicketService
     public function open(User $user, string $subject, string $body, TicketCategory $category, ?Order $order = null): Ticket
     {
         if ($order !== null && $order->buyer_id !== $user->id) {
-            throw new UserFacingException('You can only open tickets about your own orders.');
+            throw new UserFacingException(__('You can only open tickets about your own orders.'));
         }
 
         return DB::transaction(function () use ($user, $subject, $body, $category, $order) {
@@ -43,10 +43,10 @@ class TicketService
     {
         $staff = $author->can('tickets.manage') && $author->id !== $ticket->user_id;
         if ($internal && ! $staff) {
-            throw new UserFacingException('Only staff can add internal notes.');
+            throw new UserFacingException(__('Only staff can add internal notes.'));
         }
         if ($ticket->status === TicketStatus::Closed && ! $internal) {
-            throw new UserFacingException("Ticket #{$ticket->id} is closed. Open a new ticket if you still need help.");
+            throw new UserFacingException(__('Ticket #:id is closed. Open a new ticket if you still need help.', ['id' => $ticket->id]));
         }
 
         DB::transaction(function () use ($ticket, $author, $body, $staff, $internal) {
@@ -69,7 +69,7 @@ class TicketService
     public function assign(Ticket $ticket, ?User $assignee, User $actor): void
     {
         if ($assignee !== null && ! $assignee->can('tickets.manage')) {
-            throw new UserFacingException("{$assignee->email} cannot handle tickets.");
+            throw new UserFacingException(__(':email cannot handle tickets.', ['email' => $assignee->email]));
         }
         $ticket->assigned_to = $assignee?->id;
         $ticket->save();

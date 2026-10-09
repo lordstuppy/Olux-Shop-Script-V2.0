@@ -14,9 +14,9 @@ class SettingsController extends Controller
     public function index(): View
     {
         return view('admin.settings', [
-            'fields' => collect(Settings::EDITABLE)->map(fn ($def, $key) => [
+            'fields' => collect(Settings::descriptions())->map(fn ($def, $key) => [
                 'label' => $def[0],
-                'hint' => $def[2],
+                'hint' => $def[1],
                 'value' => config('shop.'.$key),
             ]),
         ]);
@@ -24,7 +24,7 @@ class SettingsController extends Controller
 
     public function update(Request $request, AuditLogger $audit): RedirectResponse
     {
-        $rules = collect(Settings::EDITABLE)->map(fn ($def) => array_merge(['required'], $def[1]))->all();
+        $rules = collect(Settings::EDITABLE)->map(fn ($rules) => array_merge(['required'], $rules))->all();
         $data = $request->validate($rules);
 
         $changed = collect($data)->filter(fn ($value, $key) => (string) config('shop.'.$key) !== (string) $value)->all();
@@ -33,6 +33,6 @@ class SettingsController extends Controller
             $audit->log('settings.updated', null, $changed);
         }
 
-        return back()->with('success', $changed === [] ? 'No settings changed.' : 'Saved '.count($changed).' changed '.(count($changed) === 1 ? 'setting' : 'settings').'.');
+        return back()->with('success', $changed === [] ? __('No settings changed.') : trans_choice('{1} Saved :count changed setting.|[0,*] Saved :count changed settings.', count($changed)));
     }
 }

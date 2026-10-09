@@ -26,21 +26,21 @@ class ProductImageService
     public function store(Product $product, UploadedFile $upload, ?string $alt): ProductImage
     {
         if ($product->images()->count() >= (int) config('shop.max_product_images')) {
-            throw new UserFacingException('A product can have at most '.config('shop.max_product_images').' images. Remove one first.');
+            throw new UserFacingException(__('A product can have at most :max images. Remove one first.', ['max' => config('shop.max_product_images')]));
         }
 
         $info = @getimagesize($upload->getRealPath());
         if ($info === false || ! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
-            throw new UserFacingException('The image must be a JPEG, PNG or WebP file.');
+            throw new UserFacingException(__('The image must be a JPEG, PNG or WebP file.'));
         }
         [$width, $height] = $info;
         if ($width < 1 || $height < 1 || $width * $height > self::MAX_PIXELS) {
-            throw new UserFacingException('The image dimensions are not supported (at most 40 megapixels).');
+            throw new UserFacingException(__('The image dimensions are not supported (at most 40 megapixels).'));
         }
 
         $source = @imagecreatefromstring((string) file_get_contents($upload->getRealPath()));
         if (! $source instanceof GdImage) {
-            throw new UserFacingException('The image could not be read. Upload a different file.');
+            throw new UserFacingException(__('The image could not be read. Upload a different file.'));
         }
 
         $base = $product->id.'/'.Str::random(32);

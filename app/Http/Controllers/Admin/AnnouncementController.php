@@ -31,7 +31,7 @@ class AnnouncementController extends Controller
         Cache::forget(self::CACHE_KEY);
         $audit->log('announcement.created', $announcement);
 
-        return back()->with('success', "Announcement \"{$announcement->title}\" published.");
+        return back()->with('success', __('Announcement ":title" published.', ['title' => $announcement->title]));
     }
 
     public function toggle(Announcement $announcement, AuditLogger $audit): RedirectResponse
@@ -40,7 +40,7 @@ class AnnouncementController extends Controller
         Cache::forget(self::CACHE_KEY);
         $audit->log($announcement->active ? 'announcement.activated' : 'announcement.deactivated', $announcement);
 
-        return back()->with('success', "Announcement \"{$announcement->title}\" is now ".($announcement->active ? 'visible' : 'hidden').'.');
+        return back()->with('success', $announcement->active ? __('Announcement ":title" is now visible.', ['title' => $announcement->title]) : __('Announcement ":title" is now hidden.', ['title' => $announcement->title]));
     }
 
     public function destroy(Announcement $announcement, AuditLogger $audit): RedirectResponse
@@ -49,6 +49,6 @@ class AnnouncementController extends Controller
         Cache::forget(self::CACHE_KEY);
         $audit->log('announcement.deleted', null, ['title' => $announcement->title]);
 
-        return back()->with('success', "Announcement \"{$announcement->title}\" deleted.");
+        return back()->with('success', __('Announcement ":title" deleted.', ['title' => $announcement->title]));
     }
 }

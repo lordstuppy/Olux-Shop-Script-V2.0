@@ -23,11 +23,11 @@ class ConfirmPasswordController extends Controller
     {
         $data = $request->validate(['password' => ['required', 'string', 'max:255']]);
         if (! Hash::check($data['password'], $request->user()->password_hash)) {
-            throw new UserFacingException('The password is incorrect.');
+            throw new UserFacingException(__('The password is incorrect.'));
         }
         $request->session()->passwordConfirmed();
 
         return redirect()->intended(route('account.settings'))
-            ->with('success', 'Password confirmed for the next '.(int) (config('auth.password_timeout') / 60).' minutes. Submit the form again to continue.');
+            ->with('success', __('Password confirmed for the next :minutes minutes. Submit the form again to continue.', ['minutes' => (int) (config('auth.password_timeout') / 60)]));
     }
 }

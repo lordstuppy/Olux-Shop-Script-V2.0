@@ -20,7 +20,7 @@ class TwoFactorController extends Controller
     public function challenge(Request $request): View|RedirectResponse
     {
         if ($this->pendingUser($request) === null) {
-            return redirect()->route('login')->with('error', 'Your sign-in attempt expired. Enter your email and password again.');
+            return redirect()->route('login')->with('error', __('Your sign-in attempt expired. Enter your email and password again.'));
         }
 
         return view('auth.two-factor-challenge');
@@ -30,18 +30,18 @@ class TwoFactorController extends Controller
     {
         $user = $this->pendingUser($request);
         if ($user === null) {
-            return redirect()->route('login')->with('error', 'Your sign-in attempt expired. Enter your email and password again.');
+            return redirect()->route('login')->with('error', __('Your sign-in attempt expired. Enter your email and password again.'));
         }
         $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
 
         $key = 'two-factor:'.$user->id;
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw new UserFacingException('Too many incorrect codes. Wait '.RateLimiter::availableIn($key).' seconds and try again.');
+            throw new UserFacingException(__('Too many incorrect codes. Wait :seconds seconds and try again.', ['seconds' => RateLimiter::availableIn($key)]));
         }
         if (! $twoFactor->verify($user, $data['code'])) {
             RateLimiter::hit($key, 60);
             Log::notice('Invalid two-factor code for user {user_id}', ['user_id' => $user->id]);
-            throw new UserFacingException('That code is not valid. Enter the current 6-digit code from your authenticator app, or a recovery code.');
+            throw new UserFacingException(__('That code is not valid. Enter the current 6-digit code from your authenticator app, or a recovery code.'));
         }
         RateLimiter::clear($key);
 
@@ -49,7 +49,7 @@ class TwoFactorController extends Controller
         $users->completeLogin($user, (bool) ($pending['remember'] ?? false), $request);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('account.orders'))->with('success', "Signed in as {$user->email}.");
+        return redirect()->intended(route('account.orders'))->with('success', __('Signed in as :email.', ['email' => $user->email]));
     }
 
     /** Account page section for setting up or managing 2FA. */
@@ -78,7 +78,7 @@ class TwoFactorController extends Controller
         $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
         $secret = $request->session()->get(self::SETUP_KEY);
         if (! is_string($secret)) {
-            throw new UserFacingException('The setup expired. Scan the new QR code and try again.');
+            throw new UserFacingException(__('The setup expired. Scan the new QR code and try again.'));
         }
 
         $codes = $twoFactor->enable($request->user(), $secret, $data['code']);
@@ -86,19 +86,19 @@ class TwoFactorController extends Controller
 
         return redirect()->route('account.two-factor')
             ->with('two_factor.recovery_codes', $codes)
-            ->with('success', 'Two-factor authentication is on. Store the recovery codes below somewhere safe; they are shown only once.');
+            ->with('success', __('Two-factor authentication is on. Store the recovery codes below somewhere safe; they are shown only once.'));
     }
 
     public function disable(Request $request, TwoFactorService $twoFactor): RedirectResponse
     {
         $user = $request->user();
         if ($user->isStaff()) {
-            throw new UserFacingException('Staff accounts must keep two-factor authentication on.');
+            throw new UserFacingException(__('Staff accounts must keep two-factor authentication on.'));
         }
         $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
         $twoFactor->disable($user, $data['code']);
 
-        return redirect()->route('account.two-factor')->with('success', 'Two-factor authentication is off.');
+        return redirect()->route('account.two-factor')->with('success', __('Two-factor authentication is off.'));
     }
 
     public function regenerate(Request $request, TwoFactorService $twoFactor): RedirectResponse
@@ -107,7 +107,7 @@ class TwoFactorController extends Controller
 
         return redirect()->route('account.two-factor')
             ->with('two_factor.recovery_codes', $codes)
-            ->with('success', 'New recovery codes created. The old ones no longer work.');
+            ->with('success', __('New recovery codes created. The old ones no longer work.'));
     }
 
     private function pendingUser(Request $request): ?User

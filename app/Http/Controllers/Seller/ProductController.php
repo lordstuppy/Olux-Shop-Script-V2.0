@@ -57,7 +57,7 @@ class ProductController extends Controller
         $product->save();
         $this->audit->log('product.created', $product);
 
-        return redirect()->route('seller.products.edit', $product)->with('success', "Draft \"{$product->title}\" saved. Add files or licence keys, then submit it for review.");
+        return redirect()->route('seller.products.edit', $product)->with('success', __('Draft ":title" saved. Add files or licence keys, then submit it for review.', ['title' => $product->title]));
     }
 
     public function edit(Product $product): View
@@ -87,8 +87,8 @@ class ProductController extends Controller
         $this->audit->log('product.updated', $product, ['needs_review' => $needsReview]);
 
         $message = $needsReview
-            ? "\"{$product->title}\" was updated and is hidden from the catalog until an administrator reviews the changes."
-            : "\"{$product->title}\" was updated.";
+            ? __('":title" was updated and is hidden from the catalog until an administrator reviews the changes.', ['title' => $product->title])
+            : __('":title" was updated.', ['title' => $product->title]);
 
         return redirect()->route('seller.products.edit', $product)->with('success', $message);
     }
@@ -97,16 +97,16 @@ class ProductController extends Controller
     {
         Gate::authorize('update', $product);
         if (! in_array($product->status, [ProductStatus::Draft, ProductStatus::Disabled], true)) {
-            throw new UserFacingException("\"{$product->title}\" is {$product->status->value} and cannot be submitted again.");
+            throw new UserFacingException(__('":title" is :status and cannot be submitted again.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
         }
         if ($product->delivery_type === DeliveryType::Instant && ! $product->currentFiles()->exists() && ! $product->licenseKeys()->exists()) {
-            throw new UserFacingException('Instant-delivery products need at least one file or licence key before review.');
+            throw new UserFacingException(__('Instant-delivery products need at least one file or licence key before review.'));
         }
         $product->status = ProductStatus::PendingReview;
         $product->save();
         $this->audit->log('product.submitted', $product);
 
-        return back()->with('success', "\"{$product->title}\" was submitted for review.");
+        return back()->with('success', __('":title" was submitted for review.', ['title' => $product->title]));
     }
 
     public function uploadFile(Request $request, Product $product): RedirectResponse
@@ -128,7 +128,7 @@ class ProductController extends Controller
         $this->audit->log('product.file_added', $product, ['file_id' => $file->id, 'checksum' => $file->checksum]);
         ScanProductFile::dispatch($file->id);
 
-        return back()->with('success', "Uploaded \"{$file->original_name}\" (".number_format($file->size).' bytes). It is delivered to buyers once the virus scan reports it clean.');
+        return back()->with('success', __('Uploaded ":name" (:size bytes). It is delivered to buyers once the virus scan reports it clean.', ['name' => $file->original_name, 'size' => number_format($file->size)]));
     }
 
     public function uploadImage(Request $request, Product $product, ProductImageService $images): RedirectResponse
@@ -142,7 +142,7 @@ class ProductController extends Controller
         $this->markForReviewIfActive($product);
         $this->audit->log('product.image_added', $product, ['image_id' => $image->id]);
 
-        return back()->with('success', "Image added ({$image->width} x {$image->height}).");
+        return back()->with('success', __('Image added (:width x :height).', ['width' => $image->width, 'height' => $image->height]));
     }
 
     public function deleteImage(Product $product, ProductImage $image, ProductImageService $images): RedirectResponse
@@ -152,7 +152,7 @@ class ProductController extends Controller
         $images->delete($image);
         $this->audit->log('product.image_removed', $product, ['image_id' => $image->id]);
 
-        return back()->with('success', 'Image removed.');
+        return back()->with('success', __('Image removed.'));
     }
 
     public function deleteFile(Product $product, ProductFile $file): RedirectResponse
@@ -165,7 +165,7 @@ class ProductController extends Controller
         $file->save();
         $this->audit->log('product.file_retired', $product, ['file_id' => $file->id]);
 
-        return back()->with('success', "\"{$file->original_name}\" will not be delivered to new orders. Existing buyers keep access.");
+        return back()->with('success', __('":name" will not be delivered to new orders. Existing buyers keep access.', ['name' => $file->original_name]));
     }
 
     public function addKeys(Request $request, Product $product): RedirectResponse
@@ -175,7 +175,7 @@ class ProductController extends Controller
         $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $data['keys'])), fn ($line) => $line !== ''));
         $keys = array_values(array_unique($lines));
         if (count($keys) > 1000) {
-            throw new UserFacingException('Add at most 1000 licence keys at a time.');
+            throw new UserFacingException(__('Add at most 1000 licence keys at a time.'));
         }
 
         $added = DB::transaction(function () use ($product, $keys) {
@@ -200,7 +200,7 @@ class ProductController extends Controller
         // Duplicates within the submitted list and keys already stored.
         $skipped = count($lines) - $added;
 
-        return back()->with('success', "Added {$added} licence keys; stock increased by {$added}.".($skipped > 0 ? " Skipped {$skipped} duplicates." : ''));
+        return back()->with('success', __('Added :added licence keys; stock increased by :added.', ['added' => $added]).($skipped > 0 ? ' '.__('Skipped :skipped duplicates.', ['skipped' => $skipped]) : ''));
     }
 
     private function validated(Request $request): array
@@ -220,10 +220,10 @@ class ProductController extends Controller
         try {
             $priceMinor = Money::parseInput($data['price'], $data['currency']);
         } catch (InvalidArgumentException) {
-            throw new UserFacingException("Enter the price as a number such as 19.99 in {$data['currency']}.");
+            throw new UserFacingException(__('Enter the price as a number such as 19.99 in :currency.', ['currency' => $data['currency']]));
         }
         if ($priceMinor <= 0 || $priceMinor > 99999999) {
-            throw new UserFacingException('The price must be between 0.01 and 999999.99.');
+            throw new UserFacingException(__('The price must be between 0.01 and 999999.99.'));
         }
 
         return [

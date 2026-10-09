@@ -43,15 +43,15 @@ class ShkeeperPayoutService
     {
         $this->assertEnabled();
         if (! in_array($payout->status, [PayoutStatus::Approved, PayoutStatus::Failed], true)) {
-            throw new UserFacingException("Payout #{$payout->id} must be approved before it can be sent.");
+            throw new UserFacingException(__('Payout #:id must be approved before it can be sent.', ['id' => $payout->id]));
         }
         $profile = $payout->seller->sellerProfile;
         if ($until = $profile?->payoutsBlockedUntil()) {
-            throw new UserFacingException('The seller changed the payout address recently; sending is possible after '.$until->format('Y-m-d H:i').' UTC.');
+            throw new UserFacingException(__('The seller changed the payout address recently; sending is possible after :time UTC.', ['time' => $until->format('Y-m-d H:i')]));
         }
         $crypto = (string) ($profile?->payout_crypto ?? '');
         if ($crypto === '') {
-            throw new UserFacingException('The seller has not chosen a payout cryptocurrency. Pay this one manually or ask the seller to update the payout settings.');
+            throw new UserFacingException(__('The seller has not chosen a payout cryptocurrency. Pay this one manually or ask the seller to update the payout settings.'));
         }
 
         try {
@@ -59,7 +59,7 @@ class ShkeeperPayoutService
             $taskId = $this->client->createPayout($crypto, $cryptoAmount, $payout->destination, $this->fee($crypto), $payout->externalId(), $this->callbackUrl());
         } catch (ShkeeperException $e) {
             Log::error('Shkeeper payout {payout_id} failed to start: {reason}', ['payout_id' => $payout->id, 'reason' => $e->getMessage()]);
-            throw new UserFacingException("Shkeeper did not accept payout #{$payout->id}: {$e->getMessage()}");
+            throw new UserFacingException(__('Shkeeper did not accept payout #:id: :reason', ['id' => $payout->id, 'reason' => $e->getMessage()]));
         }
 
         $this->payouts->transitionAutomated($payout, PayoutStatus::Processing, [PayoutStatus::Approved, PayoutStatus::Failed], $admin, [
@@ -75,7 +75,7 @@ class ShkeeperPayoutService
     {
         $this->assertEnabled();
         if (! ShkeeperClient::isValidCryptoName($crypto) || trim($destination) === '') {
-            throw new UserFacingException('A crypto refund needs a cryptocurrency and the buyer\'s destination address.');
+            throw new UserFacingException(__('A crypto refund needs a cryptocurrency and the buyer\'s destination address.'));
         }
 
         $payment = $this->refunds->reservePending($order, $amountMinor, $crypto, trim($destination), $admin, $reason);
@@ -84,7 +84,7 @@ class ShkeeperPayoutService
             $taskId = $this->client->createPayout($crypto, $cryptoAmount, trim($destination), $this->fee($crypto), 'refund-'.$payment->id, $this->callbackUrl());
         } catch (ShkeeperException $e) {
             $this->refunds->failPending($payment, $e->getMessage());
-            throw new UserFacingException('Shkeeper did not accept the refund transfer: '.$e->getMessage().' Nothing was refunded.');
+            throw new UserFacingException(__('Shkeeper did not accept the refund transfer: :reason Nothing was refunded.', ['reason' => $e->getMessage()]));
         }
 
         $payment->forceFill([
@@ -212,7 +212,7 @@ class ShkeeperPayoutService
     private function assertEnabled(): void
     {
         if (! self::enabled()) {
-            throw new UserFacingException('Automatic payouts are turned off (SHKEEPER_PAYOUTS_ENABLED). Pay manually and record the reference.');
+            throw new UserFacingException(__('Automatic payouts are turned off (SHKEEPER_PAYOUTS_ENABLED). Pay manually and record the reference.'));
         }
     }
 }

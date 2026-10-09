@@ -31,12 +31,12 @@ class GiftCardController extends Controller
         try {
             $amount = Money::parseInput($data['amount'], $data['currency']);
         } catch (InvalidArgumentException) {
-            throw new UserFacingException("Enter the amount as a number such as 25.00 in {$data['currency']}.");
+            throw new UserFacingException(__('Enter the amount as a number such as 25.00 in :currency.', ['currency' => $data['currency']]));
         }
 
         [$card, $code] = $giftCards->create($amount, $data['currency'], $request->user(), isset($data['expires_at']) ? Carbon::parse($data['expires_at'])->endOfDay() : null);
 
         // The plain code is shown exactly once; only its hash is stored.
-        return back()->with('success', 'Gift card created for '.Money::format($amount, $data['currency']).'. Code: '.$code.' (copy it now; it will not be shown again).');
+        return back()->with('success', __('Gift card created for :amount. Code: :code (copy it now; it will not be shown again).', ['amount' => Money::format($amount, $data['currency']), 'code' => $code]));
     }
 }

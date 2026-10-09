@@ -24,6 +24,6 @@ class RequireRecentPassword
         $request->session()->put('url.intended', $return);
 
         return redirect()->route('password.confirm')
-            ->with('info', 'Confirm your password to continue. This is required for sensitive actions.');
+            ->with('info', __('Confirm your password to continue. This is required for sensitive actions.'));
     }
 }

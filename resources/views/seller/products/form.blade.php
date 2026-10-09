@@ -48,7 +48,7 @@
             <ul>
                 @foreach ($product->files as $file)
                     <li>
-                        {{ $file->original_name }} ({{ __(':size bytes', ['size' => number_format($file->size)]) }}, SHA-256 <span class="mono">{{ substr($file->checksum, 0, 16) }}...</span>), {{ __('virus scan:') }} <x-status :value="$file->scan_status" />
+                        {{ $file->original_name }} ({{ __(':size bytes', ['size' => number_format($file->size)]) }}, SHA-256 <span class="mono">{{ substr($file->checksum, 0, 16) }}...</span>), {{ __('virus scan:') }} <x-status :value="$file->scan_status" :label="\App\Support\Labels::scanStatus($file->scan_status)" />
                         @if ($file->retired_at)
                             - {{ __('retired') }}
                         @else

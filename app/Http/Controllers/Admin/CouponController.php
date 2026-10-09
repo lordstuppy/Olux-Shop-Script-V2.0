@@ -37,7 +37,7 @@ class CouponController extends Controller
 
         $code = Coupon::normalizeCode($data['code']);
         if (Coupon::where('code', $code)->exists()) {
-            throw new UserFacingException("Coupon {$code} already exists.");
+            throw new UserFacingException(__('Coupon :code already exists.', ['code' => $code]));
         }
 
         $type = CouponType::from($data['type']);
@@ -49,10 +49,10 @@ class CouponController extends Controller
                 : Money::parseInput($data['value'], (string) $currency);
             $minTotal = ! empty($data['min_total']) ? Money::parseInput($data['min_total'], $currency ?? (string) config('shop.default_currency')) : 0;
         } catch (InvalidArgumentException) {
-            throw new UserFacingException('Enter the value and minimum total as plain numbers, for example 10 or 12.50.');
+            throw new UserFacingException(__('Enter the value and minimum total as plain numbers, for example 10 or 12.50.'));
         }
         if ($value <= 0 || ($type === CouponType::Percent && $value > 10000)) {
-            throw new UserFacingException('A percent coupon must be between 0.01 and 100 percent; a fixed coupon must be positive.');
+            throw new UserFacingException(__('A percent coupon must be between 0.01 and 100 percent; a fixed coupon must be positive.'));
         }
 
         $coupon = Coupon::create([
@@ -69,7 +69,7 @@ class CouponController extends Controller
         ]);
         $audit->log('coupon.created', $coupon, ['type' => $type->value, 'value' => $value]);
 
-        return back()->with('success', "Coupon {$code} created.");
+        return back()->with('success', __('Coupon :code created.', ['code' => $code]));
     }
 
     public function toggle(Coupon $coupon, AuditLogger $audit): RedirectResponse
@@ -78,7 +78,7 @@ class CouponController extends Controller
         $coupon->save();
         $audit->log($coupon->active ? 'coupon.activated' : 'coupon.deactivated', $coupon);
 
-        return back()->with('success', "Coupon {$coupon->code} is now ".($coupon->active ? 'active' : 'inactive').'.');
+        return back()->with('success', $coupon->active ? __('Coupon :code is now active.', ['code' => $coupon->code]) : __('Coupon :code is now inactive.', ['code' => $coupon->code]));
     }
 
     private function decimal(string $value): string

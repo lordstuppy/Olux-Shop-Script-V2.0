@@ -18,7 +18,7 @@ class TicketReplyMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "New reply on ticket #{$this->ticket->id}: {$this->ticket->subject}");
+        return new Envelope(subject: __('New reply on ticket #:id: :subject', ['id' => $this->ticket->id, 'subject' => $this->ticket->subject]));
     }
 
     public function content(): Content

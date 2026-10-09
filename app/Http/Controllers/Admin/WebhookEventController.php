@@ -20,10 +20,10 @@ class WebhookEventController extends Controller
 
     public function retry(Request $request, WebhookEvent $event, WebhookProcessor $processor, AuditLogger $audit): RedirectResponse
     {
-        abort_unless(in_array($event->status, [WebhookEventStatus::Failed, WebhookEventStatus::Dead], true), 422, 'Only failed events can be retried.');
+        abort_unless(in_array($event->status, [WebhookEventStatus::Failed, WebhookEventStatus::Dead], true), 422, __('Only failed events can be retried.'));
         $audit->log('webhook.retried', $event);
         $processor->process($event);
 
-        return back()->with('success', "Webhook event #{$event->id} reprocessed: {$event->status->value}.");
+        return back()->with('success', __('Webhook event #:id reprocessed: :status.', ['id' => $event->id, 'status' => mb_strtolower($event->status->label())]));
     }
 }

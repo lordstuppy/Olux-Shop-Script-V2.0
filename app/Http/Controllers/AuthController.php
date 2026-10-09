@@ -43,7 +43,7 @@ class AuthController extends Controller
         // New session id after login prevents session fixation.
         $request->session()->regenerate();
 
-        return redirect()->intended(route('account.orders'))->with('success', "Signed in as {$user->email}.");
+        return redirect()->intended(route('account.orders'))->with('success', __('Signed in as :email.', ['email' => $user->email]));
     }
 
     public function showRegister(): View
@@ -54,7 +54,7 @@ class AuthController extends Controller
     public function register(Request $request, UserService $users): RedirectResponse
     {
         if (! FormTrap::passes($request)) {
-            throw new UserFacingException('Registration could not be completed. Wait a few seconds, then submit the form again.');
+            throw new UserFacingException(__('Registration could not be completed. Wait a few seconds, then submit the form again.'));
         }
 
         $data = $request->validate([
@@ -63,15 +63,15 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'confirmed', 'max:255', Password::min(12)->letters()->numbers()],
             'accept_terms' => ['accepted'],
         ], [
-            'email.unique' => 'An account with this email already exists. Sign in or reset your password.',
-            'accept_terms.accepted' => 'You must accept the terms of service and privacy policy to create an account.',
+            'email.unique' => __('An account with this email already exists. Sign in or reset your password.'),
+            'accept_terms.accepted' => __('You must accept the terms of service and privacy policy to create an account.'),
         ]);
 
         $user = $users->register($data['name'], $data['email'], $data['password']);
         $users->completeLogin($user, false, $request);
         $request->session()->regenerate();
 
-        return redirect()->route('verification.notice')->with('success', "Welcome, {$user->name}. We sent a confirmation link to {$user->email}.");
+        return redirect()->route('verification.notice')->with('success', __('Welcome, :name. We sent a confirmation link to :email.', ['name' => $user->name, 'email' => $user->email]));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -80,6 +80,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home')->with('success', 'You have been signed out.');
+        return redirect()->route('home')->with('success', __('You have been signed out.'));
     }
 }

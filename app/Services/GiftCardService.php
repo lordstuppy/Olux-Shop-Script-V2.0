@@ -29,7 +29,7 @@ class GiftCardService
     public function create(int $amountMinor, string $currency, User $admin, ?Carbon $expiresAt = null): array
     {
         if (! Money::isSupported($currency) || $amountMinor <= 0) {
-            throw new UserFacingException('Gift cards need a positive amount in a supported currency.');
+            throw new UserFacingException(__('Gift cards need a positive amount in a supported currency.'));
         }
 
         $code = $this->generateCode();
@@ -51,13 +51,13 @@ class GiftCardService
         return DB::transaction(function () use ($user, $code) {
             $card = GiftCard::query()->whereIn('code_hash', KeyedHash::candidates($this->normalize($code)))->lockForUpdate()->first();
             if ($card === null) {
-                throw new UserFacingException('Gift card code not recognised. Check the code and try again.');
+                throw new UserFacingException(__('Gift card code not recognised. Check the code and try again.'));
             }
             if ($card->redeemed_at !== null) {
-                throw new UserFacingException("This gift card was already redeemed on {$card->redeemed_at->toDateString()}.");
+                throw new UserFacingException(__('This gift card was already redeemed on :date.', ['date' => $card->redeemed_at->toDateString()]));
             }
             if ($card->expires_at !== null && $card->expires_at->isPast()) {
-                throw new UserFacingException("This gift card expired on {$card->expires_at->toDateString()}.");
+                throw new UserFacingException(__('This gift card expired on :date.', ['date' => $card->expires_at->toDateString()]));
             }
 
             $this->balances->credit($user, $card->amount_minor, $card->currency, 'gift_card', $card, 'Gift card ending '.$card->code_last4);

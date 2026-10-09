@@ -20,6 +20,6 @@ class ReviewController extends Controller
         $review = $reviews->submit($request->user(), $product, (int) $data['rating'], $data['title'], $data['body']);
 
         return redirect()->route('products.show', $product->slug)->withFragment('reviews')
-            ->with('success', $review->wasRecentlyCreated ? 'Thank you, your review is published.' : 'Your review was updated.');
+            ->with('success', $review->wasRecentlyCreated ? __('Thank you, your review is published.') : __('Your review was updated.'));
     }
 }

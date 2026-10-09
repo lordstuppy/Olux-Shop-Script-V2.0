@@ -29,7 +29,7 @@ class CartController extends Controller
         $quantity = (int) ($data['quantity'] ?? 1);
         $cart->add($product, $quantity);
 
-        return redirect()->route('cart.show')->with('success', "Added {$quantity} x \"{$product->title}\" to your cart.");
+        return redirect()->route('cart.show')->with('success', __('Added :quantity x ":title" to your cart.', ['quantity' => $quantity, 'title' => $product->title]));
     }
 
     public function update(Request $request, Product $product, CartService $cart): RedirectResponse
@@ -40,8 +40,8 @@ class CartController extends Controller
         $cart->update($product, (int) $data['quantity']);
 
         $message = (int) $data['quantity'] === 0
-            ? "Removed \"{$product->title}\" from your cart."
-            : "Updated \"{$product->title}\" to quantity {$data['quantity']}.";
+            ? __('Removed ":title" from your cart.', ['title' => $product->title])
+            : __('Updated ":title" to quantity :quantity.', ['title' => $product->title, 'quantity' => $data['quantity']]);
 
         return redirect()->route('cart.show')->with('success', $message);
     }
@@ -50,7 +50,7 @@ class CartController extends Controller
     {
         $cart->remove($product->id);
 
-        return redirect()->route('cart.show')->with('success', "Removed \"{$product->title}\" from your cart.");
+        return redirect()->route('cart.show')->with('success', __('Removed ":title" from your cart.', ['title' => $product->title]));
     }
 
     public function currency(Request $request, CartService $cart): RedirectResponse
@@ -58,6 +58,6 @@ class CartController extends Controller
         $data = $request->validate(['currency' => ['required', Rule::in(Money::supported())]]);
         $cart->setCurrency($data['currency']);
 
-        return back()->with('success', "Prices are now shown in {$data['currency']}.");
+        return back()->with('success', __('Prices are now shown in :currency.', ['currency' => $data['currency']]));
     }
 }

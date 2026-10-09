@@ -25,12 +25,12 @@ class CartService
     public function add(Product $product, int $quantity = 1): void
     {
         if (! $product->isPurchasable()) {
-            throw new UserFacingException("\"{$product->title}\" is not available for purchase right now.");
+            throw new UserFacingException(__('":title" is not available for purchase right now.', ['title' => $product->title]));
         }
 
         $items = $this->rawItems();
         if (! isset($items[$product->id]) && count($items) >= (int) config('shop.max_cart_lines')) {
-            throw new UserFacingException('Your cart is full. Check out or remove an item before adding more.');
+            throw new UserFacingException(__('Your cart is full. Check out or remove an item before adding more.'));
         }
 
         $this->setQuantity($product, ($items[$product->id] ?? 0) + $quantity);
@@ -86,7 +86,7 @@ class CartService
     public function setCurrency(string $currency): void
     {
         if (! Money::isSupported($currency)) {
-            throw new UserFacingException("{$currency} is not a supported currency. Choose one of: ".implode(', ', Money::supported()).'.');
+            throw new UserFacingException(__(':currency is not a supported currency. Choose one of: :options.', ['currency' => $currency, 'options' => implode(', ', Money::supported())]));
         }
         $this->session->put(self::CURRENCY_KEY, $currency);
     }
@@ -114,14 +114,14 @@ class CartService
             $product = $products->get($productId);
             if ($product === null || ! $product->isPurchasable()) {
                 $problems[] = $product
-                    ? "\"{$product->title}\" is no longer available and was removed from your cart."
-                    : 'An item in your cart no longer exists and was removed.';
+                    ? __('":title" is no longer available and was removed from your cart.', ['title' => $product->title])
+                    : __('An item in your cart no longer exists and was removed.');
                 $this->remove($productId);
 
                 continue;
             }
             if ($product->stock !== null && $quantity > $product->stock) {
-                $problems[] = "Only {$product->stock} of \"{$product->title}\" left; your quantity was reduced.";
+                $problems[] = __('Only :stock of ":title" left; your quantity was reduced.', ['stock' => $product->stock, 'title' => $product->title]);
                 $quantity = $product->stock;
                 $this->session->put(self::ITEMS_KEY.'.'.$productId, $quantity);
             }
@@ -129,7 +129,7 @@ class CartService
             try {
                 [$unit, $rate] = $this->converter->convert($product->price_minor, $product->currency, $currency);
             } catch (UserFacingException $e) {
-                $problems[] = "\"{$product->title}\" is priced in {$product->currency} and cannot be bought in {$currency}. Switch the cart currency to {$product->currency}.";
+                $problems[] = __('":title" is priced in :product_currency and cannot be bought in :currency. Switch the cart currency to :product_currency.', ['title' => $product->title, 'product_currency' => $product->currency, 'currency' => $currency]);
 
                 continue;
             }
@@ -157,10 +157,10 @@ class CartService
     {
         $max = (int) config('shop.max_quantity_per_line');
         if ($quantity > $max) {
-            throw new UserFacingException("You can buy at most {$max} of \"{$product->title}\" per order.");
+            throw new UserFacingException(__('You can buy at most :max of ":title" per order.', ['max' => $max, 'title' => $product->title]));
         }
         if ($product->stock !== null && $quantity > $product->stock) {
-            throw new UserFacingException("Only {$product->stock} of \"{$product->title}\" left in stock.");
+            throw new UserFacingException(__('Only :stock of ":title" left in stock.', ['stock' => $product->stock, 'title' => $product->title]));
         }
 
         $items = $this->rawItems();

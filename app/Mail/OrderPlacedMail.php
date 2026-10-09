@@ -19,7 +19,7 @@ class OrderPlacedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Order '.$this->order->shortId().' placed: awaiting payment');
+        return new Envelope(subject: __('Order :order placed: awaiting payment', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content

@@ -21,7 +21,7 @@ class CheckoutController extends Controller
     public function show(Request $request, CartService $cart, CouponService $coupons, PaymentService $payments): View|RedirectResponse
     {
         if ($cart->isEmpty()) {
-            return redirect()->route('cart.show')->with('error', 'Your cart is empty. Add a product before checking out.');
+            return redirect()->route('cart.show')->with('error', __('Your cart is empty. Add a product before checking out.'));
         }
 
         $totals = $cart->totals();
@@ -60,14 +60,14 @@ class CheckoutController extends Controller
         $request->session()->put(self::COUPON_KEY, $coupon->code);
 
         return redirect()->route('checkout.show')
-            ->with('success', "Coupon {$coupon->code} applied: ".Money::format($discount, $totals['currency']).' off.');
+            ->with('success', __('Coupon :code applied: :amount off.', ['code' => $coupon->code, 'amount' => Money::format($discount, $totals['currency'])]));
     }
 
     public function removeCoupon(Request $request): RedirectResponse
     {
         $request->session()->forget(self::COUPON_KEY);
 
-        return redirect()->route('checkout.show')->with('success', 'Coupon removed.');
+        return redirect()->route('checkout.show')->with('success', __('Coupon removed.'));
     }
 
     public function store(Request $request, CartService $cart, OrderService $orders, PaymentService $payments): RedirectResponse
@@ -78,8 +78,8 @@ class CheckoutController extends Controller
             'crypto' => ['required_if:payment_method,crypto', 'nullable', 'string', 'max:32'],
             'accept_terms' => ['accepted'],
         ], [
-            'accept_terms.accepted' => 'You must accept the terms of service to place an order.',
-            'crypto.required_if' => 'Choose the cryptocurrency you want to pay with.',
+            'accept_terms.accepted' => __('You must accept the terms of service to place an order.'),
+            'crypto.required_if' => __('Choose the cryptocurrency you want to pay with.'),
         ]);
 
         $user = $request->user();

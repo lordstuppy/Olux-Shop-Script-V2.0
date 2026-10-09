@@ -47,7 +47,7 @@ class TwoFactorService
         // instead of true, so the setup code cannot be replayed at sign-in.
         $step = $this->google2fa->verifyKeyNewer($secret, $this->normalize($code), 0, 1);
         if (! is_int($step)) {
-            throw new UserFacingException('That code is not valid. Check the time on your phone and enter the current 6-digit code.');
+            throw new UserFacingException(__('That code is not valid. Check the time on your phone and enter the current 6-digit code.'));
         }
 
         $codes = $this->newRecoveryCodes();
@@ -65,7 +65,7 @@ class TwoFactorService
     public function disable(User $user, string $code): void
     {
         if (! $this->verify($user, $code)) {
-            throw new UserFacingException('That code is not valid. Enter a current authenticator code or an unused recovery code.');
+            throw new UserFacingException(__('That code is not valid. Enter a current authenticator code or an unused recovery code.'));
         }
         $user->forceFill([
             'two_factor_secret' => null,

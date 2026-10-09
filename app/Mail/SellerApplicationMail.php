@@ -18,7 +18,7 @@ class SellerApplicationMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Your seller application was '.$this->profile->status->value);
+        return new Envelope(subject: __('Your seller application was :status', ['status' => strtolower($this->profile->status->label())]));
     }
 
     public function content(): Content

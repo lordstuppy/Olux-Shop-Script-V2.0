@@ -21,7 +21,7 @@ class PasswordResetController extends Controller
         $users->sendPasswordResetLink($data['email']);
         $minutes = config('auth.passwords.users.expire');
 
-        return back()->with('success', "If an account exists for {$data['email']}, a reset link has been sent. It expires in {$minutes} minutes.");
+        return back()->with('success', __('If an account exists for :email, a reset link has been sent. It expires in :minutes minutes.', ['email' => $data['email'], 'minutes' => $minutes]));
     }
 
     public function showReset(Request $request, string $token): View
@@ -38,6 +38,6 @@ class PasswordResetController extends Controller
         ]);
         $users->resetPassword($data['email'], $data['token'], $data['password']);
 
-        return redirect()->route('login')->with('success', 'Your password was changed and other sessions were signed out. Sign in with the new password.');
+        return redirect()->route('login')->with('success', __('Your password was changed and other sessions were signed out. Sign in with the new password.'));
     }
 }

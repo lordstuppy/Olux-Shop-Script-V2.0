@@ -34,7 +34,7 @@ class AccountController extends Controller
         $data = $request->validate(['name' => ['required', 'string', 'max:80']]);
         $request->user()->update(['name' => $data['name']]);
 
-        return back()->with('success', 'Display name updated.');
+        return back()->with('success', __('Display name updated.'));
     }
 
     public function requestEmailChange(Request $request, UserService $users): RedirectResponse
@@ -42,10 +42,10 @@ class AccountController extends Controller
         $data = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
             'current_password' => ['required', 'current_password'],
-        ], ['current_password.current_password' => 'The current password is incorrect.']);
+        ], ['current_password.current_password' => __('The current password is incorrect.')]);
         $users->requestEmailChange($request->user(), $data['email']);
 
-        return back()->with('success', "We sent a confirmation link to {$data['email']}. Your address changes once you open it (valid for 24 hours).");
+        return back()->with('success', __('We sent a confirmation link to :email. Your address changes once you open it (valid for 24 hours).', ['email' => $data['email']]));
     }
 
     public function showEmailConfirm(string $token): View
@@ -57,7 +57,7 @@ class AccountController extends Controller
     {
         $users->confirmEmailChange($request->user(), $token);
 
-        return redirect()->route('account.settings')->with('success', "Your email address is now {$request->user()->email}.");
+        return redirect()->route('account.settings')->with('success', __('Your email address is now :email.', ['email' => $request->user()->email]));
     }
 
     public function updatePassword(Request $request, AuditLogger $audit): RedirectResponse
@@ -65,7 +65,7 @@ class AccountController extends Controller
         $data = $request->validate([
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'string', 'confirmed', 'max:255', Password::min(12)->letters()->numbers()],
-        ], ['current_password.current_password' => 'The current password is incorrect.']);
+        ], ['current_password.current_password' => __('The current password is incorrect.')]);
 
         $user = $request->user();
         $user->forceFill(['password_hash' => $data['password'], 'remember_token' => Str::random(60)])->save();
@@ -74,6 +74,6 @@ class AccountController extends Controller
         DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
         $audit->log('user.password_changed', $user, [], $user);
 
-        return back()->with('success', 'Password changed. Other sessions were signed out.');
+        return back()->with('success', __('Password changed. Other sessions were signed out.'));
     }
 }

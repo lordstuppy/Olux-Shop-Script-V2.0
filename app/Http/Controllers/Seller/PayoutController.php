@@ -36,11 +36,11 @@ class PayoutController extends Controller
         try {
             $amount = Money::parseInput($data['amount'], $data['currency']);
         } catch (InvalidArgumentException) {
-            throw new UserFacingException("Enter the payout amount as a number such as 50.00 in {$data['currency']}.");
+            throw new UserFacingException(__('Enter the payout amount as a number such as 50.00 in :currency.', ['currency' => $data['currency']]));
         }
 
         $payout = $payouts->requestPayout($request->user(), $amount, $data['currency']);
 
-        return back()->with('success', 'Payout #'.$payout->id.' of '.Money::format($amount, $data['currency']).' requested to '.$payout->destination.'.');
+        return back()->with('success', __('Payout #:id of :amount requested to :destination.', ['id' => $payout->id, 'amount' => Money::format($amount, $data['currency']), 'destination' => $payout->destination]));
     }
 }

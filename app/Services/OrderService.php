@@ -38,7 +38,7 @@ class OrderService
     public function createFromCart(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode = null): Order
     {
         if (! preg_match('/^[A-Za-z0-9-]{16,64}$/', $idempotencyKey)) {
-            throw new UserFacingException('The checkout form has expired. Reload the checkout page and submit it again.');
+            throw new UserFacingException(__('The checkout form has expired. Reload the checkout page and submit it again.'));
         }
 
         $existing = $this->findByIdempotencyKey($buyer, $idempotencyKey);
@@ -46,10 +46,10 @@ class OrderService
             return $existing;
         }
         if ($items === []) {
-            throw new UserFacingException('Your cart is empty.');
+            throw new UserFacingException(__('Your cart is empty.'));
         }
         if (! Money::isSupported($currency)) {
-            throw new UserFacingException("{$currency} is not a supported currency.");
+            throw new UserFacingException(__(':currency is not a supported currency.', ['currency' => $currency]));
         }
 
         try {
@@ -129,10 +129,10 @@ class OrderService
         DB::transaction(function () use ($order, $actor) {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== OrderStatus::Pending) {
-                throw new UserFacingException("Order {$locked->shortId()} is {$locked->status->label()} and can no longer be cancelled.");
+                throw new UserFacingException(__('Order :order is :status and can no longer be cancelled.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
             }
             if ($this->hasIncomingPayment($locked)) {
-                throw new UserFacingException("Order {$locked->shortId()} has a payment in progress and cannot be cancelled. Open a support ticket if you need help.");
+                throw new UserFacingException(__('Order :order has a payment in progress and cannot be cancelled. Open a support ticket if you need help.', ['order' => $locked->shortId()]));
             }
             $this->transition($locked, OrderStatus::Cancelled);
             $this->releaseReservations($locked);
@@ -176,7 +176,7 @@ class OrderService
         $maxOpen = (int) config('shop.max_open_orders');
         $open = Order::query()->where('buyer_id', $buyer->id)->where('status', OrderStatus::Pending->value)->count();
         if ($open >= $maxOpen) {
-            throw new UserFacingException("You have {$open} unpaid ".($open === 1 ? 'order' : 'orders').'. Pay or cancel one in Your orders before placing a new one.');
+            throw new UserFacingException(trans_choice('{1} You have :count unpaid order. Pay or cancel one in Your orders before placing a new one.|[0,*] You have :count unpaid orders. Pay or cancel one in Your orders before placing a new one.', $open));
         }
 
         ksort($items);
@@ -191,16 +191,16 @@ class OrderService
             $product = $products->get($productId);
             if ($product === null || ! $product->isPurchasable()) {
                 $title = $product?->title ?? "Product #{$productId}";
-                throw new UserFacingException("\"{$title}\" is no longer available. Remove it from your cart to continue.");
+                throw new UserFacingException(__('":title" is no longer available. Remove it from your cart to continue.', ['title' => $title]));
             }
             if ($product->seller_id === $buyer->id) {
-                throw new UserFacingException("You cannot buy your own product \"{$product->title}\".");
+                throw new UserFacingException(__('You cannot buy your own product ":title".', ['title' => $product->title]));
             }
             if ($quantity < 1 || $quantity > (int) config('shop.max_quantity_per_line')) {
-                throw new UserFacingException("Invalid quantity for \"{$product->title}\".");
+                throw new UserFacingException(__('Invalid quantity for ":title".', ['title' => $product->title]));
             }
             if ($product->stock !== null && $product->stock < $quantity) {
-                throw new UserFacingException("Only {$product->stock} of \"{$product->title}\" left in stock; you asked for {$quantity}.");
+                throw new UserFacingException(__('Only :stock of ":title" left in stock; you asked for :quantity.', ['stock' => $product->stock, 'title' => $product->title, 'quantity' => $quantity]));
             }
 
             [$unit, $rate] = $this->converter->convert($product->price_minor, $product->currency, $currency);

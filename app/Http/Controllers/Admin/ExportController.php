@@ -18,23 +18,23 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ExportController extends Controller
 {
-    public const TYPES = [
-        'orders' => 'Orders',
-        'payments' => 'Payments and refunds',
-        'payouts' => 'Seller payouts',
-        'ledger' => 'Seller ledger entries',
-        'balances' => 'Buyer balance transactions',
-    ];
+    public const TYPES = ['orders', 'payments', 'payouts', 'ledger', 'balances'];
 
     public function index(): View
     {
-        return view('admin.exports', ['types' => self::TYPES]);
+        return view('admin.exports', ['types' => [
+            'orders' => __('Orders'),
+            'payments' => __('Payments and refunds'),
+            'payouts' => __('Seller payouts'),
+            'ledger' => __('Seller ledger entries'),
+            'balances' => __('Buyer balance transactions'),
+        ]]);
     }
 
     public function download(Request $request, AuditLogger $audit): StreamedResponse
     {
         $data = $request->validate([
-            'type' => ['required', Rule::in(array_keys(self::TYPES))],
+            'type' => ['required', Rule::in(self::TYPES)],
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);

@@ -19,7 +19,7 @@ class SellerSaleMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'New sale: order '.$this->order->shortId());
+        return new Envelope(subject: __('New sale: order :order', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content

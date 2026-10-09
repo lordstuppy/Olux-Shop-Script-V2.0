@@ -56,7 +56,7 @@ class UserController extends Controller
         $data = $request->validate(['role' => ['required', Rule::enum(UserRole::class)]]);
         $users->setRole($user, UserRole::from($data['role']), $request->user());
 
-        return back()->with('success', "{$user->email} is now {$data['role']}.");
+        return back()->with('success', __(':email is now :role.', ['email' => $user->email, 'role' => mb_strtolower(UserRole::from($data['role'])->label())]));
     }
 
     public function revokeSessions(Request $request, User $user, AuditLogger $audit): RedirectResponse
@@ -65,7 +65,7 @@ class UserController extends Controller
         $user->forceFill(['remember_token' => Str::random(60)])->save();
         $audit->log('user.sessions_revoked_by_staff', $user, ['count' => $count], $request->user());
 
-        return back()->with('success', "Signed out {$count} ".($count === 1 ? 'session' : 'sessions')." of {$user->email}.");
+        return back()->with('success', trans_choice('{1} Signed out :count session of :email.|[0,*] Signed out :count sessions of :email.', $count, ['email' => $user->email]));
     }
 
     public function adjustBalance(Request $request, User $user, BalanceService $balances, AuditLogger $audit): RedirectResponse
@@ -79,10 +79,10 @@ class UserController extends Controller
         try {
             $amount = Money::parseInput($data['amount'], $data['currency']);
         } catch (InvalidArgumentException) {
-            throw new UserFacingException("Enter the amount as a number such as 5.00 in {$data['currency']}.");
+            throw new UserFacingException(__('Enter the amount as a number such as 5.00 in :currency.', ['currency' => $data['currency']]));
         }
         if ($amount <= 0) {
-            throw new UserFacingException('The amount must be greater than zero.');
+            throw new UserFacingException(__('The amount must be greater than zero.'));
         }
 
         $note = 'Adjustment by staff: '.$data['reason'];
@@ -95,7 +95,15 @@ class UserController extends Controller
             'reason' => $data['reason'],
         ], $request->user());
 
-        return back()->with('success', ucfirst($data['direction']).'ed '.Money::format($amount, $data['currency'])." to {$user->email}. New balance: ".Money::format($user->fresh()->balance_minor, $user->fresh()->currency).'.');
+        $replace = [
+            'amount' => Money::format($amount, $data['currency']),
+            'email' => $user->email,
+            'balance' => Money::format($user->fresh()->balance_minor, $user->fresh()->currency),
+        ];
+
+        return back()->with('success', $data['direction'] === 'credit'
+            ? __('Credited :amount to :email. New balance: :balance.', $replace)
+            : __('Debited :amount to :email. New balance: :balance.', $replace));
     }
 
     public function status(Request $request, User $user, UserService $users): RedirectResponse
@@ -103,6 +111,6 @@ class UserController extends Controller
         $data = $request->validate(['status' => ['required', Rule::enum(UserStatus::class)]]);
         $users->setStatus($user, UserStatus::from($data['status']), $request->user());
 
-        return back()->with('success', "{$user->email} is now {$data['status']}.");
+        return back()->with('success', __(':email is now :status.', ['email' => $user->email, 'status' => mb_strtolower(UserStatus::from($data['status'])->label())]));
     }
 }

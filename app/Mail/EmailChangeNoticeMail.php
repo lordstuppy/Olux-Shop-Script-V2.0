@@ -18,7 +18,7 @@ class EmailChangeNoticeMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Email change requested for your account');
+        return new Envelope(subject: __('Email change requested for your account'));
     }
 
     public function content(): Content

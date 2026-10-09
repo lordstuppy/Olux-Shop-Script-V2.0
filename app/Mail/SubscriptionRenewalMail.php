@@ -18,7 +18,7 @@ class SubscriptionRenewalMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Your access to \"{$this->item->title}\" ends on {$this->item->access_expires_at->format('Y-m-d')}");
+        return new Envelope(subject: __('Your access to ":title" ends on :date', ['title' => $this->item->title, 'date' => $this->item->access_expires_at->format('Y-m-d')]));
     }
 
     public function content(): Content

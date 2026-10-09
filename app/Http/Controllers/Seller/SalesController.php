@@ -26,6 +26,6 @@ class SalesController extends Controller
         $data = $request->validate(['payload' => ['required', 'string', 'max:10000']]);
         $delivery->deliverManually($item, $request->user(), $data['payload']);
 
-        return back()->with('success', "Delivered \"{$item->title}\" for order {$item->order->shortId()}. The buyer was notified by email.");
+        return back()->with('success', __('Delivered ":title" for order :order. The buyer was notified by email.', ['title' => $item->title, 'order' => $item->order->shortId()]));
     }
 }

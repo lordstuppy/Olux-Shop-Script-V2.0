@@ -18,7 +18,7 @@ class OrderPaidMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Order {$this->order->shortId()} paid");
+        return new Envelope(subject: __('Order :order paid', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content

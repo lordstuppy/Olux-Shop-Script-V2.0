@@ -60,11 +60,11 @@ class PaymentService
     public function startShkeeperPayment(Order $order, string $crypto): Payment
     {
         if ($order->status !== OrderStatus::Pending) {
-            throw new UserFacingException("Order {$order->shortId()} is {$order->status->label()}; no payment is needed.");
+            throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $order->shortId(), 'status' => mb_strtolower($order->status->label())]));
         }
         $allowed = array_column($this->availableCryptos(), 'name');
         if (! in_array($crypto, $allowed, true)) {
-            throw new UserFacingException("{$crypto} is not accepted. Choose one of: ".implode(', ', $allowed).'.');
+            throw new UserFacingException(__(':crypto is not accepted. Choose one of: :options.', ['crypto' => $crypto, 'options' => implode(', ', $allowed)]));
         }
 
         // The HTTP call happens outside any transaction so no row lock is held while waiting.
@@ -72,19 +72,19 @@ class PaymentService
             $invoice = $this->shkeeper->createInvoice($crypto, $order->public_id, $order->total_minor, $order->currency, config('services.shkeeper.callback_url') ?: route('webhooks.shkeeper'));
         } catch (ShkeeperException $e) {
             Log::error('Failed to create Shkeeper invoice for order {public_id}: {reason}', ['public_id' => $order->public_id, 'reason' => $e->getMessage()]);
-            throw new UserFacingException("The payment provider could not create an invoice for order {$order->shortId()}. Your order is saved; try again in a few minutes or choose another currency.");
+            throw new UserFacingException(__('The payment provider could not create an invoice for order :order. Your order is saved; try again in a few minutes or choose another currency.', ['order' => $order->shortId()]));
         }
 
         return DB::transaction(function () use ($order, $invoice) {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== OrderStatus::Pending) {
-                throw new UserFacingException("Order {$locked->shortId()} is {$locked->status->label()}; no payment is needed.");
+                throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
             }
 
             $payment = Payment::query()->where('order_id', $locked->id)->where('kind', PaymentKind::Charge->value)
                 ->where('provider', PaymentProvider::Shkeeper->value)->lockForUpdate()->first();
             if ($payment?->status === PaymentStatus::Confirmed) {
-                throw new UserFacingException("Order {$locked->shortId()} is already paid.");
+                throw new UserFacingException(__('Order :order is already paid.', ['order' => $locked->shortId()]));
             }
 
             $isNew = $payment === null;
@@ -125,10 +125,10 @@ class PaymentService
         $payment = DB::transaction(function () use ($order, $buyer) {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->buyer_id !== $buyer->id) {
-                throw new UserFacingException('You can only pay for your own orders.');
+                throw new UserFacingException(__('You can only pay for your own orders.'));
             }
             if ($locked->status !== OrderStatus::Pending) {
-                throw new UserFacingException("Order {$locked->shortId()} is {$locked->status->label()}; no payment is needed.");
+                throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
             }
             if ($locked->total_minor === 0) {
                 // Fully discounted order: nothing to debit.

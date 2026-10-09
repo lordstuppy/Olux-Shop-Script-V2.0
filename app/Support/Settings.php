@@ -14,21 +14,42 @@ use Throwable;
  */
 final class Settings
 {
-    /** key => [label, validation rules, hint] */
+    /** key => validation rules */
     public const EDITABLE = [
-        'commission_bps' => ['Platform commission (basis points)', ['integer', 'min:0', 'max:10000'], '1000 = 10.00%. Applies to new sales.'],
-        'payout_hold_days' => ['Payout hold (days)', ['integer', 'min:0', 'max:90'], 'Earnings become payable after this many days.'],
-        'min_payout_minor' => ['Minimum payout (minor units)', ['integer', 'min:100', 'max:10000000'], '1000 = 10.00 in the payout currency.'],
-        'order_ttl_minutes' => ['Unpaid order lifetime (minutes)', ['integer', 'min:10', 'max:1440'], 'Stock is released when an unpaid order expires.'],
-        'max_open_orders' => ['Unpaid orders per buyer', ['integer', 'min:1', 'max:20'], 'Prevents stock hoarding.'],
-        'max_downloads_per_item' => ['Downloads per purchased item', ['integer', 'min:1', 'max:1000'], 'Products may override this.'],
-        'quote_ttl_minutes' => ['Crypto quote validity (minutes)', ['integer', 'min:5', 'max:120'], 'Older quotes must be refreshed before paying.'],
-        'renewal_reminder_days' => ['Subscription reminder (days before end)', ['integer', 'min:1', 'max:60'], ''],
-        'payout_address_cooldown_hours' => ['Payout pause after address change (hours)', ['integer', 'min:0', 'max:720'], ''],
-        'support_email' => ['Support email address', ['email', 'max:255'], 'Shown in the footer and in emails.'],
+        'commission_bps' => ['integer', 'min:0', 'max:10000'],
+        'payout_hold_days' => ['integer', 'min:0', 'max:90'],
+        'min_payout_minor' => ['integer', 'min:100', 'max:10000000'],
+        'order_ttl_minutes' => ['integer', 'min:10', 'max:1440'],
+        'max_open_orders' => ['integer', 'min:1', 'max:20'],
+        'max_downloads_per_item' => ['integer', 'min:1', 'max:1000'],
+        'quote_ttl_minutes' => ['integer', 'min:5', 'max:120'],
+        'renewal_reminder_days' => ['integer', 'min:1', 'max:60'],
+        'payout_address_cooldown_hours' => ['integer', 'min:0', 'max:720'],
+        'support_email' => ['email', 'max:255'],
     ];
 
     private const CACHE_KEY = 'shop.settings';
+
+    /**
+     * Translated label and hint for each editable key.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function descriptions(): array
+    {
+        return [
+            'commission_bps' => [__('Platform commission (basis points)'), __('1000 = 10.00%. Applies to new sales.')],
+            'payout_hold_days' => [__('Payout hold (days)'), __('Earnings become payable after this many days.')],
+            'min_payout_minor' => [__('Minimum payout (minor units)'), __('1000 = 10.00 in the payout currency.')],
+            'order_ttl_minutes' => [__('Unpaid order lifetime (minutes)'), __('Stock is released when an unpaid order expires.')],
+            'max_open_orders' => [__('Unpaid orders per buyer'), __('Prevents stock hoarding.')],
+            'max_downloads_per_item' => [__('Downloads per purchased item'), __('Products may override this.')],
+            'quote_ttl_minutes' => [__('Crypto quote validity (minutes)'), __('Older quotes must be refreshed before paying.')],
+            'renewal_reminder_days' => [__('Subscription reminder (days before end)'), ''],
+            'payout_address_cooldown_hours' => [__('Payout pause after address change (hours)'), ''],
+            'support_email' => [__('Support email address'), __('Shown in the footer and in emails.')],
+        ];
+    }
 
     /** Merges stored overrides into config. Never fails the request. */
     public static function apply(): void
@@ -40,7 +61,7 @@ final class Settings
         }
         foreach ($values as $key => $value) {
             if (array_key_exists($key, self::EDITABLE)) {
-                config(['shop.'.$key => in_array('integer', self::EDITABLE[$key][1], true) ? (int) $value : $value]);
+                config(['shop.'.$key => in_array('integer', self::EDITABLE[$key], true) ? (int) $value : $value]);
             }
         }
     }

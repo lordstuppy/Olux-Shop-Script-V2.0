@@ -18,7 +18,7 @@ class OrderDeliveredMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Order {$this->order->shortId()}: an item was delivered");
+        return new Envelope(subject: __('Order :order: an item was delivered', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content

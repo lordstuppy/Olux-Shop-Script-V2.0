@@ -30,10 +30,10 @@ class SellerApplicationController extends Controller
             'payout_address' => ['required', 'string', 'min:10', 'max:255', 'regex:/^[A-Za-z0-9:_.-]+$/'],
             'about' => ['nullable', 'string', 'max:2000'],
             'accept_seller_terms' => ['accepted'],
-        ], ['accept_seller_terms.accepted' => 'You must accept the seller terms, including the prohibited goods list.']);
+        ], ['accept_seller_terms.accepted' => __('You must accept the seller terms, including the prohibited goods list.')]);
 
         $users->applyAsSeller($request->user(), $data);
 
-        return redirect()->route('seller.apply')->with('success', 'Seller application submitted. An administrator will review it; you will see the decision on this page.');
+        return redirect()->route('seller.apply')->with('success', __('Seller application submitted. An administrator will review it; you will see the decision on this page.'));
     }
 }

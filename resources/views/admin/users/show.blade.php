@@ -62,7 +62,7 @@
     <h2>{{ __('Balance history') }}</h2>
     <ul>
         @forelse ($transactions as $tx)
-            <li>{{ $tx->created_at->format('Y-m-d H:i') }}: {{ $tx->type }} {{ money($tx->amount_minor < 0 ? -$tx->amount_minor : $tx->amount_minor, $tx->currency) }} {{ $tx->amount_minor < 0 ? __('debit') : __('credit') }}, {{ __('balance :amount', ['amount' => money($tx->balance_after_minor, $tx->currency)]) }}</li>
+            <li>{{ $tx->created_at->format('Y-m-d H:i') }}: {{ \App\Support\Labels::balanceType($tx->type) }} {{ money($tx->amount_minor < 0 ? -$tx->amount_minor : $tx->amount_minor, $tx->currency) }} {{ $tx->amount_minor < 0 ? __('debit') : __('credit') }}, {{ __('balance :amount', ['amount' => money($tx->balance_after_minor, $tx->currency)]) }}</li>
         @empty
             <li>{{ __('No balance activity.') }}</li>
         @endforelse

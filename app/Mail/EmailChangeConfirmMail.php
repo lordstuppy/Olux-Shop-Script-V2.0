@@ -18,7 +18,7 @@ class EmailChangeConfirmMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Confirm your new email address');
+        return new Envelope(subject: __('Confirm your new email address'));
     }
 
     public function content(): Content

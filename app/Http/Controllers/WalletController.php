@@ -25,6 +25,6 @@ class WalletController extends Controller
         $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
         $card = $giftCards->redeem($request->user(), $data['code']);
 
-        return redirect()->route('wallet.show')->with('success', 'Gift card redeemed: '.Money::format($card->amount_minor, $card->currency).' added to your balance.');
+        return redirect()->route('wallet.show')->with('success', __('Gift card redeemed: :amount added to your balance.', ['amount' => Money::format($card->amount_minor, $card->currency)]));
     }
 }

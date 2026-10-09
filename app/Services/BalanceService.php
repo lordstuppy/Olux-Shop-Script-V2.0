@@ -30,10 +30,9 @@ class BalanceService
 
             if ($locked->currency !== $currency) {
                 if ($locked->balance_minor !== 0) {
-                    throw new UserFacingException(sprintf(
-                        'Your balance is held in %s, so %s cannot be added to it. Contact support to arrange a conversion.',
-                        $locked->currency,
-                        Money::format($amountMinor, $currency),
+                    throw new UserFacingException(__(
+                        'Your balance is held in :balance_currency, so :amount cannot be added to it. Contact support to arrange a conversion.',
+                        ['balance_currency' => $locked->currency, 'amount' => Money::format($amountMinor, $currency)],
                     ));
                 }
                 $locked->currency = $currency;
@@ -57,18 +56,15 @@ class BalanceService
             $locked = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->currency !== $currency) {
-                throw new UserFacingException(sprintf(
-                    'Your balance is held in %s but this order is in %s. Pay with crypto instead, or switch the shop currency to %s.',
-                    $locked->currency,
-                    $currency,
-                    $locked->currency,
+                throw new UserFacingException(__(
+                    'Your balance is held in :balance_currency but this order is in :currency. Pay with crypto instead, or switch the shop currency to :balance_currency.',
+                    ['balance_currency' => $locked->currency, 'currency' => $currency],
                 ));
             }
             if ($locked->balance_minor < $amountMinor) {
-                throw new UserFacingException(sprintf(
-                    'Insufficient balance. Order total %s, available %s.',
-                    Money::format($amountMinor, $currency),
-                    Money::format($locked->balance_minor, $currency),
+                throw new UserFacingException(__(
+                    'Insufficient balance. Order total :total, available :available.',
+                    ['total' => Money::format($amountMinor, $currency), 'available' => Money::format($locked->balance_minor, $currency)],
                 ));
             }
 

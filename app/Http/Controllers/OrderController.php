@@ -82,7 +82,7 @@ class OrderController extends Controller
         $data = $request->validate(['crypto' => ['required', 'string', 'max:32']]);
         $payments->startShkeeperPayment($order, $data['crypto']);
 
-        return redirect()->route('orders.pay', $order)->with('success', "Invoice created. Send the exact {$data['crypto']} amount shown below.");
+        return redirect()->route('orders.pay', $order)->with('success', __('Invoice created. Send the exact :crypto amount shown below.', ['crypto' => $data['crypto']]));
     }
 
     public function payWithBalance(Order $order, PaymentService $payments): RedirectResponse
@@ -98,7 +98,7 @@ class OrderController extends Controller
         Gate::authorize('act', $order);
         $orders->cancel($order, auth()->user());
 
-        return redirect()->route('orders.show', $order)->with('success', "Order {$order->shortId()} cancelled. Reserved stock was released.");
+        return redirect()->route('orders.show', $order)->with('success', __('Order :order cancelled. Reserved stock was released.', ['order' => $order->shortId()]));
     }
 
     /**
@@ -121,7 +121,7 @@ class OrderController extends Controller
     public function invoice(Order $order, InvoiceService $invoices): StreamedResponse
     {
         Gate::authorize('view', $order);
-        abort_unless($order->status->isPaidState(), 404, 'Invoices are issued once an order is paid.');
+        abort_unless($order->status->isPaidState(), 404, __('Invoices are issued once an order is paid.'));
 
         $invoice = $invoices->issue($order);
 
@@ -135,17 +135,15 @@ class OrderController extends Controller
         $short = $order->shortId();
 
         return match (true) {
-            $order->status === OrderStatus::Delivered => ['success', "Order {$short} paid. Download link sent to your email."],
-            $order->status === OrderStatus::Paid => ['success', "Order {$short} paid. Delivery is in progress; you will receive an email when it is ready."],
+            $order->status === OrderStatus::Delivered => ['success', __('Order :order paid. Download link sent to your email.', ['order' => $short])],
+            $order->status === OrderStatus::Paid => ['success', __('Order :order paid. Delivery is in progress; you will receive an email when it is ready.', ['order' => $short])],
             $order->status === OrderStatus::Pending && $charge?->failure_reason !== null => ['error', $charge->failure_reason],
-            $order->status === OrderStatus::Pending && $charge?->received_minor > 0 => ['info', sprintf(
-                'Partial payment received for order %s: %s of %s. Send the remaining amount to the same address.',
-                $short,
-                Money::format($charge->received_minor, $order->currency),
-                Money::format($order->total_minor, $order->currency),
+            $order->status === OrderStatus::Pending && $charge?->received_minor > 0 => ['info', __(
+                'Partial payment received for order :order: :received of :total. Send the remaining amount to the same address.',
+                ['order' => $short, 'received' => Money::format($charge->received_minor, $order->currency), 'total' => Money::format($order->total_minor, $order->currency)],
             )],
-            $order->status === OrderStatus::Pending => ['info', "Order {$short} is waiting for payment confirmation. This page refreshes every 30 seconds."],
-            default => ['info', "Order {$short} is {$order->status->label()}."],
+            $order->status === OrderStatus::Pending => ['info', __('Order :order is waiting for payment confirmation. This page refreshes every 30 seconds.', ['order' => $short])],
+            default => ['info', __('Order :order is :status.', ['order' => $short, 'status' => mb_strtolower($order->status->label())])],
         };
     }
 }

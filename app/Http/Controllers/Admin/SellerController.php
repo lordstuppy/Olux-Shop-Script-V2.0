@@ -23,7 +23,7 @@ class SellerController extends Controller
         $data = $request->validate(['commission_bps' => ['nullable', 'integer', 'min:0', 'max:10000']]);
         $users->approveSeller($profile, $request->user(), isset($data['commission_bps']) ? (int) $data['commission_bps'] : null);
 
-        return back()->with('success', "Approved {$profile->display_name} as a seller.");
+        return back()->with('success', __('Approved :name as a seller.', ['name' => $profile->display_name]));
     }
 
     public function reject(Request $request, SellerProfile $profile, UserService $users): RedirectResponse
@@ -31,6 +31,6 @@ class SellerController extends Controller
         $data = $request->validate(['note' => ['required', 'string', 'max:500']]);
         $users->rejectSeller($profile, $request->user(), $data['note']);
 
-        return back()->with('success', "Rejected the application from {$profile->display_name}.");
+        return back()->with('success', __('Rejected the application from :name.', ['name' => $profile->display_name]));
     }
 }

@@ -19,7 +19,7 @@ class RefundIssuedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Refund for order '.$this->order->shortId());
+        return new Envelope(subject: __('Refund for order :order', ['order' => $this->order->shortId()]));
     }
 
     public function content(): Content

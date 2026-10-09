@@ -43,7 +43,7 @@ class ProductController extends Controller
     public function downloadFile(Product $product, ProductFile $file, AuditLogger $audit): StreamedResponse
     {
         abort_unless($file->product_id === $product->id, 404);
-        abort_if($file->scan_status === 'infected', 410, 'This file was removed because it failed the virus scan.');
+        abort_if($file->scan_status === 'infected', 410, __('This file was removed because it failed the virus scan.'));
         $audit->log('product.file_inspected', $product, ['file_id' => $file->id]);
 
         return Storage::disk('products')->download($file->storage_path, $file->original_name);
@@ -56,13 +56,13 @@ class ProductController extends Controller
         if ($data['status'] === ProductStatus::Active->value) {
             $unscanned = $product->currentFiles()->whereNotIn('scan_status', ['clean', 'skipped'])->count();
             if ($unscanned > 0) {
-                throw new UserFacingException("\"{$product->title}\" has {$unscanned} ".($unscanned === 1 ? 'file' : 'files').' without a clean virus scan. Approve it after the scan finishes.');
+                throw new UserFacingException(trans_choice('{1} ":title" has :count file without a clean virus scan. Approve it after the scan finishes.|[0,*] ":title" has :count files without a clean virus scan. Approve it after the scan finishes.', $unscanned, ['title' => $product->title]));
             }
         }
         $product->status = ProductStatus::from($data['status']);
         $product->save();
         $audit->log('product.status_changed', $product, ['from' => $old->value, 'to' => $data['status']]);
 
-        return back()->with('success', "\"{$product->title}\" is now {$data['status']}.");
+        return back()->with('success', __('":title" is now :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
     }
 }

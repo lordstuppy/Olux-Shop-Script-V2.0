@@ -31,11 +31,11 @@ class SessionController extends Controller
             }
         }
         if (! $deleted) {
-            throw new UserFacingException('That session no longer exists.');
+            throw new UserFacingException(__('That session no longer exists.'));
         }
         $audit->log('user.session_revoked', $user, [], $user);
 
-        return back()->with('success', 'The session was signed out.');
+        return back()->with('success', __('The session was signed out.'));
     }
 
     public function destroyOthers(Request $request, AuditLogger $audit): RedirectResponse
@@ -46,6 +46,6 @@ class SessionController extends Controller
         $user->forceFill(['remember_token' => Str::random(60)])->save();
         $audit->log('user.sessions_revoked', $user, ['count' => $count], $user);
 
-        return back()->with('success', "Signed out {$count} other ".($count === 1 ? 'session' : 'sessions').'.');
+        return back()->with('success', trans_choice('{1} Signed out :count other session.|[0,*] Signed out :count other sessions.', $count));
     }
 }

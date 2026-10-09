@@ -28,6 +28,6 @@ class ReviewController extends Controller
         $data = $request->validate(['status' => ['required', Rule::in(['visible', 'hidden'])]]);
         $reviews->moderate($review, $data['status'], $request->user());
 
-        return back()->with('success', "Review #{$review->id} is now {$data['status']}.");
+        return back()->with('success', $data['status'] === 'visible' ? __('Review #:id is now visible.', ['id' => $review->id]) : __('Review #:id is now hidden.', ['id' => $review->id]));
     }
 }

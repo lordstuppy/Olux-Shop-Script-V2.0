@@ -25,11 +25,11 @@ class DownloadController extends Controller
 
         abort_unless($item->order_id === $order->id, 404);
         abort_unless($file->product_id === $item->product_id, 404);
-        abort_unless(in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true), 403, 'Downloads are not available for this order.');
+        abort_unless(in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true), 403, __('Downloads are not available for this order.'));
         $delivered = collect($item->delivered_payload['files'] ?? [])->pluck('id')->all();
-        abort_unless(in_array($file->id, $delivered, true), 403, 'This file has not been delivered for this order.');
-        abort_if($item->accessExpired(), 403, 'Access to this subscription ended on '.$item->access_expires_at?->format('Y-m-d').'. Renew it from the product page.');
-        abort_if($file->scan_status === 'infected', 410, 'This file was removed because it failed a security scan.');
+        abort_unless(in_array($file->id, $delivered, true), 403, __('This file has not been delivered for this order.'));
+        abort_if($item->accessExpired(), 403, __('Access to this subscription ended on :date. Renew it from the product page.', ['date' => $item->access_expires_at?->format('Y-m-d')]));
+        abort_if($file->scan_status === 'infected', 410, __('This file was removed because it failed a security scan.'));
 
         // Count the download under a row lock so parallel requests cannot exceed the limit.
         $limit = $item->product->downloadLimit();
@@ -42,7 +42,7 @@ class DownloadController extends Controller
 
             return true;
         });
-        abort_unless($allowed, 403, "The download limit of {$limit} for this item has been reached. Open a support ticket if you need another copy.");
+        abort_unless($allowed, 403, __('The download limit of :limit for this item has been reached. Open a support ticket if you need another copy.', ['limit' => $limit]));
 
         Log::info('Download of file {file_id} for order {public_id} by user {user_id}', [
             'file_id' => $file->id,

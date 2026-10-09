@@ -30,7 +30,7 @@ class EmailVerificationController extends Controller
             $audit->log('user.email_verified', $user, [], $user);
         }
 
-        return redirect()->route('products.index')->with('success', "Email address {$user->email} confirmed. You can now check out.");
+        return redirect()->route('products.index')->with('success', __('Email address :email confirmed. You can now check out.', ['email' => $user->email]));
     }
 
     public function resend(Request $request): RedirectResponse
@@ -40,6 +40,6 @@ class EmailVerificationController extends Controller
         }
         $request->user()->sendEmailVerificationNotification();
 
-        return back()->with('success', "A new confirmation link was sent to {$request->user()->email}.");
+        return back()->with('success', __('A new confirmation link was sent to :email.', ['email' => $request->user()->email]));
     }
 }
