@@ -16,6 +16,7 @@
 # Needs: docker, php 8.3, composer, python3, openssl, curl, pg_dump/pg_restore.
 # PHP's built-in server stands in for PHP-FPM behind nginx.
 set -eu
+export PYTHONDONTWRITEBYTECODE=1
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 HERE="$ROOT/tests/live"
 W=${LIVE_DIR:-/tmp/shop-live}

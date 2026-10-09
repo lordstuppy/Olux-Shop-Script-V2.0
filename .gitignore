@@ -30,3 +30,4 @@ Thumbs.db
 /tests/browser/playwright-report
 /tests/load/webhook-orders.json
 /docker/rclone/rclone.conf
+__pycache__/
