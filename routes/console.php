@@ -12,6 +12,7 @@ use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
 use App\Services\ShkeeperPayoutService;
+use App\Support\TranslationCatalog;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
@@ -94,6 +95,25 @@ Artisan::command('shop:create-admin {email} {--name=Administrator}', function (s
 
     return 0;
 })->purpose('Create an administrator account (interactive password prompt)');
+
+Artisan::command('shop:lang-extract {--check : Exit 1 if lang/en.json is out of date instead of writing it}', function () {
+    $json = TranslationCatalog::encode(TranslationCatalog::extract());
+    $current = is_file(TranslationCatalog::path()) ? file_get_contents(TranslationCatalog::path()) : '';
+    if ($this->option('check')) {
+        if ($json !== $current) {
+            $this->error('lang/en.json is out of date. Run: php artisan shop:lang-extract');
+
+            return 1;
+        }
+        $this->info('lang/en.json is up to date.');
+
+        return 0;
+    }
+    file_put_contents(TranslationCatalog::path(), $json);
+    $this->info('Wrote '.count(json_decode($json, true)).' keys to lang/en.json.');
+
+    return 0;
+})->purpose('Collect translation keys from the source into lang/en.json');
 
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();

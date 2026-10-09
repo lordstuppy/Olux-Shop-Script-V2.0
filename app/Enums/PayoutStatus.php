@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasLabel;
+
 enum PayoutStatus: string
 {
+    use HasLabel;
+
     case Requested = 'requested';
     case Approved = 'approved';
     // Sent to Shkeeper; waiting for the payout callback or status poll.

@@ -179,6 +179,22 @@ CSRF verification stays enabled in tests. `tests/browser/run.sh` and
 `tests/load/run.sh` **drop and re-seed** the database named in `.env`, so run
 them against a disposable database only.
 
+## Translations
+
+Every user-facing string goes through Laravel's translator with the English
+text as the key (`__('Your cart')`). The shop ships in English only.
+
+- `lang/en.json` lists every key. It is generated from the source by
+  `php artisan shop:lang-extract`; a unit test fails when it is out of date.
+- `lang/en/*.php` hold the framework messages (validation, passwords,
+  pagination).
+- To add a language, copy `lang/en.json` to `lang/<locale>.json` and
+  `lang/en/` to `lang/<locale>/`, translate the values (keep `:placeholders`
+  unchanged), and set `APP_LOCALE=<locale>`. Missing keys fall back to
+  English.
+- Money and dates keep their current fixed formats (`12.34 USD`, ISO dates)
+  in every locale.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for the disclosure process and a summary of the

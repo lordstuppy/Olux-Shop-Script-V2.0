@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasLabel;
+
 enum OrderStatus: string
 {
+    use HasLabel;
+
     case Pending = 'pending';
     case Paid = 'paid';
     case Delivered = 'delivered';
@@ -39,7 +43,7 @@ enum OrderStatus: string
         return in_array($this, [self::Paid, self::Delivered, self::PartiallyRefunded, self::Refunded], true);
     }
 
-    public function label(): string
+    public function labelKey(): string
     {
         return match ($this) {
             self::Pending => 'Awaiting payment',

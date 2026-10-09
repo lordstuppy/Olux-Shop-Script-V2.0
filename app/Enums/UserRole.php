@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Enums\Concerns\HasLabel;
+
 enum UserRole: string
 {
+    use HasLabel;
+
     case Buyer = 'buyer';
     case Seller = 'seller';
     case Support = 'support';
@@ -14,10 +18,5 @@ enum UserRole: string
     public function isStaff(): bool
     {
         return in_array($this, [self::Support, self::Finance, self::Admin], true);
-    }
-
-    public function label(): string
-    {
-        return ucfirst($this->value);
     }
 }
