@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -49,7 +50,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Settings::apply();
+        // Stored settings must never be baked into bootstrap/cache/config.php,
+        // and long-running queue workers pick up changes before every job.
+        if (! $this->app->runningConsoleCommand('config:cache', 'optimize')) {
+            Settings::apply();
+        }
+        Queue::before(fn () => Settings::apply());
         $this->configureRateLimits();
 
         foreach (Permissions::MAP as $ability => $roles) {

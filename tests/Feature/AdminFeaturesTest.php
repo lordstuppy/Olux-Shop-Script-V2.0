@@ -18,14 +18,20 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\TicketService;
 use App\Support\Settings;
+use Illuminate\Contracts\Queue\Job;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use Tests\TestCase;
 
 class AdminFeaturesTest extends TestCase
@@ -136,6 +142,43 @@ class AdminFeaturesTest extends TestCase
 
         $this->admin(UserRole::Finance);
         $this->get(route('admin.settings.index'))->assertForbidden();
+    }
+
+    public function test_stored_settings_are_not_baked_into_the_config_cache(): void
+    {
+        DB::table('settings')->insert(['key' => 'payout_hold_days', 'value' => '3', 'created_at' => now(), 'updated_at' => now()]);
+        Cache::forget('shop.settings');
+        config(['shop.payout_hold_days' => 7]);
+        $argv = $_SERVER['argv'];
+        try {
+            // config:cache boots a fresh application and serialises its config;
+            // the stored override must not end up in that file.
+            $_SERVER['argv'] = ['artisan', 'config:cache'];
+            $this->app->getProvider(AppServiceProvider::class)->boot();
+            $this->assertSame(7, config('shop.payout_hold_days'));
+
+            $_SERVER['argv'] = ['artisan', 'queue:work'];
+            $this->app->getProvider(AppServiceProvider::class)->boot();
+            $this->assertSame(3, config('shop.payout_hold_days'));
+        } finally {
+            $_SERVER['argv'] = $argv;
+        }
+    }
+
+    public function test_queue_workers_pick_up_changed_settings_before_each_job(): void
+    {
+        config(['shop.commission_bps' => 1000]);
+        // Another process (the admin UI) saves a new value and clears the cache.
+        DB::table('settings')->insert(['key' => 'commission_bps', 'value' => '1750', 'created_at' => now(), 'updated_at' => now()]);
+        Cache::forget('shop.settings');
+        $this->assertSame(1000, config('shop.commission_bps'));
+
+        $job = Mockery::mock(Job::class);
+        $job->shouldReceive('payload')->andReturn([]);
+        $job->shouldIgnoreMissing();
+        event(new JobProcessing('database', $job));
+
+        $this->assertSame(1750, config('shop.commission_bps'));
     }
 
     public function test_ticket_assignment_and_internal_notes(): void
