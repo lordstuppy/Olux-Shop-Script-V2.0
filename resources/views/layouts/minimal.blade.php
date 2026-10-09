@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,8 +14,8 @@
 <main id="main">
     <div class="wrap">
         @yield('content')
-        <p class="muted mt">Request id: <span class="mono">{{ app(\App\Support\RequestId::class)->get() }}</span>. Quote it if you contact <a href="mailto:{{ config('shop.support_email') }}">{{ config('shop.support_email') }}</a>.</p>
-        <p><a href="{{ url('/') }}">Back to the shop</a></p>
+        <p class="muted mt">{{ __('Request id:') }} <span class="mono">{{ app(\App\Support\RequestId::class)->get() }}</span>. {{ __('Quote it if you contact') }} <a href="mailto:{{ config('shop.support_email') }}">{{ config('shop.support_email') }}</a>.</p>
+        <p><a href="{{ url('/') }}">{{ __('Back to the shop') }}</a></p>
     </div>
 </main>
 </body>

@@ -28,8 +28,8 @@
 @endpush
 
 @section('content')
-    <nav aria-label="Breadcrumb">
-        <a href="{{ route('products.index') }}">Products</a>
+    <nav aria-label="{{ __('Breadcrumb') }}">
+        <a href="{{ route('products.index') }}">{{ __('Products') }}</a>
         @if ($product->category)
             / <a href="{{ route('products.index', ['category' => $product->category->slug]) }}">{{ $product->category->name }}</a>
         @endif
@@ -38,9 +38,9 @@
     <div class="two-col">
         <div>
             <h1>{{ $product->title }}</h1>
-            <p class="muted">Sold by {{ $product->seller->sellerProfile?->display_name ?? $product->seller->name }}
+            <p class="muted">{{ __('Sold by :seller', ['seller' => $product->seller->sellerProfile?->display_name ?? $product->seller->name]) }}
                 @if ($rating['count'] > 0)
-                    &middot; <a href="#reviews">Rated {{ number_format($rating['average'], 1) }} out of 5 ({{ $rating['count'] }} {{ $rating['count'] === 1 ? 'review' : 'reviews' }})</a>
+                    &middot; <a href="#reviews">{{ trans_choice('{1} Rated :rating out of 5 (:count review)|[2,*] Rated :rating out of 5 (:count reviews)', $rating['count'], ['rating' => number_format($rating['average'], 1)]) }}</a>
                 @endif
             </p>
             @if ($product->images->isNotEmpty())
@@ -50,7 +50,7 @@
                     @if ($product->images->count() > 1)
                         <ul class="thumbs">
                             @foreach ($product->images->skip(1) as $image)
-                                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" alt="{{ $image->alt_text ?? 'Additional image of '.$product->title }}" loading="lazy"></a></li>
+                                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" alt="{{ $image->alt_text ?? __('Additional image of :title', ['title' => $product->title]) }}" loading="lazy"></a></li>
                             @endforeach
                         </ul>
                     @endif
@@ -60,28 +60,28 @@
         </div>
 
         <aside class="card" aria-labelledby="buy-heading">
-            <h2 id="buy-heading">Buy</h2>
+            <h2 id="buy-heading">{{ __('Buy') }}</h2>
             <p class="price">{{ money($product->price_minor, $product->currency) }}</p>
             @if ($convertedMinor !== null)
-                <p class="muted">About {{ money($convertedMinor, $cartCurrency) }} at the current shop rate.</p>
+                <p class="muted">{{ __('About :amount at the current shop rate.', ['amount' => money($convertedMinor, $cartCurrency)]) }}</p>
             @endif
-            <p>{{ $product->delivery_type === \App\Enums\DeliveryType::Instant ? 'Instant delivery after payment confirmation.' : 'Delivered by the seller after payment, usually within 24 hours.' }}</p>
+            <p>{{ $product->delivery_type === \App\Enums\DeliveryType::Instant ? __('Instant delivery after payment confirmation.') : __('Delivered by the seller after payment, usually within 24 hours.') }}</p>
             @if ($product->stock !== null)
-                <p>{{ $product->stock > 0 ? $product->stock.' in stock.' : 'Out of stock.' }}</p>
+                <p>{{ $product->stock > 0 ? __(':count in stock.', ['count' => $product->stock]) : __('Out of stock.') }}</p>
             @endif
             @if ($product->access_days)
-                <p>Subscription: {{ $product->access_days }} days of access per unit, starting at delivery. To renew, buy it again; we email you a reminder before access ends.</p>
+                <p>{{ __('Subscription: :days days of access per unit, starting at delivery. To renew, buy it again; we email you a reminder before access ends.', ['days' => $product->access_days]) }}</p>
             @endif
             @if ($product->delivery_type === \App\Enums\DeliveryType::Instant && $product->activeFiles->isNotEmpty())
-                <p class="hint">Includes {{ $product->activeFiles->count() }} {{ $product->activeFiles->count() === 1 ? 'file' : 'files' }}; up to {{ $product->downloadLimit() }} downloads per purchase.</p>
+                <p class="hint">{{ trans_choice('{1} Includes :count file; up to :limit downloads per purchase.|[2,*] Includes :count files; up to :limit downloads per purchase.', $product->activeFiles->count(), ['limit' => $product->downloadLimit()]) }}</p>
             @endif
 
             @if ($product->isPurchasable())
                 <form method="post" action="{{ route('cart.add') }}" class="stack">
                     @csrf
                     <input type="hidden" name="product_id" value="{{ $product->id }}">
-                    <x-field name="quantity" label="Quantity" type="number" value="1" min="1" :max="min(config('shop.max_quantity_per_line'), $product->stock ?? config('shop.max_quantity_per_line'))" required />
-                    <button type="submit">Add to cart</button>
+                    <x-field name="quantity" :label="__('Quantity')" type="number" value="1" min="1" :max="min(config('shop.max_quantity_per_line'), $product->stock ?? config('shop.max_quantity_per_line'))" required />
+                    <button type="submit">{{ __('Add to cart') }}</button>
                 </form>
             @endif
             @auth
@@ -89,13 +89,13 @@
                     <form method="post" action="{{ route('wishlist.destroy', $product->id) }}" class="mt">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn-secondary">Remove from wishlist</button>
+                        <button type="submit" class="btn-secondary">{{ __('Remove from wishlist') }}</button>
                     </form>
                 @else
                     <form method="post" action="{{ route('wishlist.store') }}" class="mt">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <button type="submit" class="btn-secondary">Save to wishlist</button>
+                        <button type="submit" class="btn-secondary">{{ __('Save to wishlist') }}</button>
                     </form>
                 @endif
             @endauth
@@ -103,35 +103,35 @@
     </div>
 
     <section id="reviews" aria-labelledby="reviews-heading">
-        <h2 id="reviews-heading">Reviews</h2>
+        <h2 id="reviews-heading">{{ __('Reviews') }}</h2>
         @if ($rating['count'] > 0)
-            <p>Average {{ number_format($rating['average'], 1) }} out of 5 from {{ $rating['count'] }} verified {{ $rating['count'] === 1 ? 'buyer' : 'buyers' }}.</p>
+            <p>{{ trans_choice('{1} Average :rating out of 5 from :count verified buyer.|[2,*] Average :rating out of 5 from :count verified buyers.', $rating['count'], ['rating' => number_format($rating['average'], 1)]) }}</p>
         @endif
         @forelse ($reviews as $review)
             <article class="message">
                 <h3>{{ $review->title }}</h3>
-                <p class="meta"><span aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('*', $review->rating) }}{{ str_repeat('-', 5 - $review->rating) }}</span> &middot; {{ $review->user->name }} &middot; {{ $review->created_at->format('Y-m-d') }} &middot; Verified buyer</p>
+                <p class="meta"><span aria-label="{{ __(':rating out of 5 stars', ['rating' => $review->rating]) }}">{{ str_repeat('*', $review->rating) }}{{ str_repeat('-', 5 - $review->rating) }}</span> &middot; {{ $review->user->name }} &middot; {{ $review->created_at->format('Y-m-d') }} &middot; {{ __('Verified buyer') }}</p>
                 <div class="description">{{ $review->body }}</div>
             </article>
         @empty
-            <p>No reviews yet.</p>
+            <p>{{ __('No reviews yet.') }}</p>
         @endforelse
 
         @if ($canReview)
-            <h3>{{ $myReview ? 'Edit your review' : 'Write a review' }}</h3>
+            <h3>{{ $myReview ? __('Edit your review') : __('Write a review') }}</h3>
             <form method="post" action="{{ route('products.reviews.store', $product->slug) }}" class="stack">
                 @csrf
-                <x-select name="rating" label="Rating" :options="[5 => '5 - excellent', 4 => '4 - good', 3 => '3 - okay', 2 => '2 - poor', 1 => '1 - bad']" :value="$myReview?->rating ?? 5" />
-                <x-field name="title" label="Title" :value="$myReview?->title" maxlength="120" required />
-                <x-textarea name="body" label="Your review" :value="$myReview?->body" maxlength="3000" required />
-                <button type="submit">{{ $myReview ? 'Update review' : 'Publish review' }}</button>
+                <x-select name="rating" :label="__('Rating')" :options="[5 => __('5 - excellent'), 4 => __('4 - good'), 3 => __('3 - okay'), 2 => __('2 - poor'), 1 => __('1 - bad')]" :value="$myReview?->rating ?? 5" />
+                <x-field name="title" :label="__('Title')" :value="$myReview?->title" maxlength="120" required />
+                <x-textarea name="body" :label="__('Your review')" :value="$myReview?->body" maxlength="3000" required />
+                <button type="submit">{{ $myReview ? __('Update review') : __('Publish review') }}</button>
             </form>
         @endif
     </section>
 
     @if ($related->isNotEmpty())
         <section aria-labelledby="related-heading">
-            <h2 id="related-heading">Related products</h2>
+            <h2 id="related-heading">{{ __('Related products') }}</h2>
             <div class="grid">
                 @foreach ($related as $item)
                     @include('partials.product-card', ['product' => $item, 'headingLevel' => 3])

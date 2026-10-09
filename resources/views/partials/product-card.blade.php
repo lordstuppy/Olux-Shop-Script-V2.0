@@ -10,12 +10,12 @@
     @endif
     <p class="price">{{ money($product->price_minor, $product->currency) }}</p>
     <p class="muted">
-        {{ $product->delivery_type === \App\Enums\DeliveryType::Instant ? 'Instant delivery' : 'Delivered by the seller' }}
+        {{ $product->delivery_type === \App\Enums\DeliveryType::Instant ? __('Instant delivery') : __('Delivered by the seller') }}
         @if ($product->access_days)
-            &middot; {{ $product->access_days }}-day access
+            &middot; {{ __(':days-day access', ['days' => $product->access_days]) }}
         @endif
         @if ($product->stock !== null)
-            &middot; {{ $product->stock > 0 ? $product->stock.' in stock' : 'Out of stock' }}
+            &middot; {{ $product->stock > 0 ? __(':count in stock', ['count' => $product->stock]) : __('Out of stock') }}
         @endif
     </p>
 </article>

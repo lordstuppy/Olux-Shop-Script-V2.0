@@ -9,7 +9,7 @@
 @endif
 @if ($errors->any())
     <div class="flash flash-error" role="alert">
-        <p><strong>Please correct the following {{ $errors->count() === 1 ? 'problem' : $errors->count().' problems' }}:</strong></p>
+        <p><strong>{{ trans_choice('{1} Please correct the following problem:|[2,*] Please correct the following :count problems:', $errors->count()) }}</strong></p>
         <ul>
             @foreach ($errors->all() as $message)
                 <li>{{ $message }}</li>

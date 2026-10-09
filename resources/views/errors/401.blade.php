@@ -1,8 +1,8 @@
 @extends('layouts.minimal')
 
-@section('title', 'Sign-in required')
+@section('title', __('Sign-in required'))
 
 @section('content')
-    <h1>Sign-in required</h1>
-    <p>You need to sign in to see this page.</p>
+    <h1>{{ __('Sign-in required') }}</h1>
+    <p>{{ __('You need to sign in to see this page.') }}</p>
 @endsection

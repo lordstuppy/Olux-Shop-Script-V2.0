@@ -52,10 +52,10 @@
                 <text x="{{ $lx }}" y="{{ $y - 6 }}" text-anchor="{{ $anchor }}" class="chart-label">{{ money($point['minor'], $currency) }}</text>
             @endif
             @if ($i === 0 || $i === $n - 1 || ($n > 14 && $i % 7 === 0 && $i < $n - 3))
-                <text x="{{ $left + $i * $band + $band / 2 }}" y="{{ $h - 10 }}" text-anchor="middle" class="chart-axis">{{ \Illuminate\Support\Carbon::parse($point['date'])->format('M j') }}</text>
+                <text x="{{ $left + $i * $band + $band / 2 }}" y="{{ $h - 10 }}" text-anchor="middle" class="chart-axis">{{ \Illuminate\Support\Carbon::parse($point['date'])->translatedFormat('M j') }}</text>
             @endif
         @endforeach
         <line x1="{{ $left }}" x2="{{ $w - $right }}" y1="{{ $top + $plotH }}" y2="{{ $top + $plotH }}" class="chart-baseline"/>
     </svg>
-    <figcaption class="muted">{{ $caption }}. Axis in {{ $currency }}; hover a column for the exact value, or see the table.</figcaption>
+    <figcaption class="muted">{{ $caption }}. {{ __('Axis in :currency; hover a column for the exact value, or see the table.', ['currency' => $currency]) }}</figcaption>
 </figure>
