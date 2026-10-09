@@ -6,7 +6,7 @@
     <h1>Sign in</h1>
     <form method="post" action="{{ route('login') }}" class="stack">
         @csrf
-        <x-field name="email" label="Email" type="email" autocomplete="email" required autofocus />
+        <x-field name="email" label="Email" type="email" autocomplete="email" required />
         <x-field name="password" label="Password" type="password" autocomplete="current-password" required />
         <label class="check"><input type="checkbox" name="remember" value="1"> Keep me signed in on this device</label>
         <button type="submit">Sign in</button>

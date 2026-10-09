@@ -21,7 +21,7 @@
     @else
         <div class="grid">
             @foreach ($products as $product)
-                @include('partials.product-card', ['product' => $product])
+                @include('partials.product-card', ['product' => $product, 'headingLevel' => 2])
             @endforeach
         </div>
         {{ $products->links() }}

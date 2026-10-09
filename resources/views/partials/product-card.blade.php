@@ -1,5 +1,6 @@
+@php $level = $headingLevel ?? 3; @endphp
 <article class="card">
-    <h3><a href="{{ route('products.show', $product->slug) }}">{{ $product->title }}</a></h3>
+    <h{{ $level }} class="card-title"><a href="{{ route('products.show', $product->slug) }}">{{ $product->title }}</a></h{{ $level }}>
     @if ($product->category)
         <p class="muted">{{ $product->category->name }}</p>
     @endif

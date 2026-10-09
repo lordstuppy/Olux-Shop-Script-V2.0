@@ -1,0 +1,12 @@
+{
+    "name": "shop-browser-tests",
+    "private": true,
+    "description": "No-JavaScript rendering and accessibility checks for the shop.",
+    "scripts": {
+        "test": "playwright test"
+    },
+    "devDependencies": {
+        "@axe-core/playwright": "4.10.2",
+        "@playwright/test": "1.56.1"
+    }
+}

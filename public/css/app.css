@@ -133,3 +133,4 @@ td.num, th.num { text-align: right; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .qty-input { width: 5rem; }
 .mt { margin-top: 1.25rem; }
+.card-title { font-size: 1.1rem; margin: 0 0 .5rem; }
