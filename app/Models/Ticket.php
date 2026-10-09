@@ -35,4 +35,14 @@ class Ticket extends Model
     {
         return $this->hasMany(TicketMessage::class)->orderBy('id');
     }
+
+    public function publicMessages(): HasMany
+    {
+        return $this->messages()->where('internal', false);
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
 }

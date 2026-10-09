@@ -54,12 +54,16 @@ class DeliveryService
         $this->completeIfFullyDelivered($order);
     }
 
-    public function deliverManually(OrderItem $item, User $seller, string $text): void
+    /**
+     * Delivery text written by the seller, or by staff on the seller's behalf
+     * ($asStaff), for manual products or items whose automatic delivery failed.
+     */
+    public function deliverManually(OrderItem $item, User $seller, string $text, bool $asStaff = false): void
     {
-        DB::transaction(function () use ($item, $seller, $text) {
+        DB::transaction(function () use ($item, $seller, $text, $asStaff) {
             $locked = OrderItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
             $order = $locked->order;
-            if ($locked->seller_id !== $seller->id) {
+            if (! $asStaff && $locked->seller_id !== $seller->id) {
                 throw new UserFacingException('You can only deliver items you sold.');
             }
             if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered], true)) {

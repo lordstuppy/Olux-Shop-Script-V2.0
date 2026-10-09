@@ -31,6 +31,7 @@ class CouponController extends Controller
             'currency' => ['nullable', 'required_if:type,fixed', Rule::in(Money::supported())],
             'min_total' => ['nullable', 'string', 'max:16'],
             'max_redemptions' => ['nullable', 'integer', 'min:1'],
+            'max_per_user' => ['nullable', 'integer', 'min:1'],
             'expires_at' => ['nullable', 'date', 'after:now'],
         ]);
 
@@ -61,6 +62,7 @@ class CouponController extends Controller
             'currency' => $currency,
             'min_total_minor' => $minTotal,
             'max_redemptions' => $data['max_redemptions'] ?? null,
+            'max_per_user' => $data['max_per_user'] ?? null,
             'expires_at' => $data['expires_at'] ?? null,
             'active' => true,
             'created_by' => $request->user()->id,

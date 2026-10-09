@@ -14,6 +14,18 @@ use Illuminate\Support\Facades\Storage;
  */
 class InvoiceService
 {
+    /** Re-renders the PDF (same number), for example after refunds. */
+    public function regenerate(Order $order): Invoice
+    {
+        $invoice = Invoice::query()->where('order_id', $order->id)->first();
+        if ($invoice !== null && $invoice->storage_path !== null) {
+            Storage::disk('invoices')->delete($invoice->storage_path);
+            $invoice->forceFill(['storage_path' => null])->save();
+        }
+
+        return $this->issue($order);
+    }
+
     public function issue(Order $order): Invoice
     {
         $invoice = DB::transaction(function () use ($order) {

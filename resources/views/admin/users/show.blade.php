@@ -39,6 +39,18 @@
     </div>
     @endcan
 
+    @can('balances.adjust')
+        <h2>Adjust balance</h2>
+        <form method="post" action="{{ route('admin.users.balance', $user) }}" class="stack">
+            @csrf
+            <x-select name="direction" label="Direction" :options="['credit' => 'Credit (add)', 'debit' => 'Debit (remove)']" />
+            <x-field name="amount" label="Amount" inputmode="decimal" required />
+            <x-select name="currency" label="Currency" :options="array_combine(\App\Support\Money::supported(), \App\Support\Money::supported())" :value="$user->currency" />
+            <x-field name="reason" label="Reason (shown in the user's wallet history)" maxlength="255" required />
+            <button type="submit">Apply adjustment</button>
+        </form>
+    @endcan
+
     @if ($user->sellerProfile)
         <h2>Seller profile</h2>
         <p>{{ $user->sellerProfile->display_name }} &middot; <x-status :value="$user->sellerProfile->status" /> &middot; payout {{ $user->sellerProfile->payout_currency }} to <span class="mono">{{ $user->sellerProfile->payout_address }}</span></p>

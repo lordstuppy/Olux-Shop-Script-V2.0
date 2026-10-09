@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\TicketCategory;
 use App\Models\Order;
 use App\Models\Ticket;
+use App\Models\User;
 use App\Services\TicketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,18 +58,36 @@ class TicketController extends Controller
     public function show(Ticket $ticket): View
     {
         Gate::authorize('view', $ticket);
-        $ticket->load(['messages.author', 'order', 'user']);
+        $staff = auth()->user()->can('tickets.manage');
+        $ticket->load(['order', 'user', 'assignee']);
+        $messages = ($staff ? $ticket->messages() : $ticket->publicMessages())->with('author')->get();
 
-        return view('tickets.show', ['ticket' => $ticket]);
+        return view('tickets.show', [
+            'ticket' => $ticket,
+            'messages' => $messages,
+            'staff' => $staff,
+            'assignees' => $staff ? User::query()->whereIn('role', ['admin', 'support'])->orderBy('email')->get(['id', 'email']) : collect(),
+        ]);
     }
 
     public function reply(Request $request, Ticket $ticket, TicketService $tickets): RedirectResponse
     {
         Gate::authorize('reply', $ticket);
-        $data = $request->validate(['body' => ['required', 'string', 'max:5000']]);
-        $tickets->reply($ticket, $request->user(), $data['body']);
+        $data = $request->validate(['body' => ['required', 'string', 'max:5000'], 'internal' => ['nullable', 'boolean']]);
+        $internal = $request->boolean('internal');
+        $tickets->reply($ticket, $request->user(), $data['body'], $internal);
 
-        return redirect()->route('tickets.show', $ticket)->with('success', "Reply added to ticket #{$ticket->id}.");
+        return redirect()->route('tickets.show', $ticket)->with('success', $internal ? "Internal note added to ticket #{$ticket->id}." : "Reply added to ticket #{$ticket->id}.");
+    }
+
+    public function assign(Request $request, Ticket $ticket, TicketService $tickets): RedirectResponse
+    {
+        abort_unless($request->user()->can('tickets.manage'), 403);
+        $data = $request->validate(['assigned_to' => ['nullable', 'integer', 'exists:users,id']]);
+        $assignee = isset($data['assigned_to']) ? User::find($data['assigned_to']) : null;
+        $tickets->assign($ticket, $assignee, $request->user());
+
+        return back()->with('success', $assignee ? "Ticket #{$ticket->id} assigned to {$assignee->email}." : "Ticket #{$ticket->id} unassigned.");
     }
 
     public function close(Request $request, Ticket $ticket, TicketService $tickets): RedirectResponse

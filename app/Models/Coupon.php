@@ -16,6 +16,7 @@ class Coupon extends Model
             'value' => 'integer',
             'min_total_minor' => 'integer',
             'max_redemptions' => 'integer',
+            'max_per_user' => 'integer',
             'redemptions_count' => 'integer',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',

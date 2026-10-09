@@ -30,7 +30,7 @@ class CheckoutController extends Controller
         $couponError = null;
         if ($code = $request->session()->get(self::COUPON_KEY)) {
             try {
-                [$coupon, $discount] = $coupons->preview($code, $totals['currency'], $totals['subtotal_minor']);
+                [$coupon, $discount] = $coupons->preview($code, $totals['currency'], $totals['subtotal_minor'], $request->user());
             } catch (UserFacingException $e) {
                 $couponError = $e->getMessage();
                 $request->session()->forget(self::COUPON_KEY);
@@ -56,7 +56,7 @@ class CheckoutController extends Controller
     {
         $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
         $totals = $cart->totals();
-        [$coupon, $discount] = $coupons->preview($data['code'], $totals['currency'], $totals['subtotal_minor']);
+        [$coupon, $discount] = $coupons->preview($data['code'], $totals['currency'], $totals['subtotal_minor'], $request->user());
         $request->session()->put(self::COUPON_KEY, $coupon->code);
 
         return redirect()->route('checkout.show')

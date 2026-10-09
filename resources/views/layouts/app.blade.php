@@ -66,6 +66,11 @@
 
 <main id="main" tabindex="-1">
     <div class="wrap">
+        @foreach ($announcements ?? [] as $announcement)
+            <aside class="announcement" aria-label="Announcement">
+                <strong>{{ $announcement['title'] }}</strong> {{ $announcement['body'] }}
+            </aside>
+        @endforeach
         @include('partials.flash')
         @yield('content')
     </div>

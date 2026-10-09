@@ -2,8 +2,8 @@
 module.exports = {
     guest: ['/', '/products', '/products?q=guide&sort=price_asc', ':product', '/cart', '/login', '/register', '/forgot-password', '/terms', '/privacy', '/data-retention', '/sell'],
     buyer: ['/orders', '/wallet', '/account', '/account/two-factor', '/tickets', '/tickets/new', '/cart', '/sell'],
-    seller: ['/seller', '/seller/products', '/seller/products/new', '/seller/sales', '/seller/payouts'],
-    admin: ['/admin', '/admin/users', '/admin/sellers', '/admin/products', '/admin/categories', '/admin/orders', '/admin/payments', '/admin/webhooks', '/admin/payouts', '/admin/reconciliation', '/admin/coupons', '/admin/gift-cards', '/admin/exchange-rates', '/admin/tickets', '/admin/audit'],
+    seller: ['/seller', '/seller/products', '/seller/products/new', '/seller/products/1/edit', '/seller/sales', '/seller/payouts', '/seller/payout-settings'],
+    admin: ['/admin', '/admin/users', '/admin/sellers', '/admin/products', '/admin/categories', '/admin/orders', '/admin/payments', '/admin/webhooks', '/admin/payouts', '/admin/reconciliation', '/admin/coupons', '/admin/gift-cards', '/admin/exchange-rates', '/admin/tickets', '/admin/audit', '/admin/reports', '/admin/exports', '/admin/settings', '/admin/announcements', '/admin/products/1', '/admin/users/2'],
     accounts: {
         buyer: 'buyer@example.test',
         seller: 'seller@example.test',

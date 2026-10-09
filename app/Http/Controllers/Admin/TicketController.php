@@ -13,9 +13,17 @@ class TicketController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['status' => ['nullable', Rule::enum(TicketStatus::class)]]);
-        $query = Ticket::with(['user', 'order'])->latest('updated_at');
+        $data = $request->validate([
+            'status' => ['nullable', Rule::enum(TicketStatus::class)],
+            'assigned' => ['nullable', Rule::in(['me', 'none', 'any'])],
+        ]);
+        $query = Ticket::with(['user', 'order', 'assignee'])->latest('updated_at');
         $query->where('status', $data['status'] ?? TicketStatus::Open->value);
+        match ($data['assigned'] ?? 'any') {
+            'me' => $query->where('assigned_to', $request->user()->id),
+            'none' => $query->whereNull('assigned_to'),
+            default => null,
+        };
 
         return view('admin.tickets', ['tickets' => $query->paginate(30)->withQueryString(), 'filters' => $data]);
     }

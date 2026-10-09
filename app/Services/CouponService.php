@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\CouponType;
+use App\Enums\OrderStatus;
 use App\Exceptions\UserFacingException;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\User;
 use App\Support\Money;
 
 class CouponService
@@ -13,13 +15,13 @@ class CouponService
     /**
      * Read-only check used to preview a coupon on the checkout page.
      */
-    public function preview(string $code, string $currency, int $subtotalMinor): array
+    public function preview(string $code, string $currency, int $subtotalMinor, ?User $user = null): array
     {
         $coupon = Coupon::query()->where('code', Coupon::normalizeCode($code))->first();
         if ($coupon === null) {
             throw new UserFacingException('Coupon code "'.Coupon::normalizeCode($code).'" was not found.');
         }
-        $this->assertUsable($coupon, $currency, $subtotalMinor);
+        $this->assertUsable($coupon, $currency, $subtotalMinor, $user);
 
         return [$coupon, $this->discountFor($coupon, $subtotalMinor)];
     }
@@ -30,13 +32,13 @@ class CouponService
      *
      * @return array{0: Coupon, 1: int} coupon and discount in minor units
      */
-    public function reserve(string $code, string $currency, int $subtotalMinor): array
+    public function reserve(string $code, string $currency, int $subtotalMinor, ?User $user = null): array
     {
         $coupon = Coupon::query()->where('code', Coupon::normalizeCode($code))->lockForUpdate()->first();
         if ($coupon === null) {
             throw new UserFacingException('Coupon code "'.Coupon::normalizeCode($code).'" was not found.');
         }
-        $this->assertUsable($coupon, $currency, $subtotalMinor);
+        $this->assertUsable($coupon, $currency, $subtotalMinor, $user);
 
         $coupon->increment('redemptions_count');
 
@@ -62,7 +64,7 @@ class CouponService
         return min($discount, $subtotalMinor);
     }
 
-    private function assertUsable(Coupon $coupon, string $currency, int $subtotalMinor): void
+    private function assertUsable(Coupon $coupon, string $currency, int $subtotalMinor, ?User $user = null): void
     {
         $code = $coupon->code;
         if (! $coupon->active) {
@@ -76,6 +78,13 @@ class CouponService
         }
         if ($coupon->max_redemptions !== null && $coupon->redemptions_count >= $coupon->max_redemptions) {
             throw new UserFacingException("Coupon {$code} has reached its redemption limit.");
+        }
+        if ($user !== null && $coupon->max_per_user !== null) {
+            $used = Order::query()->where('buyer_id', $user->id)->where('coupon_id', $coupon->id)
+                ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Expired->value])->count();
+            if ($used >= $coupon->max_per_user) {
+                throw new UserFacingException("You have already used coupon {$coupon->code} the maximum of {$coupon->max_per_user} ".($coupon->max_per_user === 1 ? 'time' : 'times').'.');
+            }
         }
         // A coupon with a currency (always the case for fixed coupons) only
         // applies to orders in that currency.

@@ -11,6 +11,11 @@ class TicketMessage extends Model
 
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return ['internal' => 'boolean'];
+    }
+
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);

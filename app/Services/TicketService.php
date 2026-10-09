@@ -39,24 +39,41 @@ class TicketService
         });
     }
 
-    public function reply(Ticket $ticket, User $author, string $body): void
+    public function reply(Ticket $ticket, User $author, string $body, bool $internal = false): void
     {
-        if ($ticket->status === TicketStatus::Closed) {
+        $staff = $author->can('tickets.manage') && $author->id !== $ticket->user_id;
+        if ($internal && ! $staff) {
+            throw new UserFacingException('Only staff can add internal notes.');
+        }
+        if ($ticket->status === TicketStatus::Closed && ! $internal) {
             throw new UserFacingException("Ticket #{$ticket->id} is closed. Open a new ticket if you still need help.");
         }
 
-        $staffReply = $author->can('tickets.manage') && $author->id !== $ticket->user_id;
-
-        DB::transaction(function () use ($ticket, $author, $body, $staffReply) {
-            $ticket->messages()->create(['author_id' => $author->id, 'body' => $body]);
-            $ticket->status = $staffReply ? TicketStatus::Answered : TicketStatus::Open;
+        DB::transaction(function () use ($ticket, $author, $body, $staff, $internal) {
+            $ticket->messages()->create(['author_id' => $author->id, 'body' => $body, 'internal' => $internal]);
+            if (! $internal) {
+                $ticket->status = $staff ? TicketStatus::Answered : TicketStatus::Open;
+            }
+            if ($staff && $ticket->assigned_to === null) {
+                $ticket->assigned_to = $author->id;
+            }
             $ticket->touch();
             $ticket->save();
         });
 
-        if ($staffReply) {
+        if ($staff && ! $internal) {
             Mail::to($ticket->user)->queue((new TicketReplyMail($ticket))->afterCommit());
         }
+    }
+
+    public function assign(Ticket $ticket, ?User $assignee, User $actor): void
+    {
+        if ($assignee !== null && ! $assignee->can('tickets.manage')) {
+            throw new UserFacingException("{$assignee->email} cannot handle tickets.");
+        }
+        $ticket->assigned_to = $assignee?->id;
+        $ticket->save();
+        $this->audit->log('ticket.assigned', $ticket, ['to' => $assignee?->email], $actor);
     }
 
     public function close(Ticket $ticket, User $actor): void

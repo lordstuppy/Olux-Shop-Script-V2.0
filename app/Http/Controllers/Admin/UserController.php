@@ -4,16 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Exceptions\UserFacingException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\BalanceService;
 use App\Services\UserService;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class UserController extends Controller
 {
@@ -62,6 +66,36 @@ class UserController extends Controller
         $audit->log('user.sessions_revoked_by_staff', $user, ['count' => $count], $request->user());
 
         return back()->with('success', "Signed out {$count} ".($count === 1 ? 'session' : 'sessions')." of {$user->email}.");
+    }
+
+    public function adjustBalance(Request $request, User $user, BalanceService $balances, AuditLogger $audit): RedirectResponse
+    {
+        $data = $request->validate([
+            'direction' => ['required', Rule::in(['credit', 'debit'])],
+            'amount' => ['required', 'string', 'max:16'],
+            'currency' => ['required', Rule::in(Money::supported())],
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+        try {
+            $amount = Money::parseInput($data['amount'], $data['currency']);
+        } catch (InvalidArgumentException) {
+            throw new UserFacingException("Enter the amount as a number such as 5.00 in {$data['currency']}.");
+        }
+        if ($amount <= 0) {
+            throw new UserFacingException('The amount must be greater than zero.');
+        }
+
+        $note = 'Adjustment by staff: '.$data['reason'];
+        $data['direction'] === 'credit'
+            ? $balances->credit($user, $amount, $data['currency'], 'admin_adjustment', $request->user(), $note)
+            : $balances->debit($user, $amount, $data['currency'], 'admin_adjustment', $request->user(), $note);
+        $audit->log('balance.adjusted', $user, [
+            'direction' => $data['direction'],
+            'amount' => Money::format($amount, $data['currency']),
+            'reason' => $data['reason'],
+        ], $request->user());
+
+        return back()->with('success', ucfirst($data['direction']).'ed '.Money::format($amount, $data['currency'])." to {$user->email}. New balance: ".Money::format($user->fresh()->balance_minor, $user->fresh()->currency).'.');
     }
 
     public function status(Request $request, User $user, UserService $users): RedirectResponse

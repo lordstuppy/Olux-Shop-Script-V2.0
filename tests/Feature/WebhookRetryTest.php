@@ -13,6 +13,7 @@ class WebhookRetryTest extends TestCase
 {
     public function test_transient_failure_is_retried_with_backoff(): void
     {
+        $this->freezeSecond();
         $payments = Mockery::mock(PaymentService::class);
         $payments->shouldReceive('handleShkeeperNotification')->once()->andThrow(new RuntimeException('deadlock detected'));
         $payments->shouldReceive('handleShkeeperNotification')->once()->andReturn(['status' => 'processed', 'message' => 'ok']);
@@ -39,6 +40,8 @@ class WebhookRetryTest extends TestCase
 
     public function test_event_is_marked_dead_after_all_retries(): void
     {
+        // A frozen clock makes the measured delays exact.
+        $this->freezeSecond();
         $payments = Mockery::mock(PaymentService::class);
         $payments->shouldReceive('handleShkeeperNotification')->andThrow(new RuntimeException('database unavailable'));
         $this->app->instance(PaymentService::class, $payments);

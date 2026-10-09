@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\Admin\AnnouncementController;
+use App\Models\Announcement;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\Security\ClamAvScanner;
@@ -9,10 +11,12 @@ use App\Services\Security\VirusScanner;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Support\Permissions;
 use App\Support\RequestId;
+use App\Support\Settings;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -45,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Settings::apply();
         $this->configureRateLimits();
 
         foreach (Permissions::MAP as $ability => $roles) {
@@ -58,6 +63,15 @@ class AppServiceProvider extends ServiceProvider
         // without a session, so fall back to empty values.
         View::composer('layouts.app', function ($view) {
             $request = request();
+            try {
+                // Plain arrays only: the cache refuses to unserialize objects (serializable_classes).
+                $announcements = Cache::remember(AnnouncementController::CACHE_KEY, 60, fn () => Announcement::query()->current()->latest('id')->limit(2)
+                    ->get(['title', 'body'])->map(fn ($a) => ['title' => $a->title, 'body' => $a->body])->all());
+            } catch (\Throwable) {
+                $announcements = [];
+            }
+            $view->with('announcements', $announcements);
+
             if ($request->hasSession()) {
                 $cart = app(CartService::class);
                 $view->with(['cartCount' => $cart->count(), 'shopCurrency' => $cart->currency()]);

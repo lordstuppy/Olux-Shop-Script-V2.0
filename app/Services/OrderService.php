@@ -203,7 +203,7 @@ class OrderService
         $coupon = null;
         $discount = 0;
         if ($couponCode !== null && trim($couponCode) !== '') {
-            [$coupon, $discount] = $this->coupons->reserve($couponCode, $currency, $subtotal);
+            [$coupon, $discount] = $this->coupons->reserve($couponCode, $currency, $subtotal, $buyer);
         }
 
         $order = Order::create([

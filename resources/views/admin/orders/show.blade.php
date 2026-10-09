@@ -12,6 +12,32 @@
         @if ($order->invoice) &middot; Invoice {{ $order->invoice->number }} @endif
     </p>
 
+    <h2>Actions</h2>
+    <div class="actions">
+        @can('orders.manage')
+            @if ($order->status === \App\Enums\OrderStatus::Pending)
+                <form method="post" action="{{ route('admin.orders.cancel', $order) }}">
+                    @csrf
+                    <button type="submit" class="btn-danger">Cancel order</button>
+                </form>
+            @endif
+            @if ($order->status->isPaidState())
+                <form method="post" action="{{ route('admin.orders.invoice', $order) }}">
+                    @csrf
+                    <button type="submit" class="btn-secondary">Regenerate invoice</button>
+                </form>
+            @endif
+        @endcan
+        @can('orders.resend')
+            @if ($order->status->isPaidState())
+                <form method="post" action="{{ route('admin.orders.redeliver', $order) }}">
+                    @csrf
+                    <button type="submit" class="btn-secondary">Retry delivery and resend email</button>
+                </form>
+            @endif
+        @endcan
+    </div>
+
     <h2>Items</h2>
     <div class="table-wrap">
         <table>
@@ -27,7 +53,25 @@
                         <td class="num">{{ money($item->refunded_minor, $order->currency) }}</td>
                         <td class="num">{{ money($item->seller_earning_minor, $order->currency) }} ({{ $item->commission_bps / 100 }}% fee)</td>
                         <td>{{ money($item->list_price_minor, $item->list_currency) }} x {{ rtrim(rtrim((string) $item->fx_rate, '0'), '.') }}</td>
-                        <td>{{ $item->delivered_at?->format('Y-m-d H:i') ?? 'No' }}</td>
+                        <td>
+                            {{ $item->delivered_at?->format('Y-m-d H:i') ?? 'No' }}
+                            @if ($item->delivered_at) <br><span class="muted">{{ $item->download_count }} downloads</span>@endif
+                            @can('orders.manage')
+                                @if ($item->download_count > 0)
+                                    <form method="post" action="{{ route('admin.orders.items.reset-downloads', [$order, $item]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn-link">Reset downloads<span class="visually-hidden"> for {{ $item->title }}</span></button>
+                                    </form>
+                                @endif
+                                @if (! $item->delivered_at && in_array($order->status, [\App\Enums\OrderStatus::Paid, \App\Enums\OrderStatus::Delivered], true))
+                                    <form method="post" action="{{ route('admin.orders.items.deliver', [$order, $item]) }}" class="stack">
+                                        @csrf
+                                        <x-textarea name="payload" :id="'payload-'.$item->id" label="Deliver on the seller's behalf" maxlength="10000" required />
+                                        <button type="submit" class="btn-secondary">Deliver<span class="visually-hidden"> {{ $item->title }}</span></button>
+                                    </form>
+                                @endif
+                            @endcan
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -60,7 +104,7 @@
         </table>
     </div>
 
-    @if ($order->status->isPaidState() && $order->refundableMinor() > 0)
+    @if ($order->status->isPaidState() && $order->refundableMinor() > 0 && auth()->user()->can('orders.manage'))
         <h2>Refund</h2>
         <p>Refundable: {{ money($order->refundableMinor(), $order->currency) }}. Each refund is recorded as a separate payment and adjusts seller earnings.</p>
         <form method="post" action="{{ route('admin.orders.refund', $order) }}" class="stack" data-once>

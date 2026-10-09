@@ -126,6 +126,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/messages', [TicketController::class, 'reply'])->middleware('throttle:forms')->name('tickets.reply');
     Route::post('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
+    Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->middleware(['role:admin,support', 'staff.2fa'])->name('tickets.assign');
 
     Route::post('/sell', [SellerApplicationController::class, 'store'])->middleware(['verified', 'throttle:forms'])->name('seller.apply.store');
 
@@ -162,6 +163,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}', [Admin\UserController::class, 'show'])->can('users.view')->name('users.show');
         Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->can('users.manage')->middleware('password.recent')->name('users.role');
         Route::post('/users/{user}/status', [Admin\UserController::class, 'status'])->can('users.manage')->middleware('password.recent')->name('users.status');
+        Route::post('/users/{user}/balance', [Admin\UserController::class, 'adjustBalance'])->can('balances.adjust')->middleware('password.recent')->name('users.balance');
         Route::post('/users/{user}/sessions/revoke', [Admin\UserController::class, 'revokeSessions'])->can('sessions.revoke')->name('users.sessions.revoke');
 
         Route::get('/sellers', [Admin\SellerController::class, 'index'])->can('sellers.manage')->name('sellers.index');
@@ -175,9 +177,16 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/categories', [Admin\CategoryController::class, 'index'])->can('categories.manage')->name('categories.index');
         Route::post('/categories', [Admin\CategoryController::class, 'store'])->can('categories.manage')->name('categories.store');
+        Route::put('/categories/{category:id}', [Admin\CategoryController::class, 'update'])->can('categories.manage')->name('categories.update');
+        Route::delete('/categories/{category:id}', [Admin\CategoryController::class, 'destroy'])->can('categories.manage')->name('categories.destroy');
 
         Route::get('/orders', [Admin\OrderController::class, 'index'])->can('orders.view')->name('orders.index');
         Route::get('/orders/{order}', [Admin\OrderController::class, 'show'])->can('orders.view')->name('orders.show');
+        Route::post('/orders/{order}/cancel', [Admin\OrderController::class, 'cancel'])->can('orders.manage')->name('orders.cancel');
+        Route::post('/orders/{order}/items/{item}/deliver', [Admin\OrderController::class, 'deliverItem'])->can('orders.manage')->name('orders.items.deliver');
+        Route::post('/orders/{order}/items/{item}/reset-downloads', [Admin\OrderController::class, 'resetDownloads'])->can('orders.manage')->name('orders.items.reset-downloads');
+        Route::post('/orders/{order}/redeliver', [Admin\OrderController::class, 'retryDelivery'])->can('orders.resend')->name('orders.redeliver');
+        Route::post('/orders/{order}/invoice', [Admin\OrderController::class, 'regenerateInvoice'])->can('orders.manage')->name('orders.invoice');
         Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->can('orders.manage')->middleware('password.recent')->name('orders.refund');
 
         Route::get('/payments', [Admin\PaymentController::class, 'index'])->can('payments.view')->name('payments.index');
@@ -201,5 +210,15 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
         Route::get('/audit', [Admin\AuditLogController::class, 'index'])->can('audit.view')->name('audit.index');
+
+        Route::get('/reports', Admin\ReportController::class)->can('reports.view')->name('reports');
+        Route::get('/exports', [Admin\ExportController::class, 'index'])->can('exports.download')->name('exports.index');
+        Route::get('/exports/download', [Admin\ExportController::class, 'download'])->can('exports.download')->middleware('password.recent')->name('exports.download');
+        Route::get('/settings', [Admin\SettingsController::class, 'index'])->can('settings.manage')->name('settings.index');
+        Route::put('/settings', [Admin\SettingsController::class, 'update'])->can('settings.manage')->middleware('password.recent')->name('settings.update');
+        Route::get('/announcements', [Admin\AnnouncementController::class, 'index'])->can('announcements.manage')->name('announcements.index');
+        Route::post('/announcements', [Admin\AnnouncementController::class, 'store'])->can('announcements.manage')->name('announcements.store');
+        Route::post('/announcements/{announcement}/toggle', [Admin\AnnouncementController::class, 'toggle'])->can('announcements.manage')->name('announcements.toggle');
+        Route::delete('/announcements/{announcement}', [Admin\AnnouncementController::class, 'destroy'])->can('announcements.manage')->name('announcements.destroy');
     });
 });
