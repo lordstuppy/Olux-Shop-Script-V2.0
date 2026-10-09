@@ -777,9 +777,9 @@ def bulk_dashboard_health():
     check('text/csv' in h['Content-Type'] and csv.count('\n') >= 5, 'bulk order export')
     pid = STATE['products']['manual']
     a.get('/admin/products')
-    a.form('/admin/products', '/admin/bulk/products', {'action': 'disabled', 'scope': 'selected', 'ids': [str(pid)]})
-    check(sql(f'select status from products where id={pid}') == 'disabled', 'bulk disable')
-    a.form('/admin/products', '/admin/bulk/products', {'action': 'active', 'scope': 'selected', 'ids': [str(pid)]})
+    a.form('/admin/products', '/admin/bulk/products', {'action': 'disabled', 'scope': 'selected', 'ids[]': [str(pid)]})
+    check(sql(f'select status from products where id={pid}') == 'disabled', f'bulk disable: {a.flash()}')
+    a.form('/admin/products', '/admin/bulk/products', {'action': 'active', 'scope': 'selected', 'ids[]': [str(pid)]})
     check(sql(f'select status from products where id={pid}') == 'active', 'bulk approve')
     a.get('/admin')
     page = text_of(a.last[2])
