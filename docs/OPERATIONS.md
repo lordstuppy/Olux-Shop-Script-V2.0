@@ -16,6 +16,8 @@ Scheduled tasks (`routes/console.php`):
 | `shop:reconcile-payments` | every 5 minutes | Polls Shkeeper invoice status for pending payments (covers lost webhooks) |
 | `shop:retry-webhooks` | every minute | Re-queues failed webhook events whose backoff elapsed |
 | `shop:reconcile-payouts` | daily 03:15 | Seller ledger vs completed orders and payouts; exits 1 and logs errors on mismatch |
+| `shop:reconcile-shkeeper-transfers` | every 5 minutes | Polls Shkeeper for payouts and crypto refunds whose callback has not arrived |
+| `shop:subscription-reminders` | hourly | Emails buyers whose subscription access ends within `SHOP_RENEWAL_REMINDER_DAYS` |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |
 | `auth:clear-resets` | hourly | Removes expired password reset tokens |
 
@@ -43,6 +45,48 @@ Then configure the shop:
 Shkeeper re-sends a callback every 60 seconds until it receives HTTP 202, and
 it sends one callback per transaction, even after an invoice is paid. Both
 cases are handled idempotently.
+
+### Automatic payouts and crypto refunds (optional)
+
+Set `SHKEEPER_PAYOUTS_ENABLED=true`, `SHKEEPER_PAYOUT_USERNAME` and
+`SHKEEPER_PAYOUT_PASSWORD` (a Shkeeper login; the payout API uses HTTP Basic
+auth), and `SHKEEPER_PAYOUT_FEES` (for example `BTC:10,LTC:10`). Enable the
+payout callback in Shkeeper; it is sent to `/webhooks/shkeeper/payouts`
+(override with `SHKEEPER_PAYOUT_CALLBACK_URL`) and verified like payment
+callbacks.
+
+Flow: seller requests a payout, then staff approve it, then "Send via
+Shkeeper" (a fresh quote converts the fiat amount to the seller's payout
+crypto). The payout stays `processing` until the callback or the status poll
+reports success (it is then marked paid with the transaction hash) or
+failure (staff can resend or reject it). Crypto refunds follow the same path
+from the admin order page. The refund is booked only after Shkeeper confirms
+it, and while it is pending it counts against the refundable amount. Keep
+the Shkeeper payout wallet funded only with what you intend to pay out.
+
+## Accounts and roles
+
+- Create the first admin: `php artisan shop:create-admin admin@example.com`.
+- Staff roles are `admin` (everything), `finance` (orders, refunds, payments,
+  payouts, coupons, gift cards, rates, reports, exports, balance adjustments)
+  and `support` (orders read-only, tickets, users read-only, session sign-out,
+  announcements, review moderation). Change roles at `/admin/users/{id}`.
+- Every staff account must turn on two-factor authentication before it can
+  open `/admin`.
+- Runtime settings (commission, payout hold, minimum payout, order lifetime,
+  open-order cap, download limit, quote validity, reminders, payout
+  cool-down, support email) are editable at `/admin/settings`. They override
+  `.env` and are audited.
+
+## Virus scanning
+
+Seller uploads are scanned by ClamAV (`clamav` service, clamd on port 3310)
+through a queued job. The `clamav` container needs outbound access to
+`database.clamav.net` to update its signatures (`freshclam`). With
+`SHOP_VIRUS_SCAN=required` (production) a file is never delivered, and its
+product cannot be approved, until the scan reports it clean. A scanner outage
+is retried with backoff. `SHOP_VIRUS_SCAN=disabled` marks files `skipped` and
+is meant for development only.
 
 ## Payment incidents
 
@@ -93,18 +137,26 @@ cases are handled idempotently.
 
 `scripts/backup.sh [dir]` writes a timestamped directory containing:
 - `database.dump`, from `pg_dump` in custom format;
-- `files.tar.gz`, with product files and invoices;
+- `files.tar.gz`, with product files, product images and invoices;
 - `SHA256SUMS`.
 
-Run it at least daily from cron and copy the output off-host, encrypted. Keep
-daily backups for 14 days and monthly ones for 12 months, or whatever your
-data retention policy requires.
+Optional settings:
+- **`BACKUP_AGE_RECIPIENT`:** encrypt both files with [age](https://age-encryption.org)
+  and delete the plaintext.
+- **`BACKUP_RCLONE_REMOTE`:** upload the set off-site with rclone. Put
+  `rclone.conf` in `docker/rclone/`, which is git-ignored.
+- **`BACKUP_KEEP_DAYS`:** prune old local backups (default 14).
+
+`docker compose --profile backup up -d` runs it daily (`BACKUP_CRON`,
+default 02:15 UTC) in a dedicated container. Keep the age private key
+offline: it is the only way to read the backups.
 
 Restore procedure (test it quarterly on a staging host):
 
 1. `php artisan down` and stop the queue workers and the scheduler.
-2. `scripts/restore.sh backups/<timestamp>`. It verifies the checksums and
-   asks for confirmation before replacing data.
+2. `scripts/restore.sh backups/<timestamp>`. It decrypts `*.age` files with
+   the key file in `BACKUP_AGE_IDENTITY`, verifies the checksums, and asks for
+   confirmation before replacing data.
 3. `php artisan migrate --force`, in case the backup predates the current
    schema.
 4. `php artisan shop:reconcile-payouts`, and check `/admin/webhooks` for

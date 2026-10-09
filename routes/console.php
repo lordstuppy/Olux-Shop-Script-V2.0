@@ -1,10 +1,13 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Enums\WebhookEventStatus;
 use App\Jobs\ProcessWebhookEvent;
 use App\Mail\SubscriptionRenewalMail;
 use App\Models\OrderItem;
+use App\Models\User;
 use App\Models\WebhookEvent;
+use App\Services\AuditLogger;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
@@ -12,6 +15,9 @@ use App\Services\ShkeeperPayoutService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 Artisan::command('shop:expire-orders', function (OrderService $orders) {
     $count = $orders->expireStale();
@@ -65,6 +71,29 @@ Artisan::command('shop:reconcile-shkeeper-transfers', function (ShkeeperPayoutSe
     $count = $transfers->reconcile();
     $this->info("Updated {$count} payouts or refunds from Shkeeper status polling.");
 })->purpose('Poll Shkeeper for payouts and crypto refunds whose callback has not arrived');
+
+Artisan::command('shop:create-admin {email} {--name=Administrator}', function (string $email) {
+    $validator = Validator::make(['email' => $email], ['email' => ['required', 'email', 'max:255', 'unique:users,email']]);
+    if ($validator->fails()) {
+        $this->error($validator->errors()->first('email'));
+
+        return 1;
+    }
+    $password = $this->secret('Password (at least 12 characters, letters and numbers)');
+    $check = Validator::make(['password' => $password], ['password' => ['required', PasswordRule::min(12)->letters()->numbers()]]);
+    if ($check->fails() || $password !== $this->secret('Repeat the password')) {
+        $this->error($check->fails() ? $check->errors()->first('password') : 'The passwords do not match.');
+
+        return 1;
+    }
+
+    $user = User::create(['name' => (string) $this->option('name'), 'email' => Str::lower($email), 'password_hash' => $password]);
+    $user->forceFill(['role' => UserRole::Admin, 'email_verified_at' => now()])->save();
+    app(AuditLogger::class)->log('user.admin_created_cli', $user, [], null);
+    $this->info("Admin {$user->email} created. Sign in and set up two-factor authentication; /admin stays locked until you do.");
+
+    return 0;
+})->purpose('Create an administrator account (interactive password prompt)');
 
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();

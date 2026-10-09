@@ -229,4 +229,22 @@ class AdminFeaturesTest extends TestCase
         $again = $orders->createFromCart($buyer, [$product->id => 1], 'USD', (string) Str::uuid(), 'ONCE');
         $this->assertGreaterThan(0, $again->discount_minor);
     }
+
+    public function test_create_admin_command(): void
+    {
+        $this->artisan('shop:create-admin', ['email' => 'Boss@Example.test'])
+            ->expectsQuestion('Password (at least 12 characters, letters and numbers)', 'long-password-123')
+            ->expectsQuestion('Repeat the password', 'long-password-123')
+            ->assertSuccessful();
+
+        $admin = User::where('email', 'boss@example.test')->firstOrFail();
+        $this->assertSame(UserRole::Admin, $admin->role);
+        $this->assertFalse($admin->hasTwoFactor());
+        $this->actingAs($admin)->get('/admin')->assertRedirect(route('account.two-factor'));
+
+        $this->artisan('shop:create-admin', ['email' => 'boss@example.test'])->assertFailed();
+        $this->artisan('shop:create-admin', ['email' => 'x@example.test'])
+            ->expectsQuestion('Password (at least 12 characters, letters and numbers)', 'short')
+            ->assertFailed();
+    }
 }

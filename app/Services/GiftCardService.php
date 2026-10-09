@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\UserFacingException;
 use App\Models\GiftCard;
 use App\Models\User;
+use App\Support\KeyedHash;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +49,7 @@ class GiftCardService
     public function redeem(User $user, string $code): GiftCard
     {
         return DB::transaction(function () use ($user, $code) {
-            $card = GiftCard::query()->where('code_hash', $this->hash($code))->lockForUpdate()->first();
+            $card = GiftCard::query()->whereIn('code_hash', KeyedHash::candidates($this->normalize($code)))->lockForUpdate()->first();
             if ($card === null) {
                 throw new UserFacingException('Gift card code not recognised. Check the code and try again.');
             }
@@ -71,9 +72,12 @@ class GiftCardService
 
     private function hash(string $code): string
     {
-        $normalized = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code) ?? '');
+        return KeyedHash::make($this->normalize($code));
+    }
 
-        return hash_hmac('sha256', $normalized, (string) config('app.key'));
+    private function normalize(string $code): string
+    {
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code) ?? '');
     }
 
     private function generateCode(): string

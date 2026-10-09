@@ -19,6 +19,7 @@ RUN apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo postgresql-
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-shop.ini
 COPY docker/php/fpm.conf /usr/local/etc/php-fpm.d/zz-shop.conf
+COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint
 
 WORKDIR /var/www/html
 COPY --from=vendor --chown=www-data:www-data /app /var/www/html
@@ -28,5 +29,6 @@ RUN rm -rf tests/browser/node_modules \
 
 USER www-data
 EXPOSE 9000
+ENTRYPOINT ["shop-entrypoint"]
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD SCRIPT_FILENAME=/var/www/html/public/index.php REQUEST_URI=/health REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep -q '"status":"ok"' || exit 1
 CMD ["php-fpm"]

@@ -29,3 +29,4 @@ Thumbs.db
 /tests/browser/test-results
 /tests/browser/playwright-report
 /tests/load/webhook-orders.json
+/docker/rclone/rclone.conf

@@ -8,8 +8,10 @@ use App\Mail\NewDeviceLoginMail;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\VerifyEmailQueued;
+use App\Services\GiftCardService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
+use App\Services\TwoFactorService;
 use App\Services\UserService;
 use Database\Factories\UserFactory;
 use Illuminate\Support\Facades\Crypt;
@@ -236,5 +238,20 @@ class AccountSecurityTest extends TestCase
 
         config(['shop.webhook_allowed_ips' => '127.0.0.1']);
         $this->postShkeeperWebhook($this->paidPayload((string) Str::uuid(), '1.00'))->assertStatus(202);
+    }
+
+    public function test_gift_cards_and_recovery_codes_survive_app_key_rotation(): void
+    {
+        $admin = User::factory()->admin()->create();
+        [, $code] = app(GiftCardService::class)->create(1000, 'USD', $admin);
+        $user = User::factory()->withTwoFactor()->create();
+        $recovery = app(TwoFactorService::class)->regenerateRecoveryCodes($user);
+
+        $oldKey = config('app.key');
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32)), 'app.previous_keys' => [$oldKey]]);
+
+        app(GiftCardService::class)->redeem($user, $code);
+        $this->assertSame(1000, $user->fresh()->balance_minor);
+        $this->assertTrue(app(TwoFactorService::class)->verify($user->fresh(), $recovery[0]));
     }
 }

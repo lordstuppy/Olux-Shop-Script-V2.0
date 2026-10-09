@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\UserFacingException;
 use App\Models\User;
+use App\Support\KeyedHash;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
@@ -106,10 +107,10 @@ class TwoFactorService
             return true;
         }
 
-        $hash = $this->hashRecoveryCode($code);
+        $candidates = KeyedHash::candidates($code);
         $remaining = $user->two_factor_recovery_codes ?? [];
         foreach ($remaining as $i => $stored) {
-            if (hash_equals($stored, $hash)) {
+            if (collect($candidates)->contains(fn ($hash) => hash_equals($stored, $hash))) {
                 unset($remaining[$i]);
                 $user->forceFill(['two_factor_recovery_codes' => array_values($remaining)])->save();
                 $this->audit->log('user.two_factor_recovery_used', $user, ['remaining' => count($remaining)], $user);
@@ -128,7 +129,7 @@ class TwoFactorService
 
     private function hashRecoveryCode(string $code): string
     {
-        return hash_hmac('sha256', $this->normalize($code), (string) config('app.key'));
+        return KeyedHash::make($this->normalize($code));
     }
 
     /** @return list<string> */

@@ -87,9 +87,26 @@ tests/               Unit, Feature, browser (Playwright), load (k6)
    server state. `shop:reconcile-payments` polls Shkeeper's invoice status
    (server to server) to catch lost webhooks.
 
-Balance payments, refunds (to balance or recorded manual payouts), gift cards,
-coupons, seller ledger and payouts are described in
-[docs/OPERATIONS.md](docs/OPERATIONS.md). The conversion rules are in
+Balance payments, refunds (to balance, manual, or crypto via Shkeeper), gift
+cards, coupons, the seller ledger and payouts (manual or through Shkeeper's
+payout API) are described in [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
+### Features at a glance
+
+- **Buyers:** catalog with search, filters and best sellers; product images;
+  reviews from verified buyers; wishlist; session cart; balance or crypto
+  checkout with coupons; quote refresh; downloads with limits;
+  subscriptions with expiry and reminders; invoices; tickets; gift cards;
+  2FA; email change; session management.
+- **Sellers:** onboarding; products with files, licence keys and images
+  (virus-scanned, reviewed by staff); manual delivery; sales; ledger-based
+  payouts; payout address change with confirmation.
+- **Staff:** roles (admin, finance, support) behind 2FA; orders (refund,
+  cancel, deliver, retry, invoice, reset downloads); payments; webhooks;
+  payouts; reconciliation; reports with charts; CSV exports; balance
+  adjustments; coupons; gift cards; exchange rates; categories; product
+  review with file inspection; seller approval; tickets with assignment and
+  internal notes; reviews moderation; announcements; settings; audit log. The conversion rules are in
 [docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
 
 ## Quick start (local)
@@ -110,6 +127,9 @@ php artisan queue:work &
 
 The demo accounts are `admin@example.test`, `seller@example.test` and
 `buyer@example.test`. Their password is `correct-horse-battery-1` (local only).
+The demo admin has two-factor authentication with the development-only secret
+`JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`; add it to an authenticator app. In
+production, create the first admin with `php artisan shop:create-admin`.
 
 Simulate a payment from Shkeeper (sends a signed callback):
 
@@ -130,7 +150,13 @@ The Compose services are:
 - `web`: nginx on port 8080.
 - `db`: PostgreSQL 15.
 - `queue` and `scheduler`.
+- `clamav`: virus scanning of seller uploads.
 - `shkeeper-mock`: started only with the `mock` or `test` profile.
+- `backup`: scheduled, encrypted backups, started only with the `backup` profile.
+
+All application containers run with read-only root filesystems, no Linux
+capabilities and `no-new-privileges`. The `app` container caches config and
+routes at start-up and runs migrations (`RUN_MIGRATIONS=true`).
 
 When using the mock in Compose, set `SHKEEPER_BASE_URL=http://shkeeper-mock:8081`
 and `SHKEEPER_CALLBACK_URL=http://web:8080/webhooks/shkeeper`.

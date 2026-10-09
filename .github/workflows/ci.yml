@@ -30,6 +30,8 @@ jobs:
           extensions: pdo_pgsql, intl, zip, gd, sodium
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Dependency vulnerability audit
+        run: composer audit --no-interaction
       - run: ./scripts/check-ascii.sh
       - run: vendor/bin/pint --test
       - run: cp .env.example .env && php artisan key:generate
@@ -64,5 +66,5 @@ jobs:
           cp .env.example .env
           sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^DB_PASSWORD=.*/DB_PASSWORD=shop/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
           php artisan key:generate
-      - run: cd tests/browser && npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - run: cd tests/browser && npm install --no-fund && npm audit --audit-level=high && npx playwright install --with-deps chromium
       - run: ./tests/browser/run.sh
