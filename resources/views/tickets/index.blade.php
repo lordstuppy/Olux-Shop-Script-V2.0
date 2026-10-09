@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Support')
+@section('title', __('Support'))
 @section('noindex', true)
 
 @section('content')
-    <h1>Support tickets</h1>
-    <p><a class="btn" href="{{ route('tickets.create') }}">Open a new ticket</a></p>
+    <h1>{{ __('Support tickets') }}</h1>
+    <p><a class="btn" href="{{ route('tickets.create') }}">{{ __('Open a new ticket') }}</a></p>
     @if ($tickets->isEmpty())
-        <p>You have no tickets.</p>
+        <p>{{ __('You have no tickets.') }}</p>
     @else
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th scope="col">Ticket</th><th scope="col">Subject</th><th scope="col">Order</th><th scope="col">Status</th><th scope="col">Updated</th></tr>
+                    <tr><th scope="col">{{ __('Ticket') }}</th><th scope="col">{{ __('Subject') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Updated') }}</th></tr>
                 </thead>
                 <tbody>
                     @foreach ($tickets as $ticket)

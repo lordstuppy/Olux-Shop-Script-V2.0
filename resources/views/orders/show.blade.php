@@ -1,34 +1,34 @@
 @extends('layouts.app')
 
-@section('title', 'Order '.$order->shortId())
+@section('title', __('Order :order', ['order' => $order->shortId()]))
 @section('noindex', true)
 
 @section('content')
-    <h1>Order <span class="mono">{{ $order->shortId() }}</span></h1>
-    <p>Status: <x-status :value="$order->status" />. Placed {{ $order->created_at->format('Y-m-d H:i') }} UTC. Full reference: <span class="mono">{{ $order->public_id }}</span></p>
+    <h1>{{ __('Order') }} <span class="mono">{{ $order->shortId() }}</span></h1>
+    <p>{{ __('Status:') }} <x-status :value="$order->status" />. {{ __('Placed :time UTC.', ['time' => $order->created_at->format('Y-m-d H:i')]) }} {{ __('Full reference:') }} <span class="mono">{{ $order->public_id }}</span></p>
 
     @if ($order->status === \App\Enums\OrderStatus::Pending && auth()->id() === $order->buyer_id)
         <div class="actions">
-            <a class="btn" href="{{ route('orders.pay', $order) }}">Pay now</a>
+            <a class="btn" href="{{ route('orders.pay', $order) }}">{{ __('Pay now') }}</a>
             <form method="post" action="{{ route('orders.cancel', $order) }}">
                 @csrf
-                <button type="submit" class="btn-secondary">Cancel order</button>
+                <button type="submit" class="btn-secondary">{{ __('Cancel order') }}</button>
             </form>
         </div>
         @if ($order->expires_at)
-            <p class="hint">Unpaid orders expire at {{ $order->expires_at->format('Y-m-d H:i') }} UTC.</p>
+            <p class="hint">{{ __('Unpaid orders expire at :time UTC.', ['time' => $order->expires_at->format('Y-m-d H:i')]) }}</p>
         @endif
     @endif
 
-    <h2>Items</h2>
+    <h2>{{ __('Items') }}</h2>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
-                    <th scope="col">Product</th>
-                    <th scope="col" class="num">Qty</th>
-                    <th scope="col" class="num">Total</th>
-                    <th scope="col">Delivery</th>
+                    <th scope="col">{{ __('Product') }}</th>
+                    <th scope="col" class="num">{{ __('Qty') }}</th>
+                    <th scope="col" class="num">{{ __('Total') }}</th>
+                    <th scope="col">{{ __('Delivery') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,31 +40,31 @@
                         <td>
                             @if (! $item->isDelivered())
                                 @if ($order->status->isPaidState())
-                                    Waiting for delivery.
+                                    {{ __('Waiting for delivery.') }}
                                 @else
-                                    Delivered after payment.
+                                    {{ __('Delivered after payment.') }}
                                 @endif
                             @elseif (auth()->id() !== $order->buyer_id)
-                                Delivered {{ $item->delivered_at->format('Y-m-d H:i') }} UTC.
+                                {{ __('Delivered :time UTC.', ['time' => $item->delivered_at->format('Y-m-d H:i')]) }}
                             @else
                                 @php $payload = $item->delivered_payload ?? []; @endphp
                                 @if ($item->access_expires_at)
-                                    <span class="{{ $item->accessExpired() ? 'error-text' : 'muted' }}">{{ $item->accessExpired() ? 'Access ended' : 'Access until' }} {{ $item->access_expires_at->format('Y-m-d') }}.</span><br>
+                                    <span class="{{ $item->accessExpired() ? 'error-text' : 'muted' }}">{{ $item->accessExpired() ? __('Access ended :date.', ['date' => $item->access_expires_at->format('Y-m-d')]) : __('Access until :date.', ['date' => $item->access_expires_at->format('Y-m-d')]) }}</span><br>
                                 @endif
                                 @if (! empty($payload['files']))
-                                    <span class="muted">Downloads used: {{ $item->download_count }} of {{ $item->product->downloadLimit() }}.</span><br>
+                                    <span class="muted">{{ __('Downloads used: :used of :limit.', ['used' => $item->download_count, 'limit' => $item->product->downloadLimit()]) }}</span><br>
                                 @endif
                                 @foreach ($downloads[$item->id] ?? [] as $download)
-                                    <a href="{{ $download['url'] }}">Download {{ $download['name'] }}</a> ({{ number_format($download['size']) }} bytes)<br>
+                                    <a href="{{ $download['url'] }}">{{ __('Download :name', ['name' => $download['name']]) }}</a> ({{ __(':size bytes', ['size' => number_format($download['size'])]) }})<br>
                                 @endforeach
                                 @foreach ($payload['license_keys'] ?? [] as $key)
-                                    Licence key: <span class="mono">{{ $key }}</span><br>
+                                    {{ __('Licence key:') }} <span class="mono">{{ $key }}</span><br>
                                 @endforeach
                                 @if (($payload['type'] ?? '') === 'manual')
                                     <div class="description">{{ $payload['text'] ?? '' }}</div>
                                 @endif
                                 @if ($order->status === \App\Enums\OrderStatus::Refunded)
-                                    <span class="muted">This order was refunded; downloads are no longer available.</span>
+                                    <span class="muted">{{ __('This order was refunded; downloads are no longer available.') }}</span>
                                 @endif
                             @endif
                         </td>
@@ -72,30 +72,30 @@
                 @endforeach
             </tbody>
             <tfoot>
-                <tr><th scope="row" colspan="2">Subtotal</th><td class="num">{{ money($order->subtotal_minor, $order->currency) }}</td><td></td></tr>
+                <tr><th scope="row" colspan="2">{{ __('Subtotal') }}</th><td class="num">{{ money($order->subtotal_minor, $order->currency) }}</td><td></td></tr>
                 @if ($order->discount_minor > 0)
-                    <tr><th scope="row" colspan="2">Discount</th><td class="num">-{{ money($order->discount_minor, $order->currency) }}</td><td></td></tr>
+                    <tr><th scope="row" colspan="2">{{ __('Discount') }}</th><td class="num">-{{ money($order->discount_minor, $order->currency) }}</td><td></td></tr>
                 @endif
-                <tr><th scope="row" colspan="2">Total</th><td class="num"><strong>{{ money($order->total_minor, $order->currency) }}</strong></td><td></td></tr>
+                <tr><th scope="row" colspan="2">{{ __('Total') }}</th><td class="num"><strong>{{ money($order->total_minor, $order->currency) }}</strong></td><td></td></tr>
                 @if ($order->refunded_minor > 0)
-                    <tr><th scope="row" colspan="2">Refunded</th><td class="num">{{ money($order->refunded_minor, $order->currency) }}</td><td></td></tr>
+                    <tr><th scope="row" colspan="2">{{ __('Refunded') }}</th><td class="num">{{ money($order->refunded_minor, $order->currency) }}</td><td></td></tr>
                 @endif
             </tfoot>
         </table>
     </div>
 
     @if ($order->status->isPaidState())
-        <p class="mt"><a href="{{ route('orders.invoice', $order) }}">Download invoice (PDF)</a></p>
+        <p class="mt"><a href="{{ route('orders.invoice', $order) }}">{{ __('Download invoice (PDF)') }}</a></p>
     @endif
 
-    <h2>Payments</h2>
+    <h2>{{ __('Payments') }}</h2>
     @if ($order->payments->isEmpty())
-        <p>No payment has been started.</p>
+        <p>{{ __('No payment has been started.') }}</p>
     @else
         <ul>
             @foreach ($order->payments as $payment)
                 <li>
-                    {{ ucfirst($payment->kind->value) }} via {{ $payment->provider->value }}{{ $payment->crypto ? ' ('.$payment->crypto.')' : '' }}:
+                    {{ __(':kind via :provider', ['kind' => $payment->kind->label(), 'provider' => $payment->provider->label()]) }}{{ $payment->crypto ? ' ('.$payment->crypto.')' : '' }}:
                     {{ money($payment->amount_minor, $payment->currency) }}, <x-status :value="$payment->status" />
                     @if ($payment->failure_reason)
                         <br><span class="error-text">{{ $payment->failure_reason }}</span>
@@ -106,6 +106,6 @@
     @endif
 
     @if (auth()->id() === $order->buyer_id)
-        <p class="mt"><a href="{{ route('tickets.create', ['order' => $order->public_id]) }}">Report a problem with this order</a></p>
+        <p class="mt"><a href="{{ route('tickets.create', ['order' => $order->public_id]) }}">{{ __('Report a problem with this order') }}</a></p>
     @endif
 @endsection

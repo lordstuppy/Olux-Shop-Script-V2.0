@@ -1,23 +1,23 @@
 @extends('layouts.app')
 
-@section('title', 'Your orders')
+@section('title', __('Your orders'))
 @section('noindex', true)
 
 @section('content')
-    <h1>Your orders</h1>
+    <h1>{{ __('Your orders') }}</h1>
     @if ($orders->isEmpty())
-        <p>You have not placed any orders yet. <a href="{{ route('products.index') }}">Browse products</a>.</p>
+        <p>{{ __('You have not placed any orders yet.') }} <a href="{{ route('products.index') }}">{{ __('Browse products') }}</a>.</p>
     @else
         <div class="table-wrap">
             <table>
-                <caption>Most recent first</caption>
+                <caption>{{ __('Most recent first') }}</caption>
                 <thead>
                     <tr>
-                        <th scope="col">Order</th>
-                        <th scope="col">Placed</th>
-                        <th scope="col">Items</th>
-                        <th scope="col" class="num">Total</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">{{ __('Order') }}</th>
+                        <th scope="col">{{ __('Placed') }}</th>
+                        <th scope="col">{{ __('Items') }}</th>
+                        <th scope="col" class="num">{{ __('Total') }}</th>
+                        <th scope="col">{{ __('Status') }}</th>
                     </tr>
                 </thead>
                 <tbody>

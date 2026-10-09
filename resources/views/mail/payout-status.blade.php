@@ -1,11 +1,11 @@
-Payout #{{ $payout->id }} of {{ money($payout->amount_minor, $payout->currency) }} is now {{ $payout->status->value }}.
+{{ __('Payout #:id of :amount is now :status.', ['id' => $payout->id, 'amount' => money($payout->amount_minor, $payout->currency), 'status' => mb_strtolower($payout->status->label())]) }}
 
 @if ($payout->status === \App\Enums\PayoutStatus::Paid)
-Sent to {{ $payout->destination }}@if ($payout->crypto_amount) as {{ $payout->crypto_amount }} {{ $payout->crypto }}@endif.
-Transaction reference: {{ $payout->reference }}
+{{ $payout->crypto_amount ? __('Sent to :destination as :amount :crypto.', ['destination' => $payout->destination, 'amount' => $payout->crypto_amount, 'crypto' => $payout->crypto]) : __('Sent to :destination.', ['destination' => $payout->destination]) }}
+{{ __('Transaction reference:') }} {{ $payout->reference }}
 @elseif ($payout->status === \App\Enums\PayoutStatus::Rejected)
-Reason: {{ $payout->note }}
-The amount is available in your seller balance again.
+{{ __('Reason:') }} {{ $payout->note }}
+{{ __('The amount is available in your seller balance again.') }}
 @endif
 
-Payout history: {{ route('seller.payouts') }}
+{{ __('Payout history:') }} {{ route('seller.payouts') }}

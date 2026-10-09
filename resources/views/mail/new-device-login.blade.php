@@ -1,8 +1,8 @@
-Your account {{ $user->email }} was signed in from a new device.
+{{ __('Your account :email was signed in from a new device.', ['email' => $user->email]) }}
 
-Time: {{ $device->created_at->format('Y-m-d H:i') }} UTC
-IP address: {{ $device->ip }}
-Browser: {{ $device->user_agent }}
+{{ __('Time: :time UTC', ['time' => $device->created_at->format('Y-m-d H:i')]) }}
+{{ __('IP address:') }} {{ $device->ip }}
+{{ __('Browser:') }} {{ $device->user_agent }}
 
-If this was you, no action is needed.
-If it was not you, change your password now and review signed-in sessions: {{ route('account.settings') }}
+{{ __('If this was you, no action is needed.') }}
+{{ __('If it was not you, change your password now and review signed-in sessions:') }} {{ route('account.settings') }}

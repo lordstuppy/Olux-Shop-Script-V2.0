@@ -1,3 +1,3 @@
-An item in order {{ $order->shortId() }} was delivered.
+{{ __('An item in order :order was delivered.', ['order' => $order->shortId()]) }}
 
-View the delivery details: {{ route('orders.show', $order) }}
+{{ __('View the delivery details:') }} {{ route('orders.show', $order) }}

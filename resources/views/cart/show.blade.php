@@ -1,28 +1,28 @@
 @extends('layouts.app')
 
-@section('title', 'Cart')
+@section('title', __('Cart'))
 @section('noindex', true)
 
 @section('content')
-    <h1>Your cart</h1>
+    <h1>{{ __('Your cart') }}</h1>
 
     @foreach ($totals['problems'] as $problem)
         <div class="flash flash-info" role="status">{{ $problem }}</div>
     @endforeach
 
     @if ($totals['lines'] === [])
-        <p>Your cart is empty. <a href="{{ route('products.index') }}">Browse products</a>.</p>
+        <p>{{ __('Your cart is empty.') }} <a href="{{ route('products.index') }}">{{ __('Browse products') }}</a>.</p>
     @else
         <div class="table-wrap">
             <table>
-                <caption>Items, priced in {{ $totals['currency'] }}</caption>
+                <caption>{{ __('Items, priced in :currency', ['currency' => $totals['currency']]) }}</caption>
                 <thead>
                     <tr>
-                        <th scope="col">Product</th>
-                        <th scope="col" class="num">Unit price</th>
-                        <th scope="col">Quantity</th>
-                        <th scope="col" class="num">Line total</th>
-                        <th scope="col"><span class="visually-hidden">Remove</span></th>
+                        <th scope="col">{{ __('Product') }}</th>
+                        <th scope="col" class="num">{{ __('Unit price') }}</th>
+                        <th scope="col">{{ __('Quantity') }}</th>
+                        <th scope="col" class="num">{{ __('Line total') }}</th>
+                        <th scope="col"><span class="visually-hidden">{{ __('Remove') }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,7 +32,7 @@
                             <td>
                                 <a href="{{ route('products.show', $product->slug) }}">{{ $product->title }}</a>
                                 @if ($product->currency !== $totals['currency'])
-                                    <br><span class="muted">Listed at {{ money($product->price_minor, $product->currency) }}; rate {{ rtrim(rtrim($line['rate'], '0'), '.') }}</span>
+                                    <br><span class="muted">{{ __('Listed at :price; rate :rate', ['price' => money($product->price_minor, $product->currency), 'rate' => rtrim(rtrim($line['rate'], '0'), '.')]) }}</span>
                                 @endif
                             </td>
                             <td class="num">{{ money($line['unit_minor'], $totals['currency']) }}</td>
@@ -40,9 +40,9 @@
                                 <form method="post" action="{{ route('cart.update', $product->id) }}" class="actions">
                                     @csrf
                                     @method('PUT')
-                                    <label class="visually-hidden" for="qty-{{ $product->id }}">Quantity of {{ $product->title }}</label>
+                                    <label class="visually-hidden" for="qty-{{ $product->id }}">{{ __('Quantity of :product', ['product' => $product->title]) }}</label>
                                     <input id="qty-{{ $product->id }}" type="number" name="quantity" value="{{ $line['quantity'] }}" min="0" max="{{ config('shop.max_quantity_per_line') }}" class="qty-input">
-                                    <button type="submit" class="btn-secondary">Update</button>
+                                    <button type="submit" class="btn-secondary">{{ __('Update') }}</button>
                                 </form>
                             </td>
                             <td class="num">{{ money($line['line_minor'], $totals['currency']) }}</td>
@@ -50,7 +50,7 @@
                                 <form method="post" action="{{ route('cart.remove', $product->id) }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-link">Remove<span class="visually-hidden"> {{ $product->title }}</span></button>
+                                    <button type="submit" class="btn-link">{{ __('Remove') }}<span class="visually-hidden"> {{ $product->title }}</span></button>
                                 </form>
                             </td>
                         </tr>
@@ -58,7 +58,7 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th scope="row" colspan="3">Subtotal</th>
+                        <th scope="row" colspan="3">{{ __('Subtotal') }}</th>
                         <td class="num"><strong>{{ money($totals['subtotal_minor'], $totals['currency']) }}</strong></td>
                         <td></td>
                     </tr>
@@ -68,15 +68,15 @@
 
         <form method="post" action="{{ route('cart.currency') }}" class="actions mt">
             @csrf
-            <label for="cart-currency">Pay in</label>
+            <label for="cart-currency">{{ __('Pay in') }}</label>
             <select id="cart-currency" name="currency">
                 @foreach ($currencies as $code)
                     <option value="{{ $code }}" @selected($code === $totals['currency'])>{{ $code }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="btn-secondary">Change currency</button>
+            <button type="submit" class="btn-secondary">{{ __('Change currency') }}</button>
         </form>
 
-        <p class="mt"><a class="btn" href="{{ route('checkout.show') }}">Continue to checkout</a></p>
+        <p class="mt"><a class="btn" href="{{ route('checkout.show') }}">{{ __('Continue to checkout') }}</a></p>
     @endif
 @endsection
