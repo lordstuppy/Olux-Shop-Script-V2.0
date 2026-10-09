@@ -16,6 +16,23 @@ class ClamAvScanner implements VirusScanner
         private readonly int $timeout,
     ) {}
 
+    public function ping(): array
+    {
+        if ($this->host === '') {
+            return ['ok' => false, 'detail' => 'CLAMAV_HOST is not configured'];
+        }
+        $socket = @stream_socket_client("tcp://{$this->host}:{$this->port}", $errno, $errstr, min(3, $this->timeout));
+        if ($socket === false) {
+            return ['ok' => false, 'detail' => "clamd unreachable: {$errstr}"];
+        }
+        stream_set_timeout($socket, min(3, $this->timeout));
+        fwrite($socket, "zPING\0");
+        $reply = trim((string) stream_get_contents($socket), "\0\r\n ");
+        fclose($socket);
+
+        return $reply === 'PONG' ? ['ok' => true, 'detail' => 'PONG'] : ['ok' => false, 'detail' => 'unexpected reply: '.mb_substr($reply, 0, 80)];
+    }
+
     public function scan(string $absolutePath): array
     {
         if ($this->host === '') {

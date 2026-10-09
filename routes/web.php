@@ -244,6 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
         Route::get('/reviews', [Admin\ReviewController::class, 'index'])->can('reviews.moderate')->name('reviews.index');
         Route::post('/reviews/{review}/status', [Admin\ReviewController::class, 'status'])->can('reviews.moderate')->name('reviews.status');
+        Route::get('/health', Admin\SystemHealthController::class)->can('health.view')->name('health');
         Route::get('/audit', [Admin\AuditLogController::class, 'index'])->can('audit.view')->name('audit.index');
 
         Route::get('/reports', Admin\ReportController::class)->can('reports.view')->name('reports');

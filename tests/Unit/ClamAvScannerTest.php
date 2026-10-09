@@ -27,6 +27,11 @@ class ClamAvScannerTest extends TestCase
             // Child: answer one connection like clamd, then exit.
             $conn = stream_socket_accept($server, 10);
             $command = fread($conn, 10);
+            if ($command === "zPING\0") {
+                fwrite($conn, "PONG\0");
+                fclose($conn);
+                posix_kill(posix_getpid(), SIGKILL);
+            }
             $data = '';
             while (true) {
                 $len = unpack('N', fread($conn, 4))[1];
@@ -69,6 +74,13 @@ class ClamAvScannerTest extends TestCase
         file_put_contents($path, self::EICAR);
         $this->withFakeClamd(fn ($scanner) => $this->assertSame(['status' => 'infected', 'detail' => 'Eicar-Test-Signature'], $scanner->scan($path)));
         unlink($path);
+    }
+
+    public function test_ping(): void
+    {
+        $this->withFakeClamd(fn ($scanner) => $this->assertSame(['ok' => true, 'detail' => 'PONG'], $scanner->ping()));
+        $this->assertFalse((new ClamAvScanner('', 3310, 1))->ping()['ok']);
+        $this->assertFalse((new ClamAvScanner('127.0.0.1', 1, 1))->ping()['ok']);
     }
 
     public function test_unreachable_or_unconfigured_scanner_is_an_error(): void

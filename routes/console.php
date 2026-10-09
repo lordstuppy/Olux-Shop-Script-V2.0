@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Enums\WebhookEventStatus;
 use App\Jobs\ProcessWebhookEvent;
+use App\Jobs\QueueHeartbeat;
 use App\Mail\SubscriptionRenewalMail;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -13,8 +14,10 @@ use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
 use App\Services\ShkeeperPayoutService;
+use App\Services\SystemHealthService;
 use App\Support\TranslationCatalog;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
@@ -137,3 +140,6 @@ Schedule::command('shop:subscription-reminders')->hourly()->withoutOverlapping()
 Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('auth:clear-resets')->hourly();
 Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');
+// Heartbeats for the system health page.
+Schedule::call(fn () => Cache::put(SystemHealthService::SCHEDULER_HEARTBEAT, now()->timestamp, 86400))->everyMinute()->name('health:scheduler-heartbeat');
+Schedule::job(new QueueHeartbeat)->everyFiveMinutes()->name('health:queue-heartbeat');

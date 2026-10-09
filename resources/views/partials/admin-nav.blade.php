@@ -24,6 +24,7 @@
         ['admin.email-templates.index', __('Email templates'), 'templates.manage'],
         ['admin.settings.index', __('Settings'), 'settings.manage'],
         ['admin.audit.index', __('Audit log'), 'audit.view'],
+        ['admin.health', __('System health'), 'health.view'],
     ] as [$routeName, $label, $ability])
         @can($ability)
             <li><a href="{{ route($routeName) }}" @if(request()->routeIs($routeName)) aria-current="page" @endif>{{ $label }}</a></li>

@@ -34,6 +34,11 @@ class FilesAndSubscriptionsTest extends TestCase
             {
                 return ['status' => $this->status, 'detail' => $this->detail];
             }
+
+            public function ping(): array
+            {
+                return ['ok' => $this->status !== 'error', 'detail' => (string) $this->detail];
+            }
         });
     }
 

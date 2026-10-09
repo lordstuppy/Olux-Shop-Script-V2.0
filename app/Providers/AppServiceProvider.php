@@ -9,6 +9,7 @@ use App\Services\CartService;
 use App\Services\Security\ClamAvScanner;
 use App\Services\Security\VirusScanner;
 use App\Services\Shkeeper\ShkeeperClient;
+use App\Services\SystemHealthService;
 use App\Support\Permissions;
 use App\Support\RequestId;
 use App\Support\Settings;
@@ -56,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
             Settings::apply();
         }
         Queue::before(fn () => Settings::apply());
+        // Heartbeat for the system health page (see App\Jobs\QueueHeartbeat).
+        Queue::after(fn () => rescue(fn () => Cache::put(SystemHealthService::QUEUE_HEARTBEAT, now()->timestamp, 86400), report: false));
         $this->configureRateLimits();
 
         foreach (Permissions::MAP as $ability => $roles) {
