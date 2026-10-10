@@ -97,19 +97,24 @@ def kill_queue(rec, ctx):
     rec.step('queue worker started')
     for oid, _ in oids:
         wait_status(oid, 'delivered', timeout=90)
-    # Mid-job: hold the order row so DeliverOrder blocks, kill the worker, release.
+    # Mid-job: with the worker stopped the payment queues the delivery; the order lines are then
+    # locked so the restarted worker blocks inside DeliverOrder, and it is killed there.
     email, b = buyer(5)
     p = keyed_product(3)
     shop.add_to_cart(b, p)
     r, oid = shop.checkout(b, 'crypto', 'BTC')
     row = shop.order_row(oid)
-    locker = threading.Thread(target=lambda: env.sql(f"begin; select id from order_items where order_id={row['id']} for update; select pg_sleep(8); commit;"))
+    env.stop('queue')
+    shop.pay(oid)
+    wait_status(oid, 'paid', timeout=30)
+    locker = threading.Thread(target=lambda: env.sql(f"begin; select id from order_items where order_id={row['id']} for update; select pg_sleep(15); commit;"))
     locker.start()
     time.sleep(0.5)
-    shop.pay(oid)
+    env.start('queue')
     shop.wait_for(lambda: env.scalar("select count(*) from jobs where reserved_at is not null and payload like '%DeliverOrder%'") != '0', 'delivery job reserved', 20)
+    time.sleep(1)
     env.kill_worker()
-    rec.step('worker killed (kill -9) while the delivery job was reserved')
+    rec.step('worker killed (kill -9) while it was inside the delivery job')
     locker.join()
     wait_status(oid, 'delivered', timeout=200)
     rec.step('the interrupted delivery was retried after retry_after and completed')

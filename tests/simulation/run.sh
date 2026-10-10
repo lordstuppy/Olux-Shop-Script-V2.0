@@ -169,7 +169,7 @@ case "$BACKEND:$CMD" in
         esac ;;
     host:kill-worker)
         # kill -9 the running worker process only; the supervising loop restarts it.
-        pkill -KILL -f 'artisan queue:work' || true ;;
+        pkill -KILL -f '^php artisan queue:work' || true ;;
     host:disk-full)
         # Replace the product file storage with a small tmpfs holding the current files.
         D="$W/app/storage/app/private/products"
