@@ -85,6 +85,27 @@ function save(string $file, array $state): void
     file_put_contents($file, json_encode($state, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
+/**
+ * Serialises read-modify-write of the state file across the server's worker
+ * processes (without it, concurrent invoice creations got the same id).
+ *
+ * @return resource
+ */
+function lockState(string $file)
+{
+    $handle = fopen($file.'.lock', 'c');
+    flock($handle, LOCK_EX);
+
+    return $handle;
+}
+
+/** @param  resource  $handle */
+function unlockState($handle): void
+{
+    flock($handle, LOCK_UN);
+    fclose($handle);
+}
+
 function authorised(string $apiKey): bool
 {
     return hash_equals($apiKey, (string) ($_SERVER['HTTP_X_SHKEEPER_API_KEY'] ?? ''));
@@ -112,8 +133,11 @@ function mockConfig(array $state): array
  */
 function consumeFailRule(string $file, string $path): ?array
 {
+    $lock = lockState($file);
     $fh = fopen($file, 'c+');
     if ($fh === false) {
+        unlockState($lock);
+
         return null;
     }
     flock($fh, LOCK_EX);
@@ -139,6 +163,7 @@ function consumeFailRule(string $file, string $path): ?array
     }
     flock($fh, LOCK_UN);
     fclose($fh);
+    unlockState($lock);
 
     return $hit;
 }
@@ -266,6 +291,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payment_request
 
         return;
     }
+    $stateLock = lockState($stateFile);
     $state = load($stateFile);
     $id = $state[$req['external_id']]['id'] ?? (invoiceCount($state) + 1);
     $cryptoAmount = number_format((float) $req['amount'] / (float) $rates[$crypto], 8, '.', '');
@@ -282,6 +308,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payment_request
         'txs' => $state[$req['external_id']]['txs'] ?? [],
     ];
     save($stateFile, $state);
+    unlockState($stateLock);
     respond(200, [
         'status' => 'success',
         'id' => $id,
@@ -308,6 +335,7 @@ if ($method === 'GET' && preg_match('#^/api/v1/invoices/([A-Za-z0-9-]+)$#', $pat
 }
 
 if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $m)) {
+    $stateLock = lockState($stateFile);
     $state = load($stateFile);
     $invoice = $state[$m[1]] ?? null;
     if ($invoice === null) {
@@ -326,6 +354,7 @@ if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $
     $invoice['txs'][] = ['txid' => bin2hex(random_bytes(16)), 'amount_fiat' => $amount, 'trigger' => true];
     $state[$m[1]] = $invoice;
     save($stateFile, $state);
+    unlockState($stateLock);
 
     if (! $deliver) {
         respond(200, ['status' => 'success', 'delivered' => false, 'callback_http_status' => null,
@@ -382,6 +411,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout$#', $pat
             return;
         }
     }
+    $stateLock = lockState($stateFile);
     $state = load($stateFile);
     $externalId = (string) ($req['external_id'] ?? bin2hex(random_bytes(6)));
     $taskId = bin2hex(random_bytes(8));
@@ -390,6 +420,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout$#', $pat
         'destination' => $req['destination'], 'status' => 'IN_PROGRESS', 'txid' => null, 'callback_url' => $req['callback_url'] ?? null,
     ];
     save($stateFile, $state);
+    unlockState($stateLock);
     respond(200, ['task_id' => $taskId, 'external_id' => $externalId]);
 
     return;
@@ -414,6 +445,7 @@ if ($method === 'GET' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout/status$#'
 }
 
 if ($method === 'POST' && preg_match('#^/__mock/payout-result/([A-Za-z0-9_-]+)$#', $path, $m)) {
+    $stateLock = lockState($stateFile);
     $state = load($stateFile);
     $payout = $state['payouts'][$m[1]] ?? null;
     if ($payout === null) {
@@ -426,6 +458,7 @@ if ($method === 'POST' && preg_match('#^/__mock/payout-result/([A-Za-z0-9_-]+)$#
     $payout['txid'] = $payout['status'] === 'SUCCESS' ? bin2hex(random_bytes(32)) : null;
     $state['payouts'][$m[1]] = $payout;
     save($stateFile, $state);
+    unlockState($stateLock);
 
     $code = null;
     if ($payout['callback_url']) {
@@ -504,9 +537,11 @@ if ($path === '/__mock/config') {
             }
             $rules[] = $clean;
         }
-        $state = load($stateFile);
+        $stateLock = lockState($stateFile);
+    $state = load($stateFile);
         $state[CONFIG_KEY] = ['delay_ms' => max(0, (int) ($req['delay_ms'] ?? 0)), 'fail_next' => $rules];
         save($stateFile, $state);
+        unlockState($stateLock);
         respond(200, ['status' => 'success', 'config' => $state[CONFIG_KEY]]);
 
         return;

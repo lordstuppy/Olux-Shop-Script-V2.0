@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\WebhookEventStatus;
+use App\Exceptions\UserFacingException;
 use App\Models\AuditLog;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductLicenseKey;
 use App\Models\SellerLedgerEntry;
@@ -182,5 +184,21 @@ class WebhookTest extends TestCase
             $this->postShkeeperWebhook([], raw: $raw)->assertStatus(400);
         }
         $this->assertSame(0, WebhookEvent::query()->count());
+    }
+
+    public function test_a_gateway_invoice_id_already_used_by_another_order_is_refused_cleanly(): void
+    {
+        $first = $this->pendingShkeeperOrder(); // the fake gateway answers invoice id 77 every time
+        $product = $this->instantProductWithFile();
+        $second = app(OrderService::class)->createFromCart(User::factory()->create(), [$product->id => 1], 'USD', (string) Str::uuid());
+
+        $this->expectException(UserFacingException::class);
+        try {
+            app(PaymentService::class)->startShkeeperPayment($second, 'BTC');
+        } finally {
+            $this->assertSame(1, Payment::query()->where('provider_reference', '77')->count());
+            $this->assertSame(0, $second->payments()->count());
+            $this->assertSame(OrderStatus::Pending, $first->fresh()->status);
+        }
     }
 }

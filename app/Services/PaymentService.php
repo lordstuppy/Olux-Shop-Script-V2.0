@@ -15,7 +15,10 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\Shkeeper\ShkeeperClient;
+use App\Services\Shkeeper\ShkeeperInvoice;
+use App\Support\GatewayLog;
 use App\Support\Money;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -94,6 +97,22 @@ class PaymentService
             throw new UserFacingException(__('The payment provider could not create an invoice for order :order. Your order is saved; try again in a few minutes or choose another currency.', ['order' => $order->shortId()]));
         }
 
+        try {
+            return $this->recordInvoice($order, $invoice);
+        } catch (UniqueConstraintViolationException $e) {
+            // The gateway answered with an invoice id that another order already
+            // holds. Never attach it; the buyer can request a fresh invoice.
+            Log::error('Shkeeper returned invoice {invoice_id} for order {public_id}, but another payment already uses it', [
+                'invoice_id' => $invoice->id, 'public_id' => $order->public_id,
+            ]);
+            GatewayLog::record('api', 'error', ['action' => 'payment_request', 'external_id' => $order->public_id, 'message' => "duplicate invoice id {$invoice->id}"]);
+
+            throw new UserFacingException(__('The payment provider could not create an invoice for order :order. Your order is saved; try again in a few minutes or choose another currency.', ['order' => $order->shortId()]));
+        }
+    }
+
+    private function recordInvoice(Order $order, ShkeeperInvoice $invoice): Payment
+    {
         return DB::transaction(function () use ($order, $invoice) {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== OrderStatus::Pending) {
