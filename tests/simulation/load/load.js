@@ -29,6 +29,9 @@ export const options = {
         admin: { executor: 'constant-vus', exec: 'admin', vus: 1, duration: DURATION },
     },
     thresholds: {
+        // Per-request rows for the report (generous limits; the budgets are below).
+        ...Object.fromEntries(['home', 'catalog', 'search', 'product', 'add to cart', 'cart', 'login', 'checkout page', 'place order', 'webhook', 'admin products']
+            .map((n) => [`http_req_duration{name:${n}}`, ['p(95)<5000']])),
         'http_req_failed{scenario:browsers}': ['rate<0.01'],
         'http_req_duration{scenario:browsers}': ['p(95)<1500'],
         admin_product_list: ['p(95)<500'],

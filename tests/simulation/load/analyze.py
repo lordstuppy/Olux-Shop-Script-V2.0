@@ -29,11 +29,11 @@ def main(summary_path, data_path, report_path, since):
     shop.wait_for(lambda: env.scalar("select count(*) from jobs where queue='default' and payload not like '%QueueHeartbeat%'") == '0',
                   'queue drained', 300, 2)
 
-    lines += ['## Latency', '', '| Request | count | p50 ms | p95 ms | max ms |', '|---|---|---|---|---|']
+    lines += ['## Latency', '', '| Request | p50 ms | p95 ms | max ms |', '|---|---|---|---|']
     for key, m in sorted(summary['metrics'].items()):
-        if key.startswith('http_req_duration{') and 'name:' in key:
+        if key.startswith('http_req_duration{name:'):
             v = m['values']
-            lines.append(f"| {key[len('http_req_duration{name:'):-1]} | {int(v.get('count', 0)) if 'count' in v else ''} | {v.get('med', 0):.0f} | {v.get('p(95)', 0):.0f} | {v.get('max', 0):.0f} |")
+            lines.append(f"| {key[len('http_req_duration{name:'):-1]} | {v.get('med', 0):.0f} | {v.get('p(95)', 0):.0f} | {v.get('max', 0):.0f} |")
     overall = metric(summary, 'http_req_duration')
     lines += ['', f"All requests: {int(metric(summary, 'http_reqs').get('count', 0))}, p95 {overall.get('p(95)', 0):.0f} ms, "
               f"failed rate {metric(summary, 'http_req_failed').get('rate', 0):.4f}.", '']
