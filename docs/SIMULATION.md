@@ -298,4 +298,42 @@ The simulation is evidence, not approval. Exit criterion 8 is a second engineer'
 
 ## Results
 
-See the end of this file, updated after each certification run.
+All results are from the `host` backend (see "Known limits"). The reports are under `tests/simulation/reports/`.
+
+### Phases 1-6 and 8: certification (2026-10-10, commit `9baf56d`)
+
+**69 of 69 scenarios passed 5 consecutive runs** (`reports/20261010-133032/summary.md`). Every run started from a fresh database and had none of the following:
+
+- an unexpected 5xx;
+- an exception or error-level log entry not declared by the scenario;
+- a failed invariant;
+- a difference from `shop:reconcile-payouts`.
+
+The earlier certification attempts failed on bugs 34, 35 and 36. Those bugs were fixed and every scenario was re-run.
+
+### Phase 7: load (5 runs, then 3 more for diagnosis)
+
+**Data correctness passed in every run:**
+
+- all 100 webhook-paid orders were paid exactly once, including the 20 duplicate callbacks;
+- all 20 mixed-vendor checkouts (3 sellers each) were delivered;
+- all invariants held;
+- 0 failed jobs and 0 error-level log entries;
+- 0 browser request failures in about 7,500 requests per run.
+
+**Latency budgets passed on the first machine, but not on the current one.** The container was moved to a 4-core machine between the two series of runs.
+
+| Run | Machine | All requests p95 | Admin product list p95 (budget 500 ms) | Login p95 | Statements over 200 ms |
+|---|---|---|---|---|---|
+| before the container restart (commit `d609873`) | earlier machine | 440 ms | 342 ms | - | 0 |
+| 1-5 (current code) | 4 cores | 1,007-1,151 ms | 863-1,143 ms: **fail** | 4.9-6.1 s | 0, 1, 0, 0, 0 |
+| commit `d609873` again (control) | 4 cores | 1,063 ms | 1,030 ms: **fail** | 5.0 s | 0 |
+| current code with OPcache on | 4 cores | 1,084 ms | 904 ms: **fail** | 5.1 s | 0 |
+
+Diagnosis:
+
+- The load average was 9-13 on 4 cores. PHP used about 180% CPU and the kernel about 30%, so k6, PHP, PostgreSQL and nginx were sharing a saturated machine.
+- With no load, the same pages take 44-64 ms (the admin product list 64 ms).
+- The commit that met the budgets before is just as slow on this machine. The latency is a capacity limit of the test machine, not a regression.
+- The one slow statement (run 3) was a 210 ms catalog-introspection query, not from a request path, at the same saturated moment.
+- **Phase 7 latency is therefore not certified.** Repeat it on the compose backend (PHP-FPM) on hardware like production's, with k6 on a separate machine.

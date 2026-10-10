@@ -2,7 +2,7 @@
 # Hostile-conditions simulation (docs/SIMULATION.md).
 #
 # Usage: tests/simulation/run.sh <command> [args]
-#   up                 start the stack (fresh database, seeded)
+#   up                 start the stack (fresh database, seeded); host backend: SIM_REF=<commit> deploys another commit
 #   reset              fresh database + simulation seed, restart workers
 #   test [args]        run phases (see simulate.py --help), e.g. test --runs 5
 #   load               phase 7 (k6)
@@ -57,7 +57,9 @@ host_start_procs() {
     setsid nohup python3 -I "$ROOT/docker/test/fakeclamd.py" > "$W/logs/clamd.log" 2>&1 &
     echo $! >> "$W/pids"
     # PHP's built-in server with the production image's php.ini limits (uploads 50M, posts 55M).
+    # OPcache on as in the production php.ini (the CLI default is off, which recompiles every request).
     (cd public && PHP_CLI_SERVER_WORKERS=16 setsid nohup php -d upload_max_filesize=50M -d post_max_size=55M -d memory_limit=256M -d expose_php=Off \
+        -d opcache.enable=1 -d opcache.enable_cli=1 -d opcache.memory_consumption=128 -d opcache.max_accelerated_files=20000 -d opcache.validate_timestamps=0 \
         -d max_execution_time=30 -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php > "$W/logs/web.log" 2>&1 & echo $! >> "$W/pids")
     host_start_queue
     setsid nohup sh -c 'while :; do php artisan schedule:work; sleep 1; done' > "$W/logs/scheduler.log" 2>&1 &
@@ -82,7 +84,7 @@ host_stop_queue() {
 
 host_up() {
     mkdir -p "$W/app" "$W/logs" "$W/backups"
-    (cd "$ROOT" && git archive HEAD | tar -x -C "$W/app")
+    (cd "$ROOT" && git archive "${SIM_REF:-HEAD}" | tar -x -C "$W/app")
     if [ ! -f "$W/app/vendor/autoload.php" ]; then
         [ -d "$ROOT/vendor" ] && (cd "$ROOT" && tar -c --exclude=.git vendor | tar -x -C "$W/app")
         (cd "$W/app" && composer install --no-dev --classmap-authoritative --no-interaction --quiet)
