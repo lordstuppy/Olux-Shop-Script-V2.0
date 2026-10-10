@@ -341,6 +341,13 @@ The production image was built from the unchanged `Dockerfile`, with the sandbox
 
 The first runs on the image found two bugs that the host backend could not show (rows 37 and 38).
 
+**Phases 1-6, 8 and 9 (88 scenarios), second certification:** 5 consecutive passing runs, commit `620d404`.
+
+- Runs 1-4 come from `reports/20261010-210233`. Its fifth run was stopped by the sandbox's 2-hour limit for background jobs after 64 scenarios, all of which had passed.
+- The fifth run is `reports/20261010-230249` (88 of 88).
+- Every run started from a fresh database.
+- Phase 9 found no application bugs. All its first-round failures were harness errors.
+
 **Phase 7 load, 5 runs:**
 
 | Check | Result |
