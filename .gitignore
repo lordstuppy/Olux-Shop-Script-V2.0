@@ -31,3 +31,4 @@ Thumbs.db
 /tests/load/webhook-orders.json
 /docker/rclone/rclone.conf
 __pycache__/
+.sim-ca.crt

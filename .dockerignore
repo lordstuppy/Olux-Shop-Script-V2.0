@@ -14,3 +14,7 @@ storage/framework/views/*
 storage/invoices/*
 storage/app/private/*
 backups
+tests/simulation/work
+tests/simulation/reports
+tests/simulation/tls
+tests/simulation/sim.env

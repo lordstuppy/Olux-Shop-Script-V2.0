@@ -131,13 +131,35 @@ host_reset() {
 
 # ---- compose backend --------------------------------------------------------
 
+# Builds the production image from the unchanged Dockerfile. In a sandbox whose
+# only way out is a TLS-intercepting HTTPS proxy, set SIM_BUILD_CA to the proxy's
+# CA bundle: a copy of the Dockerfile then trusts it after every FROM, and the
+# proxy is passed as build arguments (Docker does not keep those in the image).
+build_image() {
+    if [ -z "${SIM_BUILD_CA:-}" ]; then
+        docker build -t digital-goods-shop:latest "$ROOT"
+        return
+    fi
+    mkdir -p "$W"
+    cp "$SIM_BUILD_CA" "$ROOT/.sim-ca.crt"
+    # The sandbox proxy refuses GitHub zip downloads but allows git, so Composer
+    # installs from source there (same composer.lock, same versions).
+    sed -e '/^FROM /a COPY --chmod=644 .sim-ca.crt /tmp/sim-ca.crt\nRUN cat /tmp/sim-ca.crt >> /etc/ssl/certs/ca-certificates.crt' \
+        -e 's/composer install \(.*\)--prefer-dist/composer install \1--prefer-source/' "$ROOT/Dockerfile" > "$W/Dockerfile.sim"
+    docker build --network host -f "$W/Dockerfile.sim" -t digital-goods-shop:latest \
+        --build-arg HTTPS_PROXY="${HTTPS_PROXY:-}" --build-arg https_proxy="${HTTPS_PROXY:-}" \
+        --build-arg NO_PROXY="localhost,127.0.0.1" "$ROOT"
+    rm -f "$ROOT/.sim-ca.crt"
+}
+
 compose_up() {
     [ -f "$ROOT/.env" ] || cp "$ROOT/.env.example" "$ROOT/.env"
     if [ ! -f "$HERE/sim.env" ]; then
         printf 'APP_KEY=base64:%s\nSHOP_SIMULATION=allow-known-passwords\n' "$(openssl rand -base64 32)" > "$HERE/sim.env"
     fi
     tls_certs
-    $COMPOSE up -d --build
+    build_image
+    $COMPOSE up -d
     until $COMPOSE exec -T db pg_isready -q 2>/dev/null; do sleep 1; done
     until $COMPOSE exec -T app php artisan migrate:status >/dev/null 2>&1; do sleep 2; done
 }
