@@ -28,7 +28,7 @@
         <x-field name="download_limit" :label="__('Downloads per purchase')" type="number" :value="$product->download_limit" min="1" max="1000" :hint="__('Leave empty for the shop default (:limit).', ['limit' => config('shop.max_downloads_per_item')])" />
         <x-select name="delivery_type" :label="__('Delivery')" :options="['instant' => __('Instant (files or licence keys)'), 'manual' => __('Manual (you deliver after payment)')]" :value="$product->delivery_type?->value" />
         <button type="submit">{{ $editing ? __('Save changes') : __('Save draft') }}</button>
-        @if ($editing && $product->status === \App\Enums\ProductStatus::Active)
+        @if ($editing && in_array($product->status, [\App\Enums\ProductStatus::Active, \App\Enums\ProductStatus::Paused], true))
             <p class="hint">{{ __('Changing the title, description, price, currency, category or delivery type sends the product back for review.') }}</p>
         @endif
     </form>
@@ -38,6 +38,18 @@
             <form method="post" action="{{ route('seller.products.submit', $product->id) }}" class="mt">
                 @csrf
                 <button type="submit">{{ __('Submit for review') }}</button>
+            </form>
+        @endif
+        @if ($product->status === \App\Enums\ProductStatus::Active)
+            <form method="post" action="{{ route('seller.products.pause', $product->id) }}" class="mt">
+                @csrf
+                <button type="submit" class="btn-secondary">{{ __('Pause sales') }}</button>
+                <span class="hint">{{ __('Hides the product from the catalog until you resume it. Buyers keep what they bought.') }}</span>
+            </form>
+        @elseif ($product->status === \App\Enums\ProductStatus::Paused)
+            <form method="post" action="{{ route('seller.products.resume', $product->id) }}" class="mt">
+                @csrf
+                <button type="submit">{{ __('Resume sales') }}</button>
             </form>
         @endif
 

@@ -159,6 +159,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/products/{product:id}/edit', [Seller\ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product:id}', [Seller\ProductController::class, 'update'])->name('products.update');
         Route::post('/products/{product:id}/submit', [Seller\ProductController::class, 'submit'])->name('products.submit');
+        Route::post('/products/{product:id}/pause', [Seller\ProductController::class, 'pause'])->name('products.pause');
+        Route::post('/products/{product:id}/resume', [Seller\ProductController::class, 'resume'])->name('products.resume');
         Route::post('/products/{product:id}/files', [Seller\ProductController::class, 'uploadFile'])->name('products.files.store');
         Route::delete('/products/{product:id}/files/{file}', [Seller\ProductController::class, 'deleteFile'])->name('products.files.destroy');
         Route::post('/products/{product:id}/keys', [Seller\ProductController::class, 'addKeys'])->name('products.keys.store');

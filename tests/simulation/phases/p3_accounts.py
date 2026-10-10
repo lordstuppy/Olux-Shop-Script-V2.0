@@ -133,8 +133,8 @@ def lockout(rec, ctx):
             x.form('/login', '/login', {'email': email, 'password': f'spray-{n}-{i}-zz'})
     owner = Client('owner', source='127.0.0.20')
     r = owner.form('/login', '/login', {'email': email, 'password': shop.PASSWORD})
-    rec.check('/login' in r.path and 'locked' in flashes(r).lower(), f'account not locked after 20 failures: {r.path} {flashes(r)}')
-    env.wait_mail(email, 'sign-in')
+    rec.check('/login' in r.path and 'paused' in flashes(r).lower(), f'account not locked after 20 failures: {r.path} {flashes(r)}')
+    env.wait_mail(email, 'Sign-in to your account was paused')
     rec.check(env.scalar("select count(*) from audit_log where action='user.login_locked'") != '0', 'lock not audited')
     # The owner resets the password, which lifts the lock.
     owner.form('/forgot-password', '/forgot-password', {'email': email})

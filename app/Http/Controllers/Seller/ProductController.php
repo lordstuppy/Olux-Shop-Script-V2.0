@@ -80,7 +80,7 @@ class ProductController extends Controller
         $data = $this->validated($request);
         $product->fill($data);
 
-        $needsReview = $product->status === ProductStatus::Active && $product->isDirty(self::REVIEWED_FIELDS);
+        $needsReview = in_array($product->status, [ProductStatus::Active, ProductStatus::Paused], true) && $product->isDirty(self::REVIEWED_FIELDS);
         if ($needsReview) {
             $product->status = ProductStatus::PendingReview;
         }
@@ -108,6 +108,37 @@ class ProductController extends Controller
         $this->audit->log('product.submitted', $product);
 
         return back()->with('success', __('":title" was submitted for review.', ['title' => $product->title]));
+    }
+
+    /** Takes an approved product off sale; it disappears from the catalog and carts. */
+    public function pause(Product $product): RedirectResponse
+    {
+        Gate::authorize('update', $product);
+        if ($product->status !== ProductStatus::Active) {
+            throw new UserFacingException(__('Only products on sale can be paused. ":title" is :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
+        }
+        $product->status = ProductStatus::Paused;
+        $product->save();
+        $this->audit->log('product.paused', $product);
+
+        return back()->with('success', __('":title" is paused and no longer for sale.', ['title' => $product->title]));
+    }
+
+    /** Puts a paused product back on sale without a new review (it was not changed). */
+    public function resume(Product $product): RedirectResponse
+    {
+        Gate::authorize('update', $product);
+        if ($product->status !== ProductStatus::Paused) {
+            throw new UserFacingException(__('Only paused products can be put back on sale. ":title" is :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
+        }
+        if (! $product->hasDeliverableContent()) {
+            throw new UserFacingException(__('Instant-delivery products need at least one file or licence key before review.'));
+        }
+        $product->status = ProductStatus::Active;
+        $product->save();
+        $this->audit->log('product.resumed', $product);
+
+        return back()->with('success', __('":title" is for sale again.', ['title' => $product->title]));
     }
 
     public function uploadFile(Request $request, Product $product): RedirectResponse

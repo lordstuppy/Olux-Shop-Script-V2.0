@@ -111,7 +111,7 @@ td.num, th.num { text-align: right; }
 
 .status { display: inline-block; padding: 0 .5em; border-radius: var(--radius); border: 1px solid var(--border); font-size: .85rem; background: var(--bg-muted); }
 .status-paid, .status-delivered, .status-active, .status-confirmed, .status-approved, .status-processed { border-color: var(--success); color: var(--success); background: var(--success-bg); }
-.status-pending, .status-pending_review, .status-requested, .status-open, .status-partial, .status-received { border-color: var(--info); color: var(--info); background: var(--info-bg); }
+.status-pending, .status-pending_review, .status-paused, .status-requested, .status-open, .status-partial, .status-received { border-color: var(--info); color: var(--info); background: var(--info-bg); }
 .status-cancelled, .status-expired, .status-rejected, .status-failed, .status-dead, .status-disabled, .status-suspended { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
 
 .qr { width: 14rem; height: 14rem; border: 1px solid var(--border); padding: .5rem; background: #fff; }
