@@ -140,4 +140,14 @@ class SecurityTest extends TestCase
         $product = $this->instantProductWithFile();
         $this->get('/storage/products/'.$product->id.'/tool.zip')->assertNotFound();
     }
+
+    public function test_ids_that_are_not_uuids_give_404_not_500(): void
+    {
+        $this->actingAs(User::factory()->create());
+        foreach (["' OR '1'='1", '1; DROP TABLE users;--', '\\', 'abc'] as $junk) {
+            $this->get('/orders/'.rawurlencode($junk))->assertNotFound();
+            $this->get('/orders/'.rawurlencode($junk).'/invoice')->assertNotFound();
+            $this->get('/tickets/new?order='.rawurlencode($junk))->assertOk();
+        }
+    }
 }

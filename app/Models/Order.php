@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -30,6 +31,16 @@ class Order extends Model
     public function getRouteKeyName(): string
     {
         return 'public_id';
+    }
+
+    /** Anything that is not a UUID cannot be an order: 404 instead of a PostgreSQL type error. */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (($field === null || $field === 'public_id') && ! Str::isUuid((string) $value)) {
+            return null;
+        }
+
+        return parent::resolveRouteBinding($value, $field);
     }
 
     /** Short reference shown to people, e.g. "3f2c9a1e". */

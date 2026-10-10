@@ -144,8 +144,12 @@ class ProductController extends Controller
     public function uploadFile(Request $request, Product $product): RedirectResponse
     {
         Gate::authorize('update', $product);
+        $maxMb = intdiv((int) config('shop.max_upload_kb'), 1024);
         $request->validate([
             'file' => ['required', 'file', 'max:'.config('shop.max_upload_kb'), 'extensions:'.self::FILE_EXTENSIONS],
+        ], [
+            'file.uploaded' => __('The file did not arrive: it is larger than :max MB or the upload was interrupted. Try again with a smaller file.', ['max' => $maxMb]),
+            'file.max' => __('The file is larger than :max MB.', ['max' => $maxMb]),
         ]);
         $upload = $request->file('file');
 
@@ -166,9 +170,13 @@ class ProductController extends Controller
     public function uploadImage(Request $request, Product $product, ProductImageService $images): RedirectResponse
     {
         Gate::authorize('update', $product);
+        $maxMb = intdiv((int) config('shop.max_image_kb'), 1024);
         $request->validate([
             'image' => ['required', 'file', 'max:'.config('shop.max_image_kb'), 'mimes:jpg,jpeg,png,webp'],
             'alt_text' => ['nullable', 'string', 'max:160'],
+        ], [
+            'image.uploaded' => __('The image did not arrive: it is larger than :max MB or the upload was interrupted. Try again with a smaller image.', ['max' => $maxMb]),
+            'image.max' => __('The image is larger than :max MB.', ['max' => $maxMb]),
         ]);
         $image = $images->store($product, $request->file('image'), $request->input('alt_text'));
         $this->markForReviewIfActive($product);

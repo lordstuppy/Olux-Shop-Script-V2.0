@@ -49,8 +49,9 @@ host_start_procs() {
     : > "$W/pids"
     setsid nohup python3 -I "$ROOT/docker/test/fakeclamd.py" > "$W/logs/clamd.log" 2>&1 &
     echo $! >> "$W/pids"
-    PHP_CLI_SERVER_WORKERS=16 setsid nohup php artisan serve --host=127.0.0.1 --port=8000 --no-reload > "$W/logs/web.log" 2>&1 &
-    echo $! >> "$W/pids"
+    # PHP's built-in server with the production image's php.ini limits (uploads 50M, posts 55M).
+    (cd public && PHP_CLI_SERVER_WORKERS=16 setsid nohup php -d upload_max_filesize=50M -d post_max_size=55M -d memory_limit=256M -d expose_php=Off \
+        -d max_execution_time=30 -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php > "$W/logs/web.log" 2>&1 & echo $! >> "$W/pids")
     host_start_queue
     setsid nohup php artisan schedule:work > "$W/logs/scheduler.log" 2>&1 &
     echo $! >> "$W/pids"

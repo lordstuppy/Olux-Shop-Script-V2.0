@@ -11,6 +11,7 @@ use App\Support\Permissions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -26,7 +27,7 @@ class TicketController extends Controller
     public function create(Request $request): View
     {
         $order = null;
-        if ($request->filled('order')) {
+        if ($request->filled('order') && Str::isUuid((string) $request->query('order'))) {
             $order = Order::query()->where('public_id', (string) $request->query('order'))->first();
             if ($order !== null) {
                 Gate::authorize('act', $order);
