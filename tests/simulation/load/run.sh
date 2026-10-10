@@ -12,10 +12,10 @@ mkdir -p "$OUT"
 python3 -I "$HERE/prepare.py" "$OUT/data.json"
 python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$OUT/data.json"
 SINCE=$(date -u '+%Y-%m-%d %H:%M:%S')
-# Host backend: each virtual user connects from its own loopback address, so
-# per-address rate limits apply per person as they would in production.
-IPS=""
-[ "${SIM_BACKEND:-compose}" = host ] && IPS="--local-ips=127.0.1.1-127.0.1.250"
+# Each virtual user connects from its own loopback address, so per-address rate
+# limits apply per person as they would in production (both backends' TLS front
+# ends run on the host network and pass the client address on).
+IPS="--local-ips=127.0.1.1-127.0.1.250"
 set +e
 $K6 run $IPS -q -e DATA="$OUT/data.json" -e SUMMARY="$OUT/k6-summary.json" -e DURATION="${DURATION:-2m}" "$HERE/load.js" > "$OUT/k6.log" 2>&1
 K6_EXIT=$?
