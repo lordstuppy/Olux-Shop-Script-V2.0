@@ -129,6 +129,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute($limits['password_reset'])->by('reset:'.$request->ip())
             ->response($throttled(__('Too many password reset requests. Wait one minute and try again.'))));
 
+        // Email change checks the password, so it is limited per account (not shared with password resets).
+        RateLimiter::for('email-change', fn (Request $request) => Limit::perMinute($limits['email_change'])->by('email-change:'.($request->user()?->id ?? $request->ip()))
+            ->response($throttled(__('Too many email change attempts. Wait one minute and try again.'))));
+
         RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute($limits['checkout'])->by('checkout:'.($request->user()?->id ?? $request->ip()))
             ->response($throttled(__('Too many checkout attempts. Wait one minute before trying again.'))));
 

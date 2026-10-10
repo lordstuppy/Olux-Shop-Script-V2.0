@@ -75,6 +75,8 @@ host_up() {
         [ -d "$ROOT/vendor" ] && (cd "$ROOT" && tar -c --exclude=.git vendor | tar -x -C "$W/app")
         (cd "$W/app" && composer install --no-dev --classmap-authoritative --no-interaction --quiet)
     fi
+    # New classes since the last deploy must be in the authoritative class map.
+    (cd "$W/app" && composer dump-autoload --no-dev --classmap-authoritative --no-interaction --quiet)
     key=$(grep '^APP_KEY=base64' "$W/app/.env" 2>/dev/null || true)
     cp "$HERE/host.env" "$W/app/.env"
     if [ -n "$key" ]; then sed -i "s#^APP_KEY=.*#$key#" "$W/app/.env"; else (cd "$W/app" && php artisan key:generate --force -q); fi

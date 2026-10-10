@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/wishlist', [WishlistController::class, 'store'])->middleware('throttle:forms')->name('wishlist.store');
     Route::delete('/wishlist/{product:id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
 
-    Route::post('/account/email', [AccountController::class, 'requestEmailChange'])->middleware('throttle:password-reset')->name('account.email');
+    Route::post('/account/email', [AccountController::class, 'requestEmailChange'])->middleware('throttle:email-change')->name('account.email');
     Route::get('/account/email/confirm/{token}', [AccountController::class, 'showEmailConfirm'])->name('account.email.confirm');
     Route::post('/account/email/confirm/{token}', [AccountController::class, 'confirmEmail'])->middleware('throttle:forms');
 

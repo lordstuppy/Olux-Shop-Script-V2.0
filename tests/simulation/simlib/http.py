@@ -8,6 +8,7 @@ replayed: method, URL, request headers and body, status, response headers,
 body excerpt, duration and the shop's X-Request-Id.
 """
 import functools
+import hashlib
 import html
 import http.client
 import http.cookiejar
@@ -23,6 +24,8 @@ import uuid
 from html.parser import HTMLParser
 
 BASE = 'https://localhost:8443'
+# Host backend only: in compose the published port hides client addresses behind Docker's NAT.
+LOOPBACK_PER_CLIENT = True
 CA = None
 TRACE_PATH = None
 _trace_lock = threading.Lock()
@@ -174,6 +177,12 @@ class Client:
         self.timeout = timeout
         self.jar = http.cookiejar.CookieJar()
         ctx = ssl.create_default_context(cafile=CA)
+        if source is None and LOOPBACK_PER_CLIENT:
+            # Each simulated person connects from its own loopback address, so
+            # per-address rate limits apply per person as they would in production.
+            h = int(hashlib.sha256(who.encode()).hexdigest(), 16)
+            source = f'127.{1 + h % 200}.{(h >> 8) % 250 + 1}.{(h >> 16) % 250 + 1}'
+        self.source = source
 
         class BoundHTTPS(urllib.request.HTTPSHandler):
             def https_open(self, req):

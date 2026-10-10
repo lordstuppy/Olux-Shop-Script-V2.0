@@ -72,6 +72,7 @@ return [
         'login_per_ip' => (int) env('RATE_LIMIT_LOGIN_PER_IP', 20),
         'register_per_hour' => (int) env('RATE_LIMIT_REGISTER_PER_HOUR', 10),
         'password_reset' => (int) env('RATE_LIMIT_PASSWORD_RESET', 3),
+        'email_change' => (int) env('RATE_LIMIT_EMAIL_CHANGE', 5),
         'checkout' => (int) env('RATE_LIMIT_CHECKOUT', 10),
         'redeem' => (int) env('RATE_LIMIT_REDEEM', 5),
         'forms' => (int) env('RATE_LIMIT_FORMS', 30),

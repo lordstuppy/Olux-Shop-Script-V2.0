@@ -154,7 +154,7 @@ def password_reset(rec, ctx):
     g = Client('forgetful')
     r1 = g.form('/forgot-password', '/forgot-password', {'email': email})
     r2 = Client('probe').form('/forgot-password', '/forgot-password', {'email': 'nobody77@sim.test'})
-    rec.check(flashes(r1) == flashes(r2), f'reset answers differ: {flashes(r1)} vs {flashes(r2)}')
+    rec.check(flashes(r1).replace(email, 'X') == flashes(r2).replace('nobody77@sim.test', 'X'), f'reset answers differ: {flashes(r1)} vs {flashes(r2)}')
     msg = env.wait_mail(email, 'Reset')[0]
     link = links(msg['ID'], '/reset-password/')[0]
     path = link.replace('https://localhost:8443', '')
@@ -321,6 +321,10 @@ def two_devices(rec, ctx):
     page = phone.get('/account')
     rec.check(page.text.count('sim/buyer32-') >= 2, 'account page does not list both sessions')
     r = phone.submit(phone.find_form(page, '/account/sessions', need={'_method': 'DELETE'}))
+    if '/confirm-password' in r.path:
+        shop.confirm_password(phone)
+        page = phone.get('/account')
+        r = phone.submit(phone.find_form(page, '/account/sessions', need={'_method': 'DELETE'}))
     rec.check('Signed out 1 other session' in flashes(r), flashes(r))
     rec.check('/login' in laptop.get('/account', expect=None).url, 'laptop still signed in')
     rec.check(phone.get('/account').status == 200, 'phone signed out too')

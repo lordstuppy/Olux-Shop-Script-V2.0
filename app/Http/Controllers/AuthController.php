@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Exceptions\UserFacingException;
 use App\Services\UserService;
 use App\Support\FormTrap;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -57,6 +60,8 @@ class AuthController extends Controller
             throw new UserFacingException(__('Registration could not be completed. Wait a few seconds, then submit the form again.'));
         }
 
+        // Addresses are stored in lower case; compare them that way too.
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -67,7 +72,12 @@ class AuthController extends Controller
             'accept_terms.accepted' => __('You must accept the terms of service and privacy policy to create an account.'),
         ]);
 
-        $user = $users->register($data['name'], $data['email'], $data['password']);
+        try {
+            $user = $users->register($data['name'], $data['email'], $data['password']);
+        } catch (UniqueConstraintViolationException) {
+            // Two sign-ups with the same address at the same moment.
+            throw ValidationException::withMessages(['email' => __('An account with this email already exists. Sign in or reset your password.')]);
+        }
         $users->completeLogin($user, false, $request);
         $request->session()->regenerate();
 

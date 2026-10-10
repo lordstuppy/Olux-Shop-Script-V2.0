@@ -1296,6 +1296,7 @@
     "Too many accounts were created from your network. Try again in an hour.": "Too many accounts were created from your network. Try again in an hour.",
     "Too many checkout attempts. Wait one minute before trying again.": "Too many checkout attempts. Wait one minute before trying again.",
     "Too many confirmation emails requested. Wait one minute and try again.": "Too many confirmation emails requested. Wait one minute and try again.",
+    "Too many email change attempts. Wait one minute and try again.": "Too many email change attempts. Wait one minute and try again.",
     "Too many gift card attempts. Wait one minute and try again.": "Too many gift card attempts. Wait one minute and try again.",
     "Too many incorrect codes. Wait :seconds seconds and try again.": "Too many incorrect codes. Wait :seconds seconds and try again.",
     "Too many login attempts for this email. Wait one minute and try again.": "Too many login attempts for this email. Wait one minute and try again.",

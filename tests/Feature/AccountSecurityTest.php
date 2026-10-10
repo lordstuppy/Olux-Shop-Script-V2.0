@@ -90,6 +90,28 @@ class AccountSecurityTest extends TestCase
         Notification::assertSentTo($user, VerifyEmailQueued::class);
     }
 
+    public function test_registration_with_an_existing_address_in_other_letter_case_is_refused(): void
+    {
+        User::factory()->create(['email' => 'taken@example.test']);
+        foreach (['TAKEN@EXAMPLE.TEST', ' Taken@Example.test '] as $email) {
+            $this->postForm('/register', ['name' => 'Dupe', 'email' => $email, 'password' => 'long-password-123', 'password_confirmation' => 'long-password-123',
+                'accept_terms' => '1', 'form_token' => $this->formToken()])
+                ->assertSessionHasErrors(['email' => 'An account with this email already exists. Sign in or reset your password.']);
+        }
+        $this->assertSame(1, User::count());
+    }
+
+    public function test_email_change_attempts_have_their_own_limit(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        for ($i = 0; $i < 3; $i++) {
+            $this->postForm('/forgot-password', ['email' => 'someone@example.test']);
+        }
+        $this->postForm('/account/email', ['email' => 'new-address@example.test', 'current_password' => 'correct-horse-battery-1'])
+            ->assertSessionHas('success');
+    }
+
     public function test_enable_two_factor_and_sign_in_with_it(): void
     {
         $user = User::factory()->create(['email' => 'tfa@example.test']);
