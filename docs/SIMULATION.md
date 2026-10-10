@@ -259,6 +259,7 @@ The run passes when all of these hold:
 | 33 | minor | independent review | Staff could relist a product the seller paused; "Buy again" ignored the cart line limit; text mails showed HTML entities; forged callbacks could flood the audit log | Refused; limit applied; raw output in text mails; one audit row per address and minute | `ReviewFindingsTest`, `WebhookTest` |
 | 34 | minor | certification run | A valid signed 3 MB webhook body was accepted | Bodies over 64 KB refused with 413 before hashing | `WebhookTest::test_oversized_bodies_are_refused_before_processing` |
 | 35 | major | P8 restore | `scripts/backup.sh` failed on a shop without invoices yet (missing directory) | Directories created before archiving | phase 8 restore scenario |
+| 36 | critical | P8 database killed | A payment that committed just before the database died lost its delivery and invoice jobs (queued after commit): the order stayed paid and undelivered forever | `shop:recover-stuck-orders` every minute re-queues them (idempotent jobs) | `StuckOrderRecoveryTest`, phase 8 lost-job step |
 
 Harness defects found along the way are not listed: wrong test data choices, k6 per-VU counters, and process supervision on the host backend. They are in the git history.
 

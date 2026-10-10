@@ -65,18 +65,36 @@ def kill_db(rec, ctx):
     rec.ev(f'orders created: {orders}')
     for oid, status, email in orders:
         rec.check(status in ('paid', 'delivered'), f'order {oid} left {status} (balance orders are all-or-nothing)')
-    rec.check(start_stock - stock_of(p['id']) == len(orders), f"stock {start_stock} -> {stock_of(p['id'])} for {len(orders)} orders")
+    units = int(env.scalar(f"select coalesce(sum(i.quantity), 0) from order_items i where i.product_id={p['id']} and i.order_id > {marker}"))
+    rec.check(start_stock - stock_of(p['id']) == units, f"stock {start_stock} -> {stock_of(p['id'])} for {units} units in {len(orders)} orders")
     rec.check(env.scalar(f'select count(*) from orders o where o.id > {marker} and not exists (select 1 from order_items i where i.order_id=o.id)') == '0',
               'order without lines')
     for email, c, f, bal in people:
         spent = bal - balance(email)
         mine = [o for o in orders if o[2] == email]
-        rec.check(spent == (p['price'] if mine else 0), f'{email}: spent {spent}, orders {mine}')
+        paid = sum(int(env.scalar(f"select total_minor from orders where public_id='{o[0]}'")) for o in mine)
+        rec.check(spent == paid, f'{email}: spent {spent}, paid orders total {paid} ({mine})')
     started = time.time()
     for oid, *_ in orders:
         # A delivery interrupted by the outage is retried after retry_after (90 s) plus backoff.
         wait_status(oid, 'delivered', timeout=360)
     rec.ev(f'all orders delivered {time.time() - started:.0f}s after the database came back')
+    # Deterministic version of the lost-job case: the payment commits but the
+    # delivery and invoice jobs never reach the queue.
+    env.stop('queue')
+    email, b = buyer(15)
+    shop.add_to_cart(b, instant_product())
+    r, lost = shop.checkout(b, 'crypto', 'BTC')
+    shop.pay(lost)
+    wait_status(lost, 'paid', timeout=30)
+    gone = env.sql("delete from jobs where payload like '%DeliverOrder%' or payload like '%GenerateInvoicePdf%' returning id")
+    env.start('queue')
+    rec.step(f'order {lost} paid, its {len(gone)} queued delivery/invoice jobs removed (lost between commit and queueing)')
+    t0 = time.time()
+    wait_status(lost, 'delivered', timeout=360)
+    shop.wait_for(lambda: env.scalar(f"select count(*) from invoices i join orders o on o.id=i.order_id where o.public_id='{lost}'") == '1', 'invoice', 120)
+    rec.ev(f'recovered by shop:recover-stuck-orders after {time.time() - t0:.0f}s')
+    ctx.allow_log(r'Re-queued')
     rec.step('all orders that were created got delivered after the restart (queue worker recovered)')
 
 
