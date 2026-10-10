@@ -51,8 +51,11 @@ class ProductController extends Controller
 
     public function status(Request $request, Product $product, ProductModerationService $moderation): RedirectResponse
     {
-        $data = $request->validate(['status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value, ProductStatus::PendingReview->value])]]);
-        $moderation->setStatus($product, ProductStatus::from($data['status']), $request->user());
+        $data = $request->validate([
+            'status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value, ProductStatus::PendingReview->value])],
+            'note' => ['required_if:status,disabled', 'nullable', 'string', 'max:500'],
+        ], ['note.required_if' => __('Tell the seller why the product is not for sale.')]);
+        $moderation->setStatus($product, ProductStatus::from($data['status']), $request->user(), $data['note'] ?? null);
 
         return back()->with('success', __('":title" is now :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
     }

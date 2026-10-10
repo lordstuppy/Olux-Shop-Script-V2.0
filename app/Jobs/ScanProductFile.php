@@ -51,6 +51,7 @@ class ScanProductFile implements ShouldQueue
             $file->forceFill(['retired_at' => now()])->save();
             $product = $file->product;
             $product->status = ProductStatus::Disabled;
+            $product->moderation_note = __('An uploaded file failed the virus scan and was removed. Upload a clean file, then submit the product for review again.');
             $product->save();
             Log::warning('Infected upload {file_id} ({signature}) removed; product {product_id} disabled', [
                 'file_id' => $file->id, 'signature' => $result['detail'], 'product_id' => $product->id,

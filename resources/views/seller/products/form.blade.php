@@ -14,6 +14,9 @@
             @endif
         </p>
     @endif
+    @if ($editing && $product->status === \App\Enums\ProductStatus::Disabled && $product->moderation_note)
+        <div class="flash flash-error" role="alert">{{ __('Not for sale. Reason from our team:') }} {{ $product->moderation_note }}</div>
+    @endif
 
     <form method="post" action="{{ $editing ? route('seller.products.update', $product->id) : route('seller.products.store') }}" class="stack">
         @csrf

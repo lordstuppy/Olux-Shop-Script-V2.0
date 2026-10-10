@@ -70,10 +70,11 @@
             </form>
         @endif
         @if ($product->status !== \App\Enums\ProductStatus::Disabled)
-            <form method="post" action="{{ route('admin.products.status', $product->id) }}">
+            <form method="post" action="{{ route('admin.products.status', $product->id) }}" class="stack">
                 @csrf
                 <input type="hidden" name="status" value="disabled">
-                <button type="submit" class="btn-danger">{{ __('Disable') }}</button>
+                <x-textarea name="note" :label="__('Reason for the seller')" maxlength="500" rows="3" :hint="__('Shown to the seller on the product page and sent by email.')" required />
+                <button type="submit" class="btn-danger">{{ $product->status === \App\Enums\ProductStatus::PendingReview ? __('Reject') : __('Disable') }}</button>
             </form>
         @endif
     </div>
