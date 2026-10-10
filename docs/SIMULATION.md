@@ -220,6 +220,32 @@ The run passes when all of these hold:
 5. **Backup restore,** following the procedure in `docs/OPERATIONS.md`. Expected: data checksums equal the backup and later changes are gone.
 6. **Disk full during upload.** Expected: a clear error, no partial file and no database row; the upload works after space is freed.
 
+### Phase 9: second round (`phases/p9_extended.py`)
+
+This round covers features the first round touched only lightly. Time-based rules are tested by moving stored timestamps back and running the command the scheduler runs.
+
+| Area | What is checked |
+|---|---|
+| Gift cards | Create, redeem, reuse, two buyers redeeming one card at the same moment, wrong currency (the card is not used up), expiry, codes not stored in plain text, rate-limited guessing |
+| Balance adjustments | Credit and debit with a reason shown in the wallet; no debit below zero; audited |
+| Crypto refunds | Refund through the gateway: success with tx hash; failure frees the amount for a retry; duplicate callbacks ignored; ledger reconciles |
+| Payout address | Change needs the emailed link; the link is single use and useless to another seller; payouts are blocked for 48 hours and work afterwards |
+| Manual delivery | By the seller and by staff for the other seller; the order completes only when every line is delivered; delivery text is encrypted at rest |
+| Downloads | Limit enforced with a clear message; tampered or expired links refused; staff reset |
+| Subscriptions | 30-day access; one reminder 3 days before the end; no downloads after the end; renewal purchase |
+| Reviews | Buyers only, one per buyer (edits), hidden reviews disappear |
+| Wishlist | Add, remove, unavailable product, another buyer cannot remove |
+| Tickets | Order link; reply emailed; internal notes never shown or emailed; 403 for others; assign, close |
+| Announcements | Escaped, scheduled, toggled off |
+| Categories | Create, rename, duplicate refused, no delete while products exist |
+| Commission screens | Product > seller > category rates set in the UI drive new sales; old sales keep their rate; invalid input refused; audited |
+| Bulk actions | Products without content are not approved; staff and the actor are never bulk-suspended; 600 ids handled without error |
+| Currencies | EUR cart and EUR wallet; a rate change re-prices the cart; seller earnings booked in EUR; a EUR coupon is refused on a USD cart |
+| Dispute deadline | Escalates to staff once, mails once, earnings stay held |
+| Payout hold | Earnings unavailable during the hold, available after it |
+| Reports | Pages load for finance; net revenue equals SQL; the reconciliation page reports a match |
+| Concurrency | A triple-clicked payout request makes one payout; two simultaneous refunds succeed once; the last coupon use goes to one buyer; a double delivery happens once |
+
 ## Bugs found and fixed
 
 | # | Severity | Found in | Problem | Fix | Regression test |
