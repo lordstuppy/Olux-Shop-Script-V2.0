@@ -11,10 +11,12 @@ RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 # --- Runtime (PHP-FPM) ------------------------------------------------------
 FROM php:8.3-fpm-alpine AS app
 
-RUN apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo postgresql-libs fcgi \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev postgresql-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+# GD needs WebP: product images are re-encoded to WebP (ProductImageService).
+RUN apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo libwebp postgresql-libs fcgi \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev libwebp-dev postgresql-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd opcache bcmath \
+    && php -r 'foreach (["imagewebp", "imagecreatefromjpeg", "imagettftext"] as $f) { if (! function_exists($f)) { fwrite(STDERR, "gd lacks $f\n"); exit(1); } }' \
     && apk del .build-deps
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-shop.ini

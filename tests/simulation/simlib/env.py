@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import time
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -151,8 +152,15 @@ def db_log():
 def _http(method, url, body=None, timeout=60):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers={'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = r.read()
+    for attempt in range(10):  # a test service that was just restarted may not accept connections yet
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                raw = r.read()
+            break
+        except (ConnectionResetError, ConnectionRefusedError, urllib.error.URLError) as e:
+            if isinstance(e, urllib.error.HTTPError) or attempt == 9:
+                raise
+            time.sleep(1)
     try:
         return json.loads(raw) if raw else None
     except ValueError:

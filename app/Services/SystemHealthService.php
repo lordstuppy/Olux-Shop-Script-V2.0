@@ -100,6 +100,9 @@ class SystemHealthService
         $files = DB::table('product_files')->whereNull('retired_at')->selectRaw('COUNT(*) AS n, COALESCE(SUM(size), 0) AS bytes')->first();
         $checks[] = $this->check(__('Product files'), __(':count files, :size', ['count' => $files->n, 'size' => $this->bytes((int) $files->bytes)]), 'good', '');
         $checks[] = $this->check(__('Writable'), is_writable($root) ? __('yes') : __('no'), is_writable($root) ? 'good' : 'critical', is_writable($root) ? '' : __('Uploads and invoices will fail.'));
+        $webp = function_exists('imagewebp') && function_exists('imagecreatefromstring');
+        $checks[] = $this->check(__('Image processing (GD with WebP)'), $webp ? __('available') : __('missing'), $webp ? 'good' : 'critical',
+            $webp ? '' : __('Product image uploads fail. Build PHP GD with WebP support (see the Dockerfile).'));
 
         return $checks;
     }
