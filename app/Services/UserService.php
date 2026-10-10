@@ -69,13 +69,19 @@ class UserService
     {
         $provider = Auth::getProvider();
         $credentials = ['email' => Str::lower($email), 'password' => $password];
-        /** @var User|null $user */
         $lockKey = self::loginLockKey($email);
-        if (Cache::has($lockKey)) {
-            // Same answer whether or not the account exists.
-            throw new UserFacingException(__('Sign-in to this account is paused for :minutes minutes after too many failed attempts. Reset your password to sign in now.', ['minutes' => (int) config('shop.login_lock.lock_minutes')]));
-        }
+        /** @var User|null $user */
         $user = $provider->retrieveByCredentials($credentials);
+        if (Cache::has($lockKey)) {
+            // The lock stops guessing, but must not let a stranger lock the owner
+            // out: the right password from a device that signed in to this account
+            // before still works. Everyone else gets the same answer, whether or
+            // not the account exists.
+            $trusted = $user !== null && $this->isKnownDevice($user) && $provider->validateCredentials($user, $credentials);
+            if (! $trusted) {
+                throw new UserFacingException(__('Sign-in to this account is paused for :minutes minutes after too many failed attempts. Reset your password to sign in now; devices you signed in with before still work.', ['minutes' => (int) config('shop.login_lock.lock_minutes')]));
+            }
+        }
 
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             Log::notice('Failed login for email hash {email_hash}', ['email_hash' => hash('sha256', Str::lower($email))]);
@@ -89,6 +95,15 @@ class UserService
         $provider->rehashPasswordIfRequired($user, $credentials);
 
         return $user;
+    }
+
+    /** True when this browser carries the device cookie of an earlier sign-in to the account. */
+    private function isKnownDevice(User $user): bool
+    {
+        $cookie = (string) request()->cookie(self::DEVICE_COOKIE, '');
+
+        return preg_match('/^[a-f0-9]{64}$/', $cookie) === 1
+            && UserDevice::query()->where('user_id', $user->id)->where('device_hash', hash('sha256', $cookie))->exists();
     }
 
     public static function loginLockKey(string $email): string
@@ -115,7 +130,10 @@ class UserService
         Log::warning('Sign-in for email hash {email_hash} locked after {attempts} failed attempts', ['email_hash' => hash('sha256', Str::lower($email)), 'attempts' => $failures]);
         if ($user !== null) {
             $this->audit->log('user.login_locked', $user, ['attempts' => $failures, 'minutes' => (int) $lock['lock_minutes']], null);
-            Mail::to($user)->queue(new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
+            // At most one mail a day, so repeated locks cannot be used to flood the owner.
+            if (Cache::add('login-lock-mail:'.$user->id, true, now()->addDay())) {
+                Mail::to($user)->queue(new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
+            }
         }
     }
 

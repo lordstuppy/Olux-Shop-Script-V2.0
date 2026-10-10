@@ -191,9 +191,18 @@ def restore(rec, ctx):
     dest = os.path.join(env.WORK, 'backups')
     sums = """select (select md5(string_agg(row(o.*)::text, ',' order by id)) from orders o) || (select md5(string_agg(row(p.*)::text, ',' order by id)) from payments p)
         || (select md5(string_agg(row(l.*)::text, ',' order by id)) from seller_ledger_entries l) || (select md5(string_agg(u.email||u.balance_minor, ',' order by id)) from users u)"""
-    before = env.scalar(sums)
-    files_before = env.scalar('select count(*) from product_files')
-    out = subprocess.run(['sh', os.path.join(app, 'scripts', 'backup.sh'), dest], cwd=app, capture_output=True, text=True)
+    # Quiesce so the checksum and the dump see the same data: in maintenance mode the
+    # worker and the scheduler pause (jobs of earlier scenarios would otherwise
+    # update orders between the checksum and pg_dump).
+    env.artisan('down')
+    time.sleep(4)
+    try:
+        before = env.scalar(sums)
+        files_before = env.scalar('select count(*) from product_files')
+        out = subprocess.run(['sh', os.path.join(app, 'scripts', 'backup.sh'), dest], cwd=app, capture_output=True, text=True)
+        rec.check(env.scalar(sums) == before, 'data changed while the backup was taken (not quiesced)')
+    finally:
+        env.artisan('up')
     rec.check(out.returncode == 0, f'backup failed: {out.stdout[-500:]} {out.stderr[-500:]}')
     backup_dir = out.stdout.strip().split()[-1]
     rec.ev(f'backup: {backup_dir}: {sorted(os.listdir(backup_dir))}')

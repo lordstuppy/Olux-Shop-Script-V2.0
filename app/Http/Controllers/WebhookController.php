@@ -11,6 +11,7 @@ use App\Support\GatewayLog;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -29,18 +30,25 @@ use Symfony\Component\HttpFoundation\IpUtils;
  */
 class WebhookController extends Controller
 {
+    private const MAX_BODY_BYTES = 65536;
+
     public function shkeeper(Request $request, ShkeeperClient $client, WebhookProcessor $processor, AuditLogger $audit): JsonResponse
     {
         $allowed = array_filter(array_map('trim', explode(',', (string) config('shop.webhook_allowed_ips'))));
         if ($allowed !== [] && ! IpUtils::checkIp((string) $request->ip(), $allowed)) {
             Log::warning('Webhook from ip {ip} outside SHKEEPER_WEBHOOK_ALLOWED_IPS rejected', ['ip' => $request->ip()]);
             GatewayLog::record('webhook', 'rejected_ip', ['ip' => $request->ip(), 'http_status' => 403]);
-            $audit->log('webhook.rejected_ip', null, ['channel' => 'payment', 'ip' => $request->ip()]);
+            self::auditRejection($audit, 'rejected_ip', ['channel' => 'payment', 'ip' => $request->ip()], $request->ip());
 
             return response()->json(['message' => 'Source address not allowed.'], 403);
         }
 
-        $raw = $request->getContent();
+        // Gateway callbacks are a few hundred bytes; refuse large bodies before hashing them.
+        if ((int) $request->header('Content-Length', '0') > self::MAX_BODY_BYTES || strlen($raw = $request->getContent()) > self::MAX_BODY_BYTES) {
+            GatewayLog::record('webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 413, 'message' => 'body too large']);
+
+            return response()->json(['message' => 'Body too large.'], 413);
+        }
         $signature = $request->header('X-Shkeeper-Signature');
         $timestamp = $request->header('X-Shkeeper-Timestamp');
 
@@ -53,7 +61,7 @@ class WebhookController extends Controller
             $reason = $signature === null || $timestamp === null ? 'missing signature or timestamp' : 'signature mismatch or stale timestamp';
             GatewayLog::record('webhook', 'rejected_signature', ['ip' => $request->ip(), 'http_status' => 401, 'message' => $reason]);
             // A forged or replayed callback is a security event (the route is rate limited).
-            $audit->log('webhook.rejected_signature', null, ['channel' => 'payment', 'reason' => $reason, 'bytes' => strlen($raw)]);
+            self::auditRejection($audit, 'rejected_signature', ['channel' => 'payment', 'reason' => $reason, 'bytes' => strlen($raw)], $request->ip());
 
             return response()->json(['message' => 'Invalid or missing signature.'], 401);
         }
@@ -107,5 +115,17 @@ class WebhookController extends Controller
         }
 
         return true;
+    }
+
+    /**
+     * Rejected callbacks are audited, but at most once per address and reason
+     * per minute, so a flood of forged requests cannot flood the audit log
+     * (every request is still counted in the gateway log).
+     */
+    private static function auditRejection(AuditLogger $audit, string $reason, array $metadata, ?string $ip): void
+    {
+        if (Cache::add('audit-webhook:'.$reason.':'.$ip, true, 60)) {
+            $audit->log('webhook.'.$reason, null, $metadata);
+        }
     }
 }

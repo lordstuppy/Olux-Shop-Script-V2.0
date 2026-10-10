@@ -86,7 +86,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // Database unreachable (restart, failover, network): a 503 with Retry-After
         // instead of the generic error page, so browsers and proxies retry.
         $exceptions->render(function (Throwable $e, Request $request) {
-            if (! ($e instanceof QueryException || $e instanceof PDOException) || ! app(LostConnectionDetector::class)->causedByLostConnection($e)) {
+            if (! ($e instanceof QueryException || $e instanceof PDOException)) {
+                return null;
+            }
+            // SQLSTATE class 08 (connection), 57P01-57P03 (admin shutdown, crash
+            // shutdown, cannot connect now: starting up or in recovery), 53300 (too
+            // many connections), plus the messages Laravel knows for lost connections.
+            $state = (string) ($e instanceof QueryException ? ($e->errorInfo[0] ?? $e->getCode()) : ($e->errorInfo[0] ?? $e->getCode()));
+            $unavailable = str_starts_with($state, '08') || in_array($state, ['57P01', '57P02', '57P03', '53300'], true)
+                || app(LostConnectionDetector::class)->causedByLostConnection($e)
+                || preg_match('/SQLSTATE\[(08\d\d\d|57P0[123]|53300)\]|the database system is (starting up|shutting down|in recovery mode)|too many clients already|timeout expired/i', $e->getMessage()) === 1;
+            if (! $unavailable) {
                 return null;
             }
             $headers = ['Retry-After' => '30', 'Cache-Control' => 'no-store'];

@@ -12,4 +12,4 @@
 {!! __('Reason:') !!} {!! $dispute->reason->label() !!}
 @endif
 
-{!! __('Open the dispute:') !!} {{ route('disputes.show', $dispute) }}
+{!! __('Open the dispute:') !!} {!! route('disputes.show', $dispute) !!}

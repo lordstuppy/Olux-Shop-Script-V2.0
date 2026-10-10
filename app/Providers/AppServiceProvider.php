@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -76,6 +77,12 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+        // Numeric route ids: anything else is a 404 before it reaches PostgreSQL
+        // (a bigint column answers "invalid input syntax" with a 500). Orders use
+        // UUIDs and are checked in Order::resolveRouteBinding.
+        Route::patterns(array_fill_keys(['ticket', 'dispute', 'item', 'file', 'image', 'payout', 'event', 'announcement',
+            'coupon', 'review', 'user', 'profile', 'product', 'category'], '[0-9]+'));
+
         Paginator::defaultView('pagination');
         Paginator::defaultSimpleView('pagination');
 
@@ -110,7 +117,7 @@ class AppServiceProvider extends ServiceProvider
             ->view('errors.429', ['reason' => $message], 429, $headers);
 
         RateLimiter::for('login', fn (Request $request) => [
-            Limit::perMinute($limits['login_per_email'])->by('login:'.Str::lower((string) $request->input('email')).'|'.$request->ip())
+            Limit::perMinute($limits['login_per_email'])->by('login:'.Str::lower(is_string($request->input('email')) ? $request->input('email') : '').'|'.$request->ip())
                 ->response($throttled(__('Too many login attempts for this email. Wait one minute and try again.'))),
             Limit::perMinute($limits['login_per_ip'])->by('login-ip:'.$request->ip())
                 ->response($throttled(__('Too many login attempts from your network. Wait one minute and try again.'))),

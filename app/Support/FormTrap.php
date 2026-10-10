@@ -30,14 +30,15 @@ final class FormTrap
 
     public static function passes(Request $request): bool
     {
-        if (trim((string) $request->input(self::HONEYPOT, '')) !== '') {
+        $honeypot = $request->input(self::HONEYPOT);
+        if ($honeypot !== null && (! is_string($honeypot) || trim($honeypot) !== '')) {
             Log::notice('Form honeypot filled on {path} from ip {ip}', ['path' => $request->path(), 'ip' => $request->ip()]);
 
             return false;
         }
 
         try {
-            $renderedAt = (int) Crypt::decryptString((string) $request->input(self::TOKEN, ''));
+            $renderedAt = (int) Crypt::decryptString(is_string($request->input(self::TOKEN)) ? $request->input(self::TOKEN) : '');
         } catch (Throwable) {
             return false;
         }

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Mail\LoginLockedMail;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\UserService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Testing\TestResponse;
@@ -27,7 +29,7 @@ class LoginLockTest extends TestCase
         }
 
         $this->attempt('target@example.test', 'correct-horse-battery-1', '198.51.100.9')
-            ->assertSessionHas('error', 'Sign-in to this account is paused for 15 minutes after too many failed attempts. Reset your password to sign in now.');
+            ->assertSessionHas('error', 'Sign-in to this account is paused for 15 minutes after too many failed attempts. Reset your password to sign in now; devices you signed in with before still work.');
         $this->assertGuest();
         Mail::assertQueued(LoginLockedMail::class, 1);
         $this->assertSame(1, AuditLog::query()->where('action', 'user.login_locked')->count());
@@ -63,5 +65,39 @@ class LoginLockTest extends TestCase
             $this->attempt('typo@example.test', 'correct-horse-battery-1', '198.51.100.'.$round)->assertRedirect(route('account.orders'));
             $this->postForm('/logout');
         }
+    }
+
+    public function test_the_owner_can_still_sign_in_from_a_known_device_while_locked(): void
+    {
+        Mail::fake();
+        $user = User::factory()->create(['email' => 'owner@example.test']);
+        $this->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.1')->assertRedirect(route('account.orders'));
+        $device = $this->app['cookie']->queued(UserService::DEVICE_COOKIE)?->getValue();
+        $this->assertNotNull($device);
+        $this->postForm('/logout');
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->attempt('owner@example.test', 'wrong-'.$i, '203.0.113.'.intdiv($i, 4));
+        }
+        $this->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.2')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
+        $this->withCookie(UserService::DEVICE_COOKIE, $device)
+            ->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.3')->assertRedirect(route('account.orders'));
+        $this->assertAuthenticatedAs($user);
+        $this->postForm('/logout');
+        $this->withCookie(UserService::DEVICE_COOKIE, $device)
+            ->attempt('owner@example.test', 'wrong-again', '198.51.100.4')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
+    }
+
+    public function test_repeated_locks_send_at_most_one_mail_a_day(): void
+    {
+        Mail::fake();
+        User::factory()->create(['email' => 'target2@example.test']);
+        foreach ([0, 1] as $round) {
+            for ($i = 0; $i < 20; $i++) {
+                $this->attempt('target2@example.test', "w-{$round}-{$i}", '203.0.'.$round.'.'.intdiv($i, 4));
+            }
+            Cache::forget(UserService::loginLockKey('target2@example.test'));
+        }
+        Mail::assertQueued(LoginLockedMail::class, 1);
     }
 }

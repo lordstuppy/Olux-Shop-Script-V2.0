@@ -173,7 +173,10 @@ class WebhookTest extends TestCase
         $this->postShkeeperWebhook($payload, timestamp: time() - 3600)->assertStatus(401);
         $this->call('POST', '/webhooks/shkeeper', [], [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload))->assertStatus(401);
 
-        $this->assertSame(3, AuditLog::query()->where('action', 'webhook.rejected_signature')->count());
+        // Audited once per address and minute, however many forged requests arrive.
+        $this->assertSame(1, AuditLog::query()->where('action', 'webhook.rejected_signature')->count());
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.99'])->postShkeeperWebhook($payload, secret: 'attacker-secret')->assertStatus(401);
+        $this->assertSame(2, AuditLog::query()->where('action', 'webhook.rejected_signature')->count());
         $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
     }
 
@@ -200,5 +203,11 @@ class WebhookTest extends TestCase
             $this->assertSame(0, $second->payments()->count());
             $this->assertSame(OrderStatus::Pending, $first->fresh()->status);
         }
+    }
+
+    public function test_oversized_bodies_are_refused_before_processing(): void
+    {
+        $this->postShkeeperWebhook([], raw: json_encode(['pad' => str_repeat('A', 70000)]))->assertStatus(413);
+        $this->assertSame(0, WebhookEvent::query()->count());
     }
 }

@@ -30,6 +30,9 @@ class ProductModerationService
         if (! in_array($status, self::STAFF_STATUSES, true)) {
             throw new UserFacingException(__('Products can be set to active, disabled or pending review.'));
         }
+        if ($status === ProductStatus::Active && $product->status === ProductStatus::Paused) {
+            throw new UserFacingException(__('":title" was paused by the seller; only the seller can put it back on sale.', ['title' => $product->title]));
+        }
         if ($status === ProductStatus::Active) {
             if (! $product->hasDeliverableContent()) {
                 throw new UserFacingException(__('":title" has nothing to deliver: it needs a file or licence keys before it can be approved.', ['title' => $product->title]));

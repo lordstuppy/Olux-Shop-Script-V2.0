@@ -150,6 +150,9 @@ class OrderController extends Controller
                     throw new UserFacingException(__('":title" is sold out.', ['title' => $item->title]));
                 }
                 $inCart = $cart->rawItems()[$product->id] ?? 0;
+                if ($inCart === 0 && count($cart->rawItems()) >= (int) config('shop.max_cart_lines')) {
+                    throw new UserFacingException(__('Your cart is full. Check out or remove an item before adding more.'));
+                }
                 $cart->update($product, max($inCart, $quantity));
                 if (! $product->isPurchasable()) {
                     $cart->remove($product->id);

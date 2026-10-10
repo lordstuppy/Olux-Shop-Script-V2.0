@@ -218,12 +218,12 @@ def forged(rec, ctx):
     ts = str(int(time.time()))
     good_sig = hmac.new(API_KEY.encode(), f'{ts}.{body}'.encode(), hashlib.sha256).hexdigest()
     attempts = {
-        'unsigned': post_webhook(body, sign=False, who='attacker'),
-        'wrong key': post_webhook(body, key='attacker-key-0000', who='attacker'),
-        'stale timestamp': post_webhook(body, ts=int(time.time()) - 3600, who='attacker'),
-        'tampered body': Client('attacker').raw('POST', '/webhooks/shkeeper', body.replace(money(row['total']), money(row['total'] * 10)).encode(),
+        'unsigned': post_webhook(body, sign=False, who='attacker-1'),
+        'wrong key': post_webhook(body, key='attacker-key-0000', who='attacker-2'),
+        'stale timestamp': post_webhook(body, ts=int(time.time()) - 3600, who='attacker-3'),
+        'tampered body': Client('attacker-4').raw('POST', '/webhooks/shkeeper', body.replace(money(row['total']), money(row['total'] * 10)).encode(),
                                                 {'Content-Type': 'application/json', 'X-Shkeeper-Timestamp': ts, 'X-Shkeeper-Signature': good_sig}),
-        'signature only': Client('attacker').raw('POST', '/webhooks/shkeeper', body.encode(), {'Content-Type': 'application/json', 'X-Shkeeper-Signature': good_sig}),
+        'signature only': Client('attacker-5').raw('POST', '/webhooks/shkeeper', body.encode(), {'Content-Type': 'application/json', 'X-Shkeeper-Signature': good_sig}),
     }
     for name, r in attempts.items():
         rec.ev(f'{name}: HTTP {r.status} {r.text[:80]}')
@@ -232,7 +232,11 @@ def forged(rec, ctx):
     rec.check(shop.order_row(oid)['status'] == 'pending', 'forged callback changed the order')
     rec.check(charges(oid)[0][0] == 'pending', f'charges {charges(oid)}')
     audits = int(env.scalar("select count(*) from audit_log where action like 'webhook.%'")) - audit_before
-    rec.check(audits == len(attempts), f'{audits} audit entries for {len(attempts)} forged callbacks')
+    rec.check(audits == len(attempts), f'{audits} audit entries for {len(attempts)} forged callbacks from {len(attempts)} addresses')
+    flood = [post_webhook(body, key='attacker-key-0000', who='flooder').status for _ in range(10)]
+    rec.check(flood == [401] * 10, f'flood statuses {flood}')
+    rec.check(int(env.scalar("select count(*) from audit_log where action like 'webhook.%'")) - audit_before == len(attempts) + 1,
+              'a flood from one address wrote more than one audit entry per minute')
     rec.check(env.scalar("select count(*) from gateway_logs where outcome='rejected_signature'") not in ('0', None), 'gateway log has no rejected entries')
     # A correctly signed callback for an order the gateway never invoiced is ignored.
     fake = json.loads(body)
@@ -253,7 +257,7 @@ def malformed(rec, ctx):
         rec.check(r.status == 400, f'{name} body answered {r.status}')
     big = '{"pad": "' + 'A' * (3 * 1024 * 1024) + '"}'
     r = post_webhook(big)
-    rec.check(r.status in (400, 413), f'3 MB body answered {r.status}')
+    rec.check(r.status == 413, f'3 MB body answered {r.status}')
     ctx.allow_log(r'unparseable|not a JSON')
     rec.check(env.scalar('select count(*) from webhook_events') == events, 'malformed bodies were stored')
 

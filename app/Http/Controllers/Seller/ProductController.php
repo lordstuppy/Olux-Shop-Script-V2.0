@@ -120,14 +120,20 @@ class ProductController extends Controller
         if ($product->status !== ProductStatus::Active) {
             throw new UserFacingException(__('Only products on sale can be paused. ":title" is :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
         }
-        $product->status = ProductStatus::Paused;
-        $product->save();
+        // Conditional update: a staff decision made a moment ago must not be overwritten.
+        if (Product::query()->whereKey($product->id)->where('status', ProductStatus::Active->value)->update(['status' => ProductStatus::Paused->value]) !== 1) {
+            throw new UserFacingException(__('":title" changed status a moment ago. Reload the page and try again.', ['title' => $product->title]));
+        }
         $this->audit->log('product.paused', $product);
 
         return back()->with('success', __('":title" is paused and no longer for sale.', ['title' => $product->title]));
     }
 
-    /** Puts a paused product back on sale without a new review (it was not changed). */
+    /**
+     * Puts a paused product back on sale without a new review. Any change to
+     * reviewed content while paused already moved it to review (see
+     * markForReviewIfActive and update()), so a paused product is unchanged.
+     */
     public function resume(Product $product): RedirectResponse
     {
         Gate::authorize('update', $product);
@@ -137,8 +143,12 @@ class ProductController extends Controller
         if (! $product->hasDeliverableContent()) {
             throw new UserFacingException(__('Instant-delivery products need at least one file or licence key before review.'));
         }
-        $product->status = ProductStatus::Active;
-        $product->save();
+        if ($product->currentFiles()->whereNotIn('scan_status', ['clean', 'skipped'])->exists()) {
+            throw new UserFacingException(__('":title" has a file that has not been scanned clean yet. Try again when the scan has finished.', ['title' => $product->title]));
+        }
+        if (Product::query()->whereKey($product->id)->where('status', ProductStatus::Paused->value)->update(['status' => ProductStatus::Active->value]) !== 1) {
+            throw new UserFacingException(__('":title" changed status a moment ago. Reload the page and try again.', ['title' => $product->title]));
+        }
         $this->audit->log('product.resumed', $product);
 
         return back()->with('success', __('":title" is for sale again.', ['title' => $product->title]));
@@ -295,9 +305,10 @@ class ProductController extends Controller
         ];
     }
 
+    /** New files, images or keys on a product that is (or can return to being) on sale need a new review. */
     private function markForReviewIfActive(Product $product): void
     {
-        if ($product->status === ProductStatus::Active) {
+        if (in_array($product->status, [ProductStatus::Active, ProductStatus::Paused], true)) {
             $product->status = ProductStatus::PendingReview;
             $product->save();
         }

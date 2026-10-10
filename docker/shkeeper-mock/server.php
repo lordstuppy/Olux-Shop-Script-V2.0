@@ -77,7 +77,16 @@ function respond(int $status, array $data): void
 
 function load(string $file): array
 {
-    return is_file($file) ? (json_decode((string) file_get_contents($file), true) ?: []) : [];
+    if (! is_file($file)) {
+        return [];
+    }
+    $fh = fopen($file, 'r');
+    flock($fh, LOCK_SH); // never read a half-written file
+    $raw = stream_get_contents($fh);
+    flock($fh, LOCK_UN);
+    fclose($fh);
+
+    return json_decode((string) $raw, true) ?: [];
 }
 
 function save(string $file, array $state): void

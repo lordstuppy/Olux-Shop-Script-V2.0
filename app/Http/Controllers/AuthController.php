@@ -61,7 +61,9 @@ class AuthController extends Controller
         }
 
         // Addresses are stored in lower case; compare them that way too.
-        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => Str::lower(trim($request->input('email')))]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],

@@ -97,6 +97,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Give up connecting after a few seconds (503 page) instead of hanging
+            // when the database host silently drops packets.
+            'options' => extension_loaded('pdo_pgsql') ? [PDO::ATTR_TIMEOUT => (int) env('DB_CONNECT_TIMEOUT', 5)] : [],
         ],
 
         'sqlsrv' => [

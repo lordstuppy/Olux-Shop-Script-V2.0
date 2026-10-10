@@ -26,7 +26,7 @@ class PasswordResetController extends Controller
 
     public function showReset(Request $request, string $token): View
     {
-        return view('auth.reset-password', ['token' => $token, 'email' => (string) $request->query('email', '')]);
+        return view('auth.reset-password', ['token' => $token, 'email' => is_string($request->query('email')) ? $request->query('email') : '']);
     }
 
     public function reset(Request $request, UserService $users): RedirectResponse

@@ -66,10 +66,11 @@ class OrderService
             return $existing;
         }
 
-        Log::info('Order {public_id} created with status pending for {total}', [
+        // After commit: a balance checkout wraps this in a transaction that may still roll back.
+        DB::afterCommit(fn () => Log::info('Order {public_id} created with status pending for {total}', [
             'public_id' => $order->public_id,
             'total' => Money::format($order->total_minor, $order->currency),
-        ]);
+        ]));
 
         return $order;
     }
@@ -215,9 +216,12 @@ class OrderService
         // Unlimited products only get a shared lock: they cannot change while the
         // order is written, but buyers of the same product do not queue behind each other.
         $limited = Product::query()->whereIn('id', array_keys($items))->whereNotNull('stock')->orderBy('id')->lockForUpdate()->get();
-        $products = $limited->concat(
-            Product::query()->whereIn('id', array_keys($items))->whereNotIn('id', $limited->pluck('id'))->orderBy('id')->sharedLock()->get(),
-        )->keyBy('id');
+        $unlimited = Product::query()->whereIn('id', array_keys($items))->whereNull('stock')->orderBy('id')->sharedLock()->get();
+        $products = $limited->concat($unlimited)->keyBy('id');
+        if ($products->count() !== Product::query()->whereIn('id', array_keys($items))->count()) {
+            // A product switched between unlimited and limited stock between the two reads.
+            throw new UserFacingException(__('A product in your cart changed a moment ago. Review your cart and place the order again.'));
+        }
         $products->load('category');
         $profiles = SellerProfile::query()->whereIn('user_id', $products->pluck('seller_id'))->get()->keyBy('user_id');
 

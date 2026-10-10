@@ -72,7 +72,7 @@ class ProductController extends Controller
     /** JSON for the optional live-search script. The page works without it. */
     public function suggest(Request $request, CatalogService $catalog): JsonResponse
     {
-        $term = (string) $request->query('q', '');
+        $term = is_string($request->query('q')) ? $request->query('q') : '';
         $results = $catalog->suggest(mb_substr($term, 0, 100))->map(fn ($p) => [
             'title' => $p->title,
             'url' => route('products.show', $p->slug),

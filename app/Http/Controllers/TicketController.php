@@ -27,8 +27,8 @@ class TicketController extends Controller
     public function create(Request $request): View
     {
         $order = null;
-        if ($request->filled('order') && Str::isUuid((string) $request->query('order'))) {
-            $order = Order::query()->where('public_id', (string) $request->query('order'))->first();
+        if (is_string($request->query('order')) && Str::isUuid($request->query('order'))) {
+            $order = Order::query()->where('public_id', $request->query('order'))->first();
             if ($order !== null) {
                 Gate::authorize('act', $order);
             }

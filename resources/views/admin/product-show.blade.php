@@ -62,7 +62,7 @@
 
     <h2>{{ __('Decision') }}</h2>
     <div class="actions">
-        @if ($product->status !== \App\Enums\ProductStatus::Active)
+        @if (! in_array($product->status, [\App\Enums\ProductStatus::Active, \App\Enums\ProductStatus::Paused], true))
             <form method="post" action="{{ route('admin.products.status', $product->id) }}">
                 @csrf
                 <input type="hidden" name="status" value="active">
