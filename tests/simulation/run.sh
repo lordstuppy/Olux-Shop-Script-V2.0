@@ -38,9 +38,15 @@ tls_certs() {
 
 host_stop_procs() {
     host_stop_queue
-    [ -f "$W/pids" ] || return 0
-    while read -r pid; do kill -TERM -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done < "$W/pids"
-    rm -f "$W/pids"
+    if [ -f "$W/pids" ]; then
+        while read -r pid; do kill -TERM -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true; done < "$W/pids"
+        rm -f "$W/pids"
+    fi
+    # Belt and braces: nothing of an earlier deploy may keep running (this host runs only the simulation).
+    pkill -f 'while :; do php artisan schedule:work' 2>/dev/null || true
+    pkill -KILL -f 'php artisan schedule:work' 2>/dev/null || true
+    pkill -KILL -f 'fakeclamd.py' 2>/dev/null || true
+    pkill -KILL -f 'S 127.0.0.1:8000' 2>/dev/null || true
     sleep 1
 }
 
@@ -69,6 +75,8 @@ host_start_queue() {
 
 host_stop_queue() {
     [ -f "$W/queue.pid" ] && { kill -KILL -- "-$(cat "$W/queue.pid")" 2>/dev/null || kill -KILL "$(cat "$W/queue.pid")" 2>/dev/null || true; rm -f "$W/queue.pid"; }
+    pkill -KILL -f 'while :; do php artisan queue:work' 2>/dev/null || true
+    pkill -KILL -f 'php artisan queue:work' 2>/dev/null || true
     return 0
 }
 

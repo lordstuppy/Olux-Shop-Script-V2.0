@@ -7,6 +7,7 @@ use App\Http\Controllers\SessionController;
 use App\Mail\NewDeviceLoginMail;
 use App\Models\Product;
 use App\Models\User;
+use App\Notifications\ResetPasswordQueued;
 use App\Notifications\VerifyEmailQueued;
 use App\Services\GiftCardService;
 use App\Services\OrderService;
@@ -14,6 +15,7 @@ use App\Services\PaymentService;
 use App\Services\TwoFactorService;
 use App\Services\UserService;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -99,6 +101,15 @@ class AccountSecurityTest extends TestCase
                 ->assertSessionHasErrors(['email' => 'An account with this email already exists. Sign in or reset your password.']);
         }
         $this->assertSame(1, User::count());
+    }
+
+    public function test_password_reset_mail_is_queued_with_retries(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'forgetful@example.test']);
+        $this->postForm('/forgot-password', ['email' => 'forgetful@example.test'])->assertSessionHas('success');
+        Notification::assertSentTo($user, ResetPasswordQueued::class,
+            fn ($n) => $n instanceof ShouldQueue && $n->tries === 5);
     }
 
     public function test_email_change_attempts_have_their_own_limit(): void

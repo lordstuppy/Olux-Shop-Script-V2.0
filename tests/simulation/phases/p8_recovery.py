@@ -38,7 +38,7 @@ def kill_db(rec, ctx):
         page = c.get('/checkout')
         people.append((email, c, c.find_form(page, '/checkout'), balance(email)))
     ctx.allow_status(503)
-    ctx.allow_log(r'SQLSTATE\[08|Connection refused|server closed|terminating connection|connection to server|could not connect|database system')
+    ctx.allow_log(r'SQLSTATE\[08|Connection refused|server closed|terminating connection|connection to server|could not connect|database system|no connection to the server')
     killer = threading.Timer(0.15, lambda: env.stop('db'))
     killer.start()
     try:

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Notifications\ResetPasswordQueued;
 use App\Notifications\VerifyEmailQueued;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -70,6 +71,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new VerifyEmailQueued);
+    }
+
+    /** @param  string  $token */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordQueued($token));
     }
 
     public function isSeller(): bool
