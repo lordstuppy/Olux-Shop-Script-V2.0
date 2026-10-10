@@ -45,5 +45,10 @@ pg_restore --host="${DB_HOST:-127.0.0.1}" --port="${DB_PORT:-5432}" --username="
     --dbname="${DB_DATABASE:-shop}" --clean --if-exists --no-owner "$SRC/database.dump"
 
 tar -xzf "$SRC/files.tar.gz"
-php artisan optimize:clear
-echo "Restore complete. Run php artisan shop:reconcile-payouts, then php artisan up."
+if command -v php >/dev/null 2>&1 && [ -f artisan ]; then
+    php artisan optimize:clear
+    echo "Restore complete. Run php artisan shop:reconcile-payouts, then php artisan up."
+else
+    # Run from the backup container (no PHP there): finish in the app container.
+    echo "Restore complete. In the app container run: php artisan optimize:clear, php artisan shop:reconcile-payouts, php artisan up."
+fi

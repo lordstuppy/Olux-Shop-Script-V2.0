@@ -206,10 +206,6 @@ def kill_mock(rec, ctx):
           'After the restore the data equals the backup exactly (orders, payments, ledger, users checksums), files are back, '
           'later changes are gone, the shop works, invariants hold', 'blocker')
 def restore(rec, ctx):
-    if env.BACKEND != 'host':
-        raise AssertionError('restore scenario is implemented for the host backend; compose uses docker compose exec with the same scripts')
-    app = os.path.join(env.WORK, 'app')
-    dest = os.path.join(env.WORK, 'backups')
     sums = """select (select md5(string_agg(row(o.*)::text, ',' order by id)) from orders o) || (select md5(string_agg(row(p.*)::text, ',' order by id)) from payments p)
         || (select md5(string_agg(row(l.*)::text, ',' order by id)) from seller_ledger_entries l) || (select md5(string_agg(u.email||u.balance_minor, ',' order by id)) from users u)"""
     # Quiesce so the checksum and the dump see the same data: in maintenance mode the
@@ -220,13 +216,12 @@ def restore(rec, ctx):
     try:
         before = env.scalar(sums)
         files_before = env.scalar('select count(*) from product_files')
-        out = subprocess.run(['sh', os.path.join(app, 'scripts', 'backup.sh'), dest], cwd=app, capture_output=True, text=True)
+        ok, text, backup_dir = env.backup()
         rec.check(env.scalar(sums) == before, 'data changed while the backup was taken (not quiesced)')
     finally:
         env.artisan('up')
-    rec.check(out.returncode == 0, f'backup failed: {out.stdout[-500:]} {out.stderr[-500:]}')
-    backup_dir = out.stdout.strip().split()[-1]
-    rec.ev(f'backup: {backup_dir}: {sorted(os.listdir(backup_dir))}')
+    rec.check(ok, f'backup failed: {text[-800:]}')
+    rec.ev(f'backup: {backup_dir}: {text[-300:]}')
     email, b = buyer(12)
     shop.add_to_cart(b, instant_product())
     r, oid = shop.checkout(b, 'crypto', 'BTC')
@@ -236,8 +231,8 @@ def restore(rec, ctx):
     rec.step('changes after the backup: one paid order, one renamed account')
     env.artisan('down')
     env.stop('queue')
-    out = subprocess.run(['sh', os.path.join(app, 'scripts', 'restore.sh'), backup_dir], cwd=app, capture_output=True, text=True, input='restore\n')
-    rec.check(out.returncode == 0, f'restore failed: {out.stdout[-800:]} {out.stderr[-800:]}')
+    ok, text = env.restore(backup_dir)
+    rec.check(ok, f'restore failed: {text[-800:]}')
     # Compare right after restore.sh, still in maintenance mode: once the workers
     # start, jobs that were queued at backup time run again and change data.
     rec.check(env.scalar(sums) == before, 'restored data differs from the backup')

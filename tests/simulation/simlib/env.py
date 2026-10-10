@@ -92,6 +92,33 @@ def disk_free():
     run_sh('disk-free')
 
 
+def backup():
+    """Runs scripts/backup.sh the way the deployment does; returns (ok, output, backup dir)."""
+    if BACKEND == 'compose':
+        out = sh(COMPOSE + ['--profile', 'backup', 'run', '--rm', '-T', '--entrypoint', 'sh', 'backup', '-c',
+                            'cd /app && sh scripts/backup.sh /backups'], check=False)
+    else:
+        app = os.path.join(WORK, 'app')
+        out = subprocess.run(['sh', os.path.join(app, 'scripts', 'backup.sh'), os.path.join(WORK, 'backups')],
+                             cwd=app, capture_output=True, text=True)
+    text = out.stdout + out.stderr
+    return out.returncode == 0, text, (out.stdout.strip().split() or [''])[-1]
+
+
+def restore(backup_dir):
+    """Runs scripts/restore.sh (answers its confirmation); returns (ok, output)."""
+    if BACKEND == 'compose':
+        out = sh(COMPOSE + ['--profile', 'backup', 'run', '--rm', '-T', '--entrypoint', 'sh', 'backup', '-c',
+                            f'cd /app && sh scripts/restore.sh {backup_dir}'], check=False, input='restore\n')
+        if out.returncode == 0:
+            artisan('optimize:clear', check=False)
+    else:
+        app = os.path.join(WORK, 'app')
+        out = subprocess.run(['sh', os.path.join(app, 'scripts', 'restore.sh'), backup_dir], cwd=app,
+                             capture_output=True, text=True, input='restore\n')
+    return out.returncode == 0, out.stdout + out.stderr
+
+
 def app_logs():
     """All JSON log lines the app wrote so far (parsed)."""
     if BACKEND == 'compose':
