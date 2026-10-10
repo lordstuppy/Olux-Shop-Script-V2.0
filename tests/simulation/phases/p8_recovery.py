@@ -72,8 +72,11 @@ def kill_db(rec, ctx):
         spent = bal - balance(email)
         mine = [o for o in orders if o[2] == email]
         rec.check(spent == (p['price'] if mine else 0), f'{email}: spent {spent}, orders {mine}')
+    started = time.time()
     for oid, *_ in orders:
-        wait_status(oid, 'delivered', timeout=120)
+        # A delivery interrupted by the outage is retried after retry_after (90 s) plus backoff.
+        wait_status(oid, 'delivered', timeout=360)
+    rec.ev(f'all orders delivered {time.time() - started:.0f}s after the database came back')
     rec.step('all orders that were created got delivered after the restart (queue worker recovered)')
 
 
@@ -217,6 +220,14 @@ def restore(rec, ctx):
     env.stop('queue')
     out = subprocess.run(['sh', os.path.join(app, 'scripts', 'restore.sh'), backup_dir], cwd=app, capture_output=True, text=True, input='restore\n')
     rec.check(out.returncode == 0, f'restore failed: {out.stdout[-800:]} {out.stderr[-800:]}')
+    # Compare right after restore.sh, still in maintenance mode: once the workers
+    # start, jobs that were queued at backup time run again and change data.
+    rec.check(env.scalar(sums) == before, 'restored data differs from the backup')
+    rec.check(shop.order_row(oid) is None, 'order created after the backup survived the restore')
+    rec.check(env.scalar("select name from users where email='buyer13@sim.test'") != 'Changed After Backup', 'post-backup change survived')
+    rec.check(env.scalar('select count(*) from product_files') == files_before, 'file rows differ')
+    queued = env.scalar('select count(*) from jobs')
+    rec.step(f'restored data equals the backup; {queued} queued jobs from backup time will run after the restart')
     env.artisan('migrate', '--force')
     env.artisan('config:cache')
     env.artisan('route:cache')
@@ -227,10 +238,6 @@ def restore(rec, ctx):
     forget_sessions()
     rec.step('restore procedure: down, stop workers, restore.sh, migrate, reconcile-payouts, up, start workers, reconcile-payments')
     rec.check(rc.returncode == 0, f'reconcile-payouts after restore: {rc.stdout[-400:]}')
-    rec.check(env.scalar(sums) == before, 'restored data differs from the backup')
-    rec.check(shop.order_row(oid) is None, 'order created after the backup survived the restore')
-    rec.check(env.scalar("select name from users where email='buyer13@sim.test'") != 'Changed After Backup', 'post-backup change survived')
-    rec.check(env.scalar('select count(*) from product_files') == files_before, 'file rows differ')
     old = env.scalar("select o.public_id from orders o where o.status='delivered' order by id limit 1")
     if old:  # a delivered order from before the backup: its files must download again
         owner = env.scalar(f"select u.email from users u join orders o on o.buyer_id=u.id where o.public_id='{old}'")
