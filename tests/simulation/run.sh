@@ -7,7 +7,8 @@
 #   test [args]        run phases (see simulate.py --help), e.g. test --runs 5
 #   load               phase 7 (k6)
 #   down               stop and remove everything
-#   stop-service S / start-service S / restart-workers   used by the phases
+#   stop-service S / start-service S (db, queue, mock, mail), kill-worker,
+#   disk-full [free KB] / disk-free, restart-workers      used by the phases
 #
 # SIM_BACKEND=compose (default): docker-compose.yml + docker-compose.test.yml,
 #   the production image with PHP-FPM. Needs the image to build.
@@ -53,14 +54,16 @@ host_start_procs() {
     (cd public && PHP_CLI_SERVER_WORKERS=16 setsid nohup php -d upload_max_filesize=50M -d post_max_size=55M -d memory_limit=256M -d expose_php=Off \
         -d max_execution_time=30 -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php > "$W/logs/web.log" 2>&1 & echo $! >> "$W/pids")
     host_start_queue
-    setsid nohup php artisan schedule:work > "$W/logs/scheduler.log" 2>&1 &
+    setsid nohup sh -c 'while :; do php artisan schedule:work; sleep 1; done' > "$W/logs/scheduler.log" 2>&1 &
     echo $! >> "$W/pids"
     sleep 2
 }
 
+# The loop plays the role of Docker's restart policy: a worker that exits
+# (lost database connection, crash, kill -9) is started again after 1 s.
 host_start_queue() {
     cd "$W/app"
-    setsid nohup php artisan queue:work --tries=1 --sleep=1 > "$W/logs/queue.log" 2>&1 &
+    setsid nohup sh -c 'while :; do php artisan queue:work --tries=1 --sleep=1 --max-time=3600; sleep 1; done' >> "$W/logs/queue.log" 2>&1 &
     echo $! > "$W/queue.pid"
 }
 
@@ -98,6 +101,10 @@ host_up() {
 }
 
 host_start_mock() {
+    if [ "${1:-}" = keep ] && docker inspect shopsim-mock >/dev/null 2>&1; then
+        docker start shopsim-mock >/dev/null
+        return 0
+    fi
     docker rm -f shopsim-mock >/dev/null 2>&1 || true
     docker run -d --name shopsim-mock --network host -e MOCK_API_KEY=sim-api-key-0123456789 -e MOCK_STATE_FILE=/tmp/state.json \
         -e PHP_CLI_SERVER_WORKERS=8 -v "$ROOT/docker/shkeeper-mock:/mock:ro" php:8.3-cli-alpine php -S 127.0.0.1:8081 /mock/server.php >/dev/null
@@ -135,6 +142,8 @@ compose_reset() {
 
 # ---- dispatch -----------------------------------------------------------------
 
+svc() { case "$1" in mock) echo shkeeper-mock ;; mail) echo mailpit ;; *) echo "$1" ;; esac; }
+
 case "$BACKEND:$CMD" in
     host:up) host_up; host_reset ;;
     compose:up) compose_up; compose_reset ;;
@@ -144,22 +153,50 @@ case "$BACKEND:$CMD" in
     compose:restart-workers) $COMPOSE restart queue scheduler >/dev/null ;;
     host:stop-service)
         case "$1" in
-            db) docker stop shopsim-db >/dev/null ;;
-            mock) docker stop shopsim-mock >/dev/null ;;
+            db) docker kill shopsim-db >/dev/null ;;
+            mock) docker kill shopsim-mock >/dev/null ;;
             queue) host_stop_queue ;;
+            mail) docker kill shopsim-mailpit >/dev/null ;;
             *) echo "unknown service $1" >&2; exit 2 ;;
         esac ;;
+    host:kill-worker)
+        # kill -9 the running worker process only; the supervising loop restarts it.
+        pkill -KILL -f 'artisan queue:work' || true ;;
+    host:disk-full)
+        # Replace the product file storage with a small tmpfs holding the current files.
+        D="$W/app/storage/app/private/products"
+        mountpoint -q "$D" && exit 0
+        mkdir -p "$W/disk-saved" && cp -a "$D/." "$W/disk-saved/"
+        used=$(du -sk "$D" | cut -f1)
+        mount -t tmpfs -o "size=$((used + ${1:-256}))k,mode=0775" tmpfs "$D"
+        cp -a "$W/disk-saved/." "$D/" ;;
+    host:disk-free)
+        D="$W/app/storage/app/private/products"
+        if mountpoint -q "$D"; then
+            cp -a "$D/." "$W/disk-saved/" 2>/dev/null || true
+            umount "$D"
+            cp -a "$W/disk-saved/." "$D/"
+            rm -rf "$W/disk-saved"
+        fi ;;
     host:start-service)
         case "$1" in
             db) docker start shopsim-db >/dev/null; until docker exec shopsim-db pg_isready -p 5433 -q; do sleep 1; done ;;
-            mock) host_start_mock ;;
+            mock) host_start_mock keep ;;
             queue) host_start_queue ;;
+            mail) docker start shopsim-mailpit >/dev/null; sleep 1 ;;
             *) echo "unknown service $1" >&2; exit 2 ;;
         esac ;;
     compose:stop-service)
-        if [ "$1" = queue ]; then $COMPOSE kill queue >/dev/null; else $COMPOSE stop "$( [ "$1" = mock ] && echo shkeeper-mock || echo "$1")" >/dev/null; fi ;;
+        $COMPOSE kill "$(svc "$1")" >/dev/null ;;
+    compose:kill-worker)
+        # Docker does not restart a killed container by itself; start it again like a supervisor would.
+        $COMPOSE kill queue >/dev/null; sleep 1; $COMPOSE start queue >/dev/null ;;
+    compose:disk-full)
+        $COMPOSE exec -T app sh -c 'f=storage/app/private/products/.fill; rm -f $f; avail=$(df -k storage/app/private/products | awk "NR==2{print \$4}"); [ "$avail" -gt '"${1:-256}"' ] && dd if=/dev/zero of=$f bs=1k count=$((avail - '"${1:-256}"')) 2>/dev/null; true' ;;
+    compose:disk-free)
+        $COMPOSE exec -T app rm -f storage/app/private/products/.fill ;;
     compose:start-service)
-        $COMPOSE start "$( [ "$1" = mock ] && echo shkeeper-mock || echo "$1")" >/dev/null
+        $COMPOSE start "$(svc "$1")" >/dev/null
         [ "$1" = db ] && until $COMPOSE exec -T db pg_isready -q 2>/dev/null; do sleep 1; done; true ;;
     *:test) cd "$ROOT" && SIM_BACKEND=$BACKEND SIM_WORK=$W python3 -I "$HERE/simulate.py" "$@" ;;
     *:load) cd "$ROOT" && SIM_BACKEND=$BACKEND sh "$HERE/load/run.sh" "$@" ;;

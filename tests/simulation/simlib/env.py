@@ -78,6 +78,20 @@ def restart_workers():
     run_sh('restart-workers')
 
 
+def kill_worker():
+    """kill -9 the queue worker process; its supervisor starts a new one."""
+    run_sh('kill-worker')
+
+
+def disk_full(free_kb=256):
+    """Leaves only free_kb of space for product file uploads."""
+    run_sh('disk-full', str(free_kb))
+
+
+def disk_free():
+    run_sh('disk-free')
+
+
 def app_logs():
     """All JSON log lines the app wrote so far (parsed)."""
     if BACKEND == 'compose':

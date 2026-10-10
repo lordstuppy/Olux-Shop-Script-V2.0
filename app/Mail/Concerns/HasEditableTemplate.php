@@ -13,6 +13,18 @@ use Illuminate\Mail\Mailables\Envelope;
  */
 trait HasEditableTemplate
 {
+    /**
+     * Queued mails survive a mail server hiccup or a worker restart: they are
+     * retried with backoff instead of failing on the first error.
+     */
+    public int $tries = 5;
+
+    /** @return list<int> seconds before each retry */
+    public function backoff(): array
+    {
+        return [10, 60, 300, 900];
+    }
+
     abstract public static function templateKey(): string;
 
     /** @return array<string, string> placeholder name (without braces) => value */

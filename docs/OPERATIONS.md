@@ -5,7 +5,7 @@
 | Process | Command | Notes |
 |---|---|---|
 | Web | PHP-FPM behind nginx (`docker/nginx/default.conf`) | Only `public/index.php` is executable |
-| Queue worker | `php artisan queue:work --tries=1` | Delivery, invoices, emails, webhook retries. Jobs define their own retries and backoff |
+| Queue worker | `php artisan queue:work --tries=1` | Delivery, invoices, emails, webhook retries. Jobs and emails define their own retries and backoff (emails: 5 tries over about 20 minutes) |
 | Scheduler | `php artisan schedule:work` (or cron `* * * * * php artisan schedule:run`) | See the table below |
 
 Scheduled tasks (`routes/console.php`):
