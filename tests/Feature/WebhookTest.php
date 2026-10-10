@@ -177,7 +177,8 @@ class WebhookTest extends TestCase
 
     public function test_signed_bodies_that_are_not_json_objects_get_400(): void
     {
-        foreach (['[1,2,3]', '[]', '{}', '42', '"text"', 'not json', '{"external_id": "abc'] as $raw) {
+        foreach (['[1,2,3]', '[]', '{}', '42', '"text"', 'not json', '{"external_id": "abc',
+            '{"external_id": {"$gt": ""}}', '{"external_id": "x", "balance_fiat": [1]}', '{"external_id": "x", "fiat": {"a": 1}}'] as $raw) {
             $this->postShkeeperWebhook([], raw: $raw)->assertStatus(400);
         }
         $this->assertSame(0, WebhookEvent::query()->count());

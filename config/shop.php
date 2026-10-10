@@ -58,6 +58,15 @@ return [
     | Requests per minute (per hour for registration). Raise these only in a
     | dedicated load-test environment; the defaults are the production values.
     */
+    // Account-level lock against password spraying from many addresses: after
+    // `attempts` failures within `window_minutes`, sign-in for that email is
+    // refused for `lock_minutes` (any address). A password reset lifts it.
+    'login_lock' => [
+        'attempts' => (int) env('LOGIN_LOCK_ATTEMPTS', 20),
+        'window_minutes' => (int) env('LOGIN_LOCK_WINDOW_MINUTES', 15),
+        'lock_minutes' => (int) env('LOGIN_LOCK_MINUTES', 15),
+    ],
+
     'rate_limits' => [
         'login_per_email' => (int) env('RATE_LIMIT_LOGIN_PER_EMAIL', 5),
         'login_per_ip' => (int) env('RATE_LIMIT_LOGIN_PER_IP', 20),

@@ -42,7 +42,8 @@ class PayoutCallbackController extends Controller
             return response()->json(['message' => 'Invalid or missing signature.'], 401);
         }
         $payload = json_decode($raw, true);
-        if (! is_array($payload) || array_is_list($payload) || ! is_string($payload['external_id'] ?? null)) {
+        if (! is_array($payload) || array_is_list($payload) || ! is_string($payload['external_id'] ?? null)
+            || array_filter(array_intersect_key($payload, array_flip(['status', 'tx_hash', 'amount', 'crypto'])), fn ($v) => ! is_scalar($v) && $v !== null) !== []) {
             GatewayLog::record('payout_webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 400]);
 
             return response()->json(['message' => 'Body is not a payout callback.'], 400);

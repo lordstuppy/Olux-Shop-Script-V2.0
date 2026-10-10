@@ -85,6 +85,11 @@ the Shkeeper payout wallet funded only with what you intend to pay out.
 
 The exact map is `App\Support\Permissions`.
 
+- **Sign-in protection:**
+  - Per minute: 5 attempts per email and address, 20 per address (429 page).
+  - Per account, from any address: after 20 failed attempts within 15 minutes, sign-in for that email is paused for 15 minutes. The owner is emailed once ("Sign-in to your account was paused") and the lock is audited as `user.login_locked`. Unknown emails get the same answer.
+  - A password reset lifts the lock at once. Tune it with `LOGIN_LOCK_ATTEMPTS`, `LOGIN_LOCK_WINDOW_MINUTES` and `LOGIN_LOCK_MINUTES`.
+
 - **Runtime settings** (super admin, `/admin/settings`):
   - Commission default, payout hold, minimum payout, order lifetime, open-order cap, download limit, quote validity, reminders, payout cool-down, dispute window and seller response time, support email.
   - They override `.env` and are audited.

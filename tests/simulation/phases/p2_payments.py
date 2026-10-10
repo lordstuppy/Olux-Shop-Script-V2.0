@@ -250,13 +250,12 @@ def malformed(rec, ctx):
                        ('number', '42'), ('nested junk', '{"external_id": {"$gt": ""}, "balance_fiat": [1]}')]:
         r = post_webhook(body)
         rec.ev(f'{name}: {r.status}')
-        expect = (202,) if name == 'nested junk' else (400,)
-        rec.check(r.status in expect, f'{name} body answered {r.status}')
+        rec.check(r.status == 400, f'{name} body answered {r.status}')
     big = '{"pad": "' + 'A' * (3 * 1024 * 1024) + '"}'
     r = post_webhook(big)
     rec.check(r.status in (400, 413), f'3 MB body answered {r.status}')
     ctx.allow_log(r'unparseable|not a JSON')
-    rec.check(int(env.scalar('select count(*) from webhook_events')) - int(events) <= 1, 'malformed bodies were stored')
+    rec.check(env.scalar('select count(*) from webhook_events') == events, 'malformed bodies were stored')
 
 
 @scenario(2, 'Gateway timeout on invoice creation', 'buyer21 checks out while the gateway hangs on payment_request',

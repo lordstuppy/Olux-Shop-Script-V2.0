@@ -59,8 +59,9 @@ class WebhookController extends Controller
         }
 
         $payload = json_decode($raw, true);
-        // Shkeeper sends a JSON object; arrays, scalars and empty objects are refused.
-        if (! is_array($payload) || array_is_list($payload)) {
+        // Shkeeper sends a JSON object whose fields we read are plain values;
+        // arrays, scalars, empty objects and nested values in those fields are refused.
+        if (! is_array($payload) || array_is_list($payload) || ! self::hasScalarFields($payload)) {
             Log::warning('Webhook with signed but unparseable body from ip {ip}', ['ip' => $request->ip()]);
             GatewayLog::record('webhook', 'bad_request', ['ip' => $request->ip(), 'http_status' => 400, 'message' => 'body is not a JSON object']);
 
@@ -94,5 +95,17 @@ class WebhookController extends Controller
         ]);
 
         return response()->json(['message' => 'Accepted.', 'status' => $event->status->value], 202);
+    }
+
+    /** The fields the shop reads must be strings, numbers, booleans or null. */
+    private static function hasScalarFields(array $payload): bool
+    {
+        foreach (['external_id', 'crypto', 'addr', 'fiat', 'balance_fiat', 'balance_crypto', 'paid', 'status', 'fee_percent', 'overpaid_fiat'] as $field) {
+            if (isset($payload[$field]) && ! is_scalar($payload[$field])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\UserStatus;
 use App\Exceptions\UserFacingException;
 use App\Mail\EmailChangeConfirmMail;
 use App\Mail\EmailChangeNoticeMail;
+use App\Mail\LoginLockedMail;
 use App\Mail\NewDeviceLoginMail;
 use App\Mail\SellerApplicationMail;
 use App\Models\SellerProfile;
@@ -16,11 +17,13 @@ use App\Models\UserDevice;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -67,18 +70,53 @@ class UserService
         $provider = Auth::getProvider();
         $credentials = ['email' => Str::lower($email), 'password' => $password];
         /** @var User|null $user */
+        $lockKey = self::loginLockKey($email);
+        if (Cache::has($lockKey)) {
+            // Same answer whether or not the account exists.
+            throw new UserFacingException(__('Sign-in to this account is paused for :minutes minutes after too many failed attempts. Reset your password to sign in now.', ['minutes' => (int) config('shop.login_lock.lock_minutes')]));
+        }
         $user = $provider->retrieveByCredentials($credentials);
 
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             Log::notice('Failed login for email hash {email_hash}', ['email_hash' => hash('sha256', Str::lower($email))]);
+            $this->countFailedLogin($email, $user);
             throw new UserFacingException(__('Login failed: the email or password is incorrect.'));
         }
+        RateLimiter::clear($lockKey.':failures');
         if (! $user->isActive()) {
             throw new UserFacingException(__('This account is suspended. Contact :email for help.', ['email' => config('shop.support_email')]));
         }
         $provider->rehashPasswordIfRequired($user, $credentials);
 
         return $user;
+    }
+
+    public static function loginLockKey(string $email): string
+    {
+        return 'login-lock:'.hash('sha256', Str::lower(trim($email)));
+    }
+
+    /** Lifts the account-level sign-in lock (after a password reset). */
+    public static function clearLoginLock(string $email): void
+    {
+        Cache::forget(self::loginLockKey($email));
+        RateLimiter::clear(self::loginLockKey($email).':failures');
+    }
+
+    private function countFailedLogin(string $email, ?User $user): void
+    {
+        $lock = config('shop.login_lock');
+        $key = self::loginLockKey($email);
+        $failures = RateLimiter::hit($key.':failures', (int) $lock['window_minutes'] * 60);
+        if ($failures < (int) $lock['attempts'] || ! Cache::add($key, true, now()->addMinutes((int) $lock['lock_minutes']))) {
+            return;
+        }
+        RateLimiter::clear($key.':failures');
+        Log::warning('Sign-in for email hash {email_hash} locked after {attempts} failed attempts', ['email_hash' => hash('sha256', Str::lower($email)), 'attempts' => $failures]);
+        if ($user !== null) {
+            $this->audit->log('user.login_locked', $user, ['attempts' => $failures, 'minutes' => (int) $lock['lock_minutes']], null);
+            Mail::to($user)->queue(new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
+        }
     }
 
     /**
@@ -140,6 +178,7 @@ class UserService
                 ])->save();
                 // Sign out other sessions that used the old password.
                 DB::table('sessions')->where('user_id', $user->id)->delete();
+                self::clearLoginLock($user->email);
                 $this->audit->log('user.password_reset', $user, [], $user);
                 event(new PasswordReset($user));
             },

@@ -7,7 +7,9 @@ request and response is appended to a JSONL trace so a failure can be
 replayed: method, URL, request headers and body, status, response headers,
 body excerpt, duration and the shop's X-Request-Id.
 """
+import functools
 import html
+import http.client
 import http.cookiejar
 import json
 import re
@@ -166,18 +168,24 @@ class Response:
 class Client:
     """One browser profile: cookies on, JavaScript off, no extensions."""
 
-    def __init__(self, who, timeout=60):
+    def __init__(self, who, timeout=60, source=None):
+        """source: local address to connect from (e.g. 127.0.0.5), to act as a different client address."""
         self.who = who
         self.timeout = timeout
         self.jar = http.cookiejar.CookieJar()
         ctx = ssl.create_default_context(cafile=CA)
+
+        class BoundHTTPS(urllib.request.HTTPSHandler):
+            def https_open(self, req):
+                conn = functools.partial(http.client.HTTPSConnection, source_address=(source, 0)) if source else http.client.HTTPSConnection
+                return self.do_open(conn, req, context=ctx)
 
         class NoRedirect(urllib.request.HTTPRedirectHandler):
             def redirect_request(self, *a, **k):
                 return None
 
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar),
-                                                  urllib.request.HTTPSHandler(context=ctx), NoRedirect)
+                                                  BoundHTTPS(context=ctx), NoRedirect)
         self.last = None
 
     def raw(self, method, path, data=None, headers=None):
