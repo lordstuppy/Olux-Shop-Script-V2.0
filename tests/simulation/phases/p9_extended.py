@@ -171,13 +171,13 @@ def payout_address(rec, ctx):
     rec.check(env.scalar(f"select destination from payouts where seller_id={sid} order by id desc limit 1") == new, f'payout after waiting: {flashes(r)}')
 
 
-@scenario(9, 'Manual delivery by the seller and by staff', 'buyer24 buys two manual products of different sellers',
+@scenario(9, 'Manual delivery by the seller and by staff', 'buyer45 buys two manual products of different sellers',
           'Order stays paid until delivered; the seller delivers their line (text shown to the buyer, emailed); staff deliver the '
           'other line on the seller\'s behalf; only then the order is delivered; empty or oversized payloads refused', 'critical')
 def manual_delivery(rec, ctx):
     p1 = shop.product("status='active' and delivery_type='manual' and currency='USD' and (stock is null or stock > 0)")
     p2 = shop.product(f"status='active' and delivery_type='manual' and currency='USD' and seller_id <> {p1['seller_id']} and (stock is null or stock > 0)")
-    email, b = buyer(24)
+    email, b = buyer(45)  # buyers 24-27 change password or email in phase 3
     for p in (p1, p2):
         shop.add_to_cart(b, p)
     r, oid = shop.checkout(b, 'crypto', 'BTC')
@@ -203,13 +203,13 @@ def manual_delivery(rec, ctx):
     check_ledger(rec, oid)
 
 
-@scenario(9, 'Download limits, expired links and staff reset', 'buyer25 owns a delivered file product',
+@scenario(9, 'Download limits, expired links and staff reset', 'buyer46 owns a delivered file product',
           'Each download counts; at the limit the link stops working with a clear message; an expired or tampered link is refused; '
           'staff reset the counter and downloads work again', 'major')
 def downloads(rec, ctx):
     p = instant_product()
     env.sql(f"update products set download_limit=2 where id={p['id']}")
-    email, b, oid = paid_order(25, product=p)
+    email, b, oid = paid_order(46, product=p)
     wait_status(oid, 'delivered')
 
     def link():
@@ -233,13 +233,13 @@ def downloads(rec, ctx):
     rec.check(link() and b.get(link()).status == 200, 'download after staff reset')
 
 
-@scenario(9, 'Subscription access over time', 'buyer26 buys a 30-day subscription; time is moved forward',
+@scenario(9, 'Subscription access over time', 'buyer47 buys a subscription; time is moved forward',
           'Access is set to 30 days; 3 days before the end one reminder is sent (never two); after the end downloads are refused '
           'with a renewal hint and the product can be bought again', 'major')
 def subscriptions(rec, ctx):
     p = shop.product("""status='active' and access_days is not null and delivery_type='instant' and currency='USD' and (stock is null or stock > 0)
         and exists (select 1 from product_files f where f.product_id=products.id and f.scan_status='clean')""")
-    email, b, oid = paid_order(26, product=p)
+    email, b, oid = paid_order(47, product=p)
     wait_status(oid, 'delivered')
     item = items_of(oid)[0]['id']
     days = env.scalar(f"select (access_expires_at::date - now()::date) from order_items where id={item}")
@@ -263,11 +263,11 @@ def subscriptions(rec, ctx):
     wait_status(oid2, 'delivered')
 
 
-@scenario(9, 'Reviews', 'buyer27 bought a product; buyer28 did not',
+@scenario(9, 'Reviews', 'buyer48 bought a product; buyer28 did not',
           'Only buyers can review; one review per buyer (a second submit edits it); hidden reviews disappear and leave the rating', 'major')
 def reviews(rec, ctx):
     p = instant_product()
-    email, b, oid = paid_order(27, product=p)
+    email, b, oid = paid_order(48, product=p)
     wait_status(oid, 'delivered')
     _, stranger = buyer(28)
     page = stranger.get(f"/products/{p['slug']}")
