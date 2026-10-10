@@ -10,6 +10,8 @@ use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustProxies;
 use App\Support\RequestId;
+use Illuminate\Contracts\Database\LostConnectionDetector;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -79,6 +81,19 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return back()->withInput($request->except(['password', 'password_confirmation', 'current_password', 'code']))
                 ->with('error', $e->getMessage());
+        });
+
+        // Database unreachable (restart, failover, network): a 503 with Retry-After
+        // instead of the generic error page, so browsers and proxies retry.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! ($e instanceof QueryException || $e instanceof PDOException) || ! app(LostConnectionDetector::class)->causedByLostConnection($e)) {
+                return null;
+            }
+            $headers = ['Retry-After' => '30', 'Cache-Control' => 'no-store'];
+
+            return $request->expectsJson() || $request->is('webhooks/*', 'health', 'search/suggest')
+                ? response()->json(['message' => 'Temporarily unavailable.'], 503, $headers)
+                : response()->view('errors.unavailable', [], 503, $headers);
         });
 
         $exceptions->context(fn () => ['request_id' => app(RequestId::class)->get()]);

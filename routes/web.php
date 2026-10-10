@@ -26,7 +26,11 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /*
 | Every state-changing route uses POST, PUT or DELETE and is CSRF-protected,
@@ -48,8 +52,11 @@ Route::get('/robots.txt', [PageController::class, 'robots'])->name('robots');
 
 Route::get('/sell', [SellerApplicationController::class, 'show'])->name('seller.apply');
 
-Route::get('/health', [HealthController::class, 'health'])->name('health');
-Route::get('/metrics', [HealthController::class, 'metrics'])->name('metrics');
+// No session: they must answer even when the session store (the database) is down.
+Route::get('/health', [HealthController::class, 'health'])->name('health')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class, EnsureUserIsActive::class]);
+Route::get('/metrics', [HealthController::class, 'metrics'])->name('metrics')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class, EnsureUserIsActive::class]);
 
 // Cart (works for guests; stored in the session)
 Route::get('/cart', [CartController::class, 'show'])->name('cart.show');

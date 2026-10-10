@@ -19,11 +19,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -153,11 +156,24 @@ class ProductController extends Controller
         ]);
         $upload = $request->file('file');
 
-        $path = $upload->storeAs((string) $product->id, Str::random(40).'.'.strtolower($upload->getClientOriginalExtension()), 'products');
+        $path = (string) $product->id.'/'.Str::random(40).'.'.strtolower($upload->getClientOriginalExtension());
+        $checksum = hash_file('sha256', $upload->getRealPath());
+        try {
+            Storage::disk('products')->putFileAs((string) $product->id, $upload, basename($path));
+            if (hash_file('sha256', Storage::disk('products')->path($path)) !== $checksum) {
+                throw new RuntimeException('stored file does not match the upload (short write)');
+            }
+        } catch (Throwable $e) {
+            // Disk full or not writable: no partial file and no database row stay behind.
+            rescue(fn () => Storage::disk('products')->delete($path), report: false);
+            Log::critical('Could not store an upload for product {product_id}: {reason}', ['product_id' => $product->id, 'reason' => $e->getMessage()]);
+
+            throw new UserFacingException(__('The file could not be saved because of a storage problem on our side. Nothing was stored; please try again later. Our team has been alerted.'));
+        }
         $file = $product->files()->create([
             'original_name' => mb_substr(basename($upload->getClientOriginalName()), 0, 255),
             'storage_path' => $path,
-            'checksum' => hash_file('sha256', Storage::disk('products')->path($path)),
+            'checksum' => $checksum,
             'size' => $upload->getSize(),
         ]);
         $this->markForReviewIfActive($product);

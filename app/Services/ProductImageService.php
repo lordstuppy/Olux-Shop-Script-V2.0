@@ -7,8 +7,11 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use GdImage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
 
 /**
  * Product images are decoded and re-encoded as WebP with GD. Re-encoding
@@ -46,9 +49,20 @@ class ProductImageService
         $base = $product->id.'/'.Str::random(32);
         [$large, $lw, $lh] = $this->resize($source, self::LARGE);
         [$thumb] = $this->resize($source, self::THUMB);
-        Storage::disk('product_images')->put($base.'.webp', $this->encode($large));
-        Storage::disk('product_images')->put($base.'-thumb.webp', $this->encode($thumb));
-        imagedestroy($source);
+        try {
+            $ok = Storage::disk('product_images')->put($base.'.webp', $this->encode($large))
+                && Storage::disk('product_images')->put($base.'-thumb.webp', $this->encode($thumb));
+            if (! $ok) {
+                throw new RuntimeException('write failed');
+            }
+        } catch (Throwable $e) {
+            rescue(fn () => Storage::disk('product_images')->delete([$base.'.webp', $base.'-thumb.webp']), report: false);
+            Log::critical('Could not store an image for product {product_id}: {reason}', ['product_id' => $product->id, 'reason' => $e->getMessage()]);
+
+            throw new UserFacingException(__('The image could not be saved because of a storage problem on our side. Nothing was stored; please try again later. Our team has been alerted.'));
+        } finally {
+            imagedestroy($source);
+        }
 
         return $product->images()->create([
             'path' => $base.'.webp',

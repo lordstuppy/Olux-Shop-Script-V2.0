@@ -37,24 +37,29 @@ def kill_db(rec, ctx):
         shop.add_to_cart(c, p)
         page = c.get('/checkout')
         people.append((email, c, c.find_form(page, '/checkout'), balance(email)))
+    ctx.allow_status(503)
+    ctx.allow_log(r'SQLSTATE\[08|Connection refused|server closed|terminating connection|connection to server|could not connect|database system')
     killer = threading.Timer(0.15, lambda: env.stop('db'))
     killer.start()
-    results = parallel([lambda c=c, f=f: c.submit(f, {'payment_method': 'balance', 'accept_terms': '1'}) for _, c, f, _ in people])
-    killer.join()
-    rec.step('PostgreSQL killed during the checkouts')
-    statuses = [getattr(r, 'status', repr(r)) for r in results]
-    rec.ev(f'responses during the outage: {statuses}')
-    g = Client('during-outage')
-    r = g.get('/', expect=None)
-    rec.ev(f'home page while the database is down: {r.status}')
-    rec.check(r.status in (500, 503) and 'Request id' in r.text and 'Stack trace' not in r.text and 'SQLSTATE' not in r.text,
-              f'outage page: {r.status} {r.text[:200]}')
-    health = g.get('/health', expect=None)
-    rec.check(health.status == 503, f'/health during outage: {health.status}')
-    env.start('db')
+    try:
+        results = parallel([lambda c=c, f=f: c.submit(f, {'payment_method': 'balance', 'accept_terms': '1'}) for _, c, f, _ in people])
+        killer.join()
+        rec.step('PostgreSQL killed during the checkouts')
+        statuses = [getattr(r, 'status', repr(r)) for r in results]
+        rec.ev(f'responses during the outage: {statuses}')
+        g = Client('during-outage')
+        r = g.get('/', expect=None)
+        rec.ev(f'home page while the database is down: {r.status}')
+        rec.check(r.status == 503 and 'Temporarily unavailable' in r.text and r.headers.get('Retry-After') and 'SQLSTATE' not in r.text,
+                  f'outage page: {r.status} {r.text[:200]}')
+        rec.check(all(getattr(x, 'status', 0) in (200, 302, 503) for x in results), f'checkout answers during the outage: {statuses}')
+        health = g.get('/health', expect=None)
+        rec.check(health.status == 503, f'/health during outage: {health.status}')
+    finally:
+        killer.join()
+        env.start('db')
     rec.step('PostgreSQL started again')
     shop.wait_for(lambda: Client('after').get('/', expect=None).status == 200, 'shop serving again', 60)
-    ctx.allow_log(r'SQLSTATE|connection|Connection refused|server closed|terminating|could not|database system')
     orders = env.sql(f"""select o.public_id, o.status, u.email from orders o join order_items i on i.order_id=o.id join users u on u.id=o.buyer_id
         where i.product_id={p['id']} and o.id > {marker}""")
     rec.ev(f'orders created: {orders}')

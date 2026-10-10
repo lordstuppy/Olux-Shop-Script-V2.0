@@ -29,9 +29,15 @@ class Ctx:
     def __init__(self):
         self.data = {}
         self.allowed_logs = []
+        self.allowed_status = set()
 
     def allow_log(self, pattern):
+        """Log entries (including reported exceptions) whose message matches are expected in this scenario."""
         self.allowed_logs.append(re.compile(pattern))
+
+    def allow_status(self, *statuses):
+        """5xx statuses that are the correct answer in this scenario (e.g. 503 while the database is down)."""
+        self.allowed_status.update(statuses)
 
 
 def log_problems(before, ctx):
@@ -43,8 +49,10 @@ def log_problems(before, ctx):
         exception = context.get('exception')
         if exception and not isinstance(exception, str):
             exception = exception.get('class') if isinstance(exception, dict) else str(exception)
-        if exception:
+        if exception and not any(p.search(message) for p in ctx.allowed_logs):
             problems.append(f'unhandled exception logged: {exception}: {message[:300]} ({context.get("request_id")})')
+        elif exception:
+            continue
         elif level >= 400 and not any(p.search(message) for p in ctx.allowed_logs):
             problems.append(f'{entry.get("level_name")} log: {message[:300]} ({context.get("request_id")})')
     return problems
@@ -65,15 +73,19 @@ def run(args, run_no, out_dir):
         if args.only and args.only.lower() not in spec['name'].lower():
             continue
         ctx.allowed_logs = []
+        ctx.allowed_status = set()
         errors_before = len(http.STATS['server_errors'])
         logs_before = len(env.app_logs())
         rec = record.run_one(spec, ctx)
         extra = []
-        new_5xx = http.STATS['server_errors'][errors_before:]
+        new_5xx = [e for e in http.STATS['server_errors'][errors_before:] if e['status'] not in ctx.allowed_status]
         if new_5xx:
             extra.append(f'5xx responses: {new_5xx}')
-        extra += log_problems(logs_before, ctx)
-        extra += shop.check_invariants()
+        try:
+            extra += log_problems(logs_before, ctx)
+            extra += shop.check_invariants()
+        except Exception as e:  # e.g. a service a scenario failed to restart
+            extra.append(f'post-scenario checks could not run: {type(e).__name__}: {str(e)[:300]}')
         if extra and rec.status == 'pass':
             rec.status = 'fail'
             rec.actual = 'Scenario steps passed, but: ' + ' | '.join(extra)[:3000]
