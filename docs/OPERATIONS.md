@@ -20,6 +20,7 @@ Scheduled tasks (`routes/console.php`):
 | `shop:subscription-reminders` | hourly | Emails buyers whose subscription access ends within `SHOP_RENEWAL_REMINDER_DAYS` |
 | `shop:escalate-disputes` | every 15 minutes | Hands disputes to staff when the seller missed the response deadline |
 | `shop:prune-gateway-logs` | daily 04:10 | Deletes gateway log entries older than 90 days |
+| `shop:recover-stuck-orders` | every minute | Re-queues delivery and invoice jobs of orders paid over 3 minutes ago that still have undelivered instant items or no invoice (jobs lost in a crash between payment and queueing) |
 | `shop:prune-saved-carts` | daily 04:20 | Deletes saved carts not changed for 30 days (`SHOP_SAVED_CART_DAYS`) |
 | health heartbeats | every minute / 5 minutes | Scheduler heartbeat, and a no-op queue job so `/admin/health` can tell an idle worker from a stopped one |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |

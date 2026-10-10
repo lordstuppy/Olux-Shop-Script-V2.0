@@ -2,6 +2,8 @@
 
 use App\Enums\UserRole;
 use App\Enums\WebhookEventStatus;
+use App\Jobs\DeliverOrder;
+use App\Jobs\GenerateInvoicePdf;
 use App\Jobs\ProcessWebhookEvent;
 use App\Jobs\QueueHeartbeat;
 use App\Mail\SubscriptionRenewalMail;
@@ -19,6 +21,7 @@ use App\Support\TranslationCatalog;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
@@ -88,6 +91,42 @@ Artisan::command('shop:prune-gateway-logs {--days=90}', function () {
     $this->info("Deleted {$count} gateway log entries.");
 })->purpose('Delete gateway log entries older than --days (default 90)');
 
+Artisan::command('shop:recover-stuck-orders {--minutes=3}', function () {
+    // The delivery and invoice jobs are queued after the payment commits. If the
+    // database or the process dies in between, the order stays paid with nothing
+    // queued. Re-queue them: both jobs are idempotent. Each order at most every 15 minutes.
+    $since = now()->subMinutes((int) $this->option('minutes'));
+    $undelivered = DB::table('orders')->join('order_items', 'order_items.order_id', '=', 'orders.id')
+        ->join('products', 'products.id', '=', 'order_items.product_id')
+        ->where('orders.status', 'paid')->where('orders.paid_at', '<', $since)->where('orders.paid_at', '>', now()->subDays(7))
+        ->whereNull('order_items.delivered_at')->where('products.delivery_type', 'instant')
+        // Lines whose delivery ran and failed (e.g. out of licence keys) wait for staff (admin redeliver).
+        ->whereNotExists(fn ($q) => $q->from('audit_log')->where('audit_log.action', 'delivery.failed')->where('audit_log.target_type', 'OrderItem')
+            ->whereRaw('audit_log.target_id = order_items.id::text'))
+        ->distinct()->limit(200)->pluck('orders.id');
+    $uninvoiced = DB::table('orders')->whereIn('status', ['paid', 'delivered', 'partially_refunded'])
+        ->where('paid_at', '<', $since)->where('paid_at', '>', now()->subDays(7))
+        ->whereNotExists(fn ($q) => $q->from('invoices')->whereColumn('invoices.order_id', 'orders.id'))
+        ->limit(200)->pluck('id');
+    $queued = 0;
+    foreach ($undelivered as $id) {
+        if (Cache::add("recover-delivery:{$id}", true, 900)) {
+            DeliverOrder::dispatch((int) $id);
+            $queued++;
+        }
+    }
+    foreach ($uninvoiced as $id) {
+        if (Cache::add("recover-invoice:{$id}", true, 900)) {
+            GenerateInvoicePdf::dispatch((int) $id);
+            $queued++;
+        }
+    }
+    if ($queued > 0) {
+        Log::warning('Re-queued {count} delivery or invoice jobs for paid orders that had none running', ['count' => $queued]);
+    }
+    $this->info("Re-queued {$queued} jobs.");
+})->purpose('Re-queue delivery and invoice jobs of paid orders whose jobs were lost (crash between commit and queueing)');
+
 Artisan::command('shop:prune-saved-carts', function () {
     $count = DB::table('saved_carts')->where('updated_at', '<', now()->subDays((int) config('shop.saved_cart_days')))->delete();
     $this->info("Deleted {$count} saved carts.");
@@ -136,6 +175,7 @@ Artisan::command('shop:lang-extract {--check : Exit 1 if lang/en.json is out of 
 })->purpose('Collect translation keys from the source into lang/en.json');
 
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
+Schedule::command('shop:recover-stuck-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('shop:reconcile-shkeeper-transfers')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('shop:retry-webhooks')->everyMinute()->withoutOverlapping();
