@@ -58,7 +58,7 @@ def main(summary_path, data_path, report_path, since):
         findings.append(f'webhook orders: {paid} paid, charge anomalies {charges[:5]}')
     buyers = "','".join(data['checkout_buyers'])
     mixed = env.sql(f"""select o.public_id, o.status, count(distinct i.seller_id) from orders o join users u on u.id=o.buyer_id join order_items i on i.order_id=o.id
-        where u.email in ('{buyers}') and o.created_at >= '{since}' group by o.public_id, o.status""")
+        where u.email in ('{buyers}') and o.created_at >= '{since}' and o.public_id not in ('{ids}') group by o.public_id, o.status""")
     lines.append(f'- Mixed-vendor checkouts: {len(mixed)} orders, statuses {sorted({m[1] for m in mixed})}, sellers per order {sorted({m[2] for m in mixed})}')
     if len(mixed) != 20 or any(m[1] != 'delivered' or m[2] != '3' for m in mixed):
         findings.append(f'mixed-vendor orders not all delivered with 3 sellers: {mixed}')

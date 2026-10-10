@@ -210,8 +210,14 @@ class OrderService
         }
 
         ksort($items);
-        // Lock in a stable order (by id) so concurrent checkouts cannot deadlock.
-        $products = Product::query()->whereIn('id', array_keys($items))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        // Products with limited stock are locked exclusively (stock is decremented
+        // below), in a stable order (by id) so concurrent checkouts cannot deadlock.
+        // Unlimited products only get a shared lock: they cannot change while the
+        // order is written, but buyers of the same product do not queue behind each other.
+        $limited = Product::query()->whereIn('id', array_keys($items))->whereNotNull('stock')->orderBy('id')->lockForUpdate()->get();
+        $products = $limited->concat(
+            Product::query()->whereIn('id', array_keys($items))->whereNotIn('id', $limited->pluck('id'))->orderBy('id')->sharedLock()->get(),
+        )->keyBy('id');
         $products->load('category');
         $profiles = SellerProfile::query()->whereIn('user_id', $products->pluck('seller_id'))->get()->keyBy('user_id');
 
