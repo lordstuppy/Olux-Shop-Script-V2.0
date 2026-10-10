@@ -260,6 +260,8 @@ The run passes when all of these hold:
 | 34 | minor | certification run | A valid signed 3 MB webhook body was accepted | Bodies over 64 KB refused with 413 before hashing | `WebhookTest::test_oversized_bodies_are_refused_before_processing` |
 | 35 | major | P8 restore | `scripts/backup.sh` failed on a shop without invoices yet (missing directory) | Directories created before archiving | phase 8 restore scenario |
 | 36 | critical | P8 database killed | A payment that committed just before the database died lost its delivery and invoice jobs (queued after commit): the order stayed paid and undelivered forever | `shop:recover-stuck-orders` every minute re-queues them (idempotent jobs) | `StuckOrderRecoveryTest`, phase 8 lost-job step |
+| 37 | critical | first run on the production image | PHP GD in the image was built without WebP, so every product image upload failed (`imagewebp()` missing) | GD built with WebP; the build fails if a needed GD function is missing; `/admin/health` checks it | phase 4 product scenario on the image |
+| 38 | critical | first run on the production image | nginx resolved the app container once at start-up; after the app container was recreated (any redeploy) every request answered 502 until nginx restarted | nginx resolves `app` through Docker's DNS on each request (10 s cache) | verified by recreating the app container under the test stack |
 
 Harness defects found along the way are not listed: wrong test data choices, k6 per-VU counters, and process supervision on the host backend. They are in the git history.
 
@@ -283,7 +285,7 @@ These were recorded as not applicable when the scope was agreed:
 
 ## Known limits of this environment
 
-- The certification backend (`compose`, the production image with PHP-FPM) needs the Alpine and Debian package mirrors to build the image. They were blocked by the sandbox's network policy during this work, so the recorded runs use the `host` backend:
+- The certification backend (`compose`, the production image with PHP-FPM) needs the Alpine and Debian package mirrors to build the image. They were blocked for most of this work, so the earlier runs used the `host` backend; the production image was certified once network access was granted (see Results):
   - the same PostgreSQL 15, nginx TLS front end, Mailpit and mock containers;
   - the app on PHP 8.3 with PHP's built-in server instead of PHP-FPM.
   
@@ -298,42 +300,49 @@ The simulation is evidence, not approval. Exit criterion 8 is a second engineer'
 
 ## Results
 
-All results are from the `host` backend (see "Known limits"). The reports are under `tests/simulation/reports/`.
+The reports are under `tests/simulation/reports/`.
 
-### Phases 1-6 and 8: certification (2026-10-10, commit `9baf56d`)
+### Production image (`compose` backend), 2026-10-10
 
-**69 of 69 scenarios passed 5 consecutive runs** (`reports/20261010-133032/summary.md`). Every run started from a fresh database and had none of the following:
+The production image was built from the unchanged `Dockerfile`, with the sandbox-only build adjustments described under `build_image` in `run.sh`. It ran PHP-FPM behind the production nginx, with the TLS front end, worker, scheduler, PostgreSQL 15, Mailpit, the Shkeeper mock and a fake clamd.
+
+**Phases 1-6 and 8: 69 of 69 scenarios passed 5 consecutive runs** (`reports/20261010-182957`, commit `087c621`). Every run started from a fresh database and had none of the following:
 
 - an unexpected 5xx;
 - an exception or error-level log entry not declared by the scenario;
 - a failed invariant;
 - a difference from `shop:reconcile-payouts`.
 
-The earlier certification attempts failed on bugs 34, 35 and 36. Those bugs were fixed and every scenario was re-run.
+The first runs on the image found two bugs that the host backend could not show (rows 37 and 38).
 
-### Phase 7: load (5 runs, then 3 more for diagnosis)
+**Phase 7 load, 5 runs:**
 
-**Data correctness passed in every run:**
+| Check | Result |
+|---|---|
+| Webhook-paid orders | 100 of 100 paid exactly once, including 20 duplicate callbacks |
+| Mixed-vendor checkouts | 20 of 20 delivered, 3 sellers each |
+| Data integrity | invariants held; 0 failed jobs; 0 error-level log entries; 0 failed browser requests |
+| PostgreSQL statements over 200 ms | none |
+| All requests p95 | 1,429-1,706 ms (browser budget p95 < 1.5 s: passed in 3 of 5 runs) |
+| Admin product list p95 | 1,292-1,761 ms against a 500 ms budget: **fail** |
+| Login p95 | 4.9-8.0 s: **fail** |
 
-- all 100 webhook-paid orders were paid exactly once, including the 20 duplicate callbacks;
-- all 20 mixed-vendor checkouts (3 sellers each) were delivered;
-- all invariants held;
-- 0 failed jobs and 0 error-level log entries;
-- 0 browser request failures in about 7,500 requests per run.
+### Host backend (PHP built-in server), 2026-10-10
 
-**Latency budgets passed on the first machine, but not on the current one.** The container was moved to a 4-core machine between the two series of runs.
+- **Phases 1-6 and 8:** 69 of 69 scenarios passed 5 consecutive runs (`reports/20261010-133032`, commit `9baf56d`).
+- **Phase 7 load:** the same data results as above. Admin product list p95 was 863-1,143 ms after the container moved to a 4-core machine, and 342 ms on the earlier machine.
 
-| Run | Machine | All requests p95 | Admin product list p95 (budget 500 ms) | Login p95 | Statements over 200 ms |
-|---|---|---|---|---|---|
-| before the container restart (commit `d609873`) | earlier machine | 440 ms | 342 ms | - | 0 |
-| 1-5 (current code) | 4 cores | 1,007-1,151 ms | 863-1,143 ms: **fail** | 4.9-6.1 s | 0, 1, 0, 0, 0 |
-| commit `d609873` again (control) | 4 cores | 1,063 ms | 1,030 ms: **fail** | 5.0 s | 0 |
-| current code with OPcache on | 4 cores | 1,084 ms | 904 ms: **fail** | 5.1 s | 0 |
+### Why the latency budgets fail here, and what that means
 
-Diagnosis:
+This sandbox has 4 CPU cores. The load generator (k6, 76 virtual users), PHP, PostgreSQL, nginx and the TLS front end all share them, and the load average reached 9-13 during the runs.
 
-- The load average was 9-13 on 4 cores. PHP used about 180% CPU and the kernel about 30%, so k6, PHP, PostgreSQL and nginx were sharing a saturated machine.
-- With no load, the same pages take 44-64 ms (the admin product list 64 ms).
-- The commit that met the budgets before is just as slow on this machine. The latency is a capacity limit of the test machine, not a regression.
-- The one slow statement (run 3) was a 210 ms catalog-introspection query, not from a request path, at the same saturated moment.
-- **Phase 7 latency is therefore not certified.** Repeat it on the compose backend (PHP-FPM) on hardware like production's, with k6 on a separate machine.
+| Setup | Admin product list, no load | Admin product list p95 under load |
+|---|---|---|
+| Production image | 55-75 ms | 1.3-1.8 s |
+| Host backend | 44-64 ms | 0.9-1.1 s |
+| The same code on the earlier, larger machine | - | 342 ms |
+
+- The PHP-FPM configuration is sane: up to 20 workers, OPcache on, no timestamp validation.
+- Logins are slow under load because password hashing (bcrypt) is deliberately expensive.
+
+The latency budgets are therefore **not certified**. Run phase 7 again on hardware like production's, with k6 on a separate machine. Data correctness under load is certified.
