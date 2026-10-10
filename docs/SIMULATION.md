@@ -251,8 +251,24 @@ The run passes when all of these hold:
 | 25 | major (perf) | P7 load | Checkout `SELECT … FOR UPDATE` waited up to 350 ms under 20 concurrent checkouts | Exclusive lock only for limited-stock products, shared lock otherwise | phase 7 slow-query check |
 | 26 | test env | P7 load | Shkeeper mock handed out duplicate invoice ids under concurrency | State updates serialised with a lock file | phase 7 |
 | 27 | test env | setup | Simulation seed used Faker, which is not in production images | Seeder creates accounts directly | `run.sh up` |
+| 28 | major | independent review | Paused product could receive new files or images and be resumed without review | Uploads to a paused product send it to review; resume refuses unscanned files; conditional status updates | `ReviewFindingsTest` |
+| 29 | major (security) | independent review | The login lock could keep an owner locked out indefinitely, mailing them on every lock | Right password from a known device works during a lock; lock mail at most once a day | `LoginLockTest` |
+| 30 | minor | independent review | Array values (`email[]=`, `q[]=`, `order[]=`) gave 500 | Inputs checked for strings | `ReviewFindingsTest::test_array_inputs_never_cause_a_500` |
+| 31 | minor | independent review | Non-numeric ids (`/tickets/abc`) reached PostgreSQL: 500 | Numeric route patterns: 404 | `ReviewFindingsTest::test_non_numeric_ids_are_404` |
+| 32 | major | independent review | "Database starting up", "too many clients" and timeouts still answered 500 | 503 for SQLSTATE 08xxx, 57P01-03, 53300; 5 s connect timeout | `ReviewFindingsTest`, `OutageTest` |
+| 33 | minor | independent review | Staff could relist a product the seller paused; "Buy again" ignored the cart line limit; text mails showed HTML entities; forged callbacks could flood the audit log | Refused; limit applied; raw output in text mails; one audit row per address and minute | `ReviewFindingsTest`, `WebhookTest` |
+| 34 | minor | certification run | A valid signed 3 MB webhook body was accepted | Bodies over 64 KB refused with 413 before hashing | `WebhookTest::test_oversized_bodies_are_refused_before_processing` |
+| 35 | major | P8 restore | `scripts/backup.sh` failed on a shop without invoices yet (missing directory) | Directories created before archiving | phase 8 restore scenario |
 
 Harness defects found along the way are not listed: wrong test data choices, k6 per-VU counters, and process supervision on the host backend. They are in the git history.
+
+## Independent review
+
+An independent reviewer agent read every application change made during the
+simulation. It found no blockers and confirmed two major and several minor
+problems (rows 28 to 33). All were fixed with regression tests, and the
+certification was run again afterwards. This is not the human sign-off
+required by exit criterion 8.
 
 ## Not applicable by decision
 
