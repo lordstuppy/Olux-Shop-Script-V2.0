@@ -33,6 +33,8 @@ export PGPASSWORD="${DB_PASSWORD:-}"
 pg_dump --host="${DB_HOST:-127.0.0.1}" --port="${DB_PORT:-5432}" --username="${DB_USERNAME:-shop}" \
     --format=custom --no-owner --file="$TARGET/database.dump" "${DB_DATABASE:-shop}"
 
+# A new shop may not have these directories yet (no uploads or invoices so far).
+mkdir -p storage/app/private storage/invoices
 tar -czf "$TARGET/files.tar.gz" storage/app/private storage/invoices
 
 ( cd "$TARGET" && sha256sum database.dump files.tar.gz > SHA256SUMS )
