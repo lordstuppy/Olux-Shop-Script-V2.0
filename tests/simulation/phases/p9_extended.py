@@ -161,13 +161,13 @@ def payout_address(rec, ctx):
     r = s.form(path, '/payout-address/confirm/') if s.get(path, expect=None).status == 200 else s.last
     rec.check('invalid' in flashes(r).lower() or r.status in (404, 422), f'link reused: {flashes(r)}')
     env.wait_mail('seller07@sim.test', 'was changed')
-    paid_order(23, product=instant_product(f'seller_id={sid}'), qty=2)
+    paid_order(23, product=instant_product(f'seller_id={sid}'), qty=5)
     staff_form(admin(), '/admin/settings', '/admin/settings', {'payout_hold_days': '0'})
-    r = s.form('/seller/payouts', '/seller/payouts', {'amount': '1.00', 'currency': 'USD'})
+    r = s.form('/seller/payouts', '/seller/payouts', {'amount': '10.00', 'currency': 'USD'})
     rec.check('payouts are possible again after' in flashes(r), f'payout during the waiting period: {flashes(r)}')
     env.sql(f"update seller_profiles set payout_address_changed_at=now()-interval '49 hours' where user_id={sid}")
     rec.step('waiting period moved 49 hours into the past')
-    r = s.form('/seller/payouts', '/seller/payouts', {'amount': '1.00', 'currency': 'USD'})
+    r = s.form('/seller/payouts', '/seller/payouts', {'amount': '10.00', 'currency': 'USD'})
     rec.check(env.scalar(f"select destination from payouts where seller_id={sid} order by id desc limit 1") == new, f'payout after waiting: {flashes(r)}')
 
 
@@ -248,9 +248,9 @@ def subscriptions(rec, ctx):
     rec.step('access end moved to 3 days from now; running the hourly shop:subscription-reminders')
     env.artisan('shop:subscription-reminders')
     env.artisan('shop:subscription-reminders')
-    env.wait_mail(email, 'ending')
+    env.wait_mail(email, 'ends on')
     time.sleep(3)
-    rec.check(len(env.mails(email, 'ending')) == 1, 'reminder sent twice')
+    rec.check(len(env.mails(email, 'ends on')) == 1, 'reminder sent twice')
     env.sql(f"update order_items set access_expires_at=now()-interval '1 minute' where id={item}")
     page = b.get(f'/orders/{oid}')
     rec.check('Access ended' in page.text, 'order page does not say access ended')
@@ -358,7 +358,10 @@ def categories(rec, ctx):
     mod.form('/admin/categories', f'/admin/categories/{cid}', {'name': 'Sim Add-ons', 'description': 'Renamed.'}, need={'_method': 'PUT'})
     rec.check(env.scalar(f'select name from categories where id={cid}') == 'Sim Add-ons', 'rename failed')
     busy = env.scalar("select category_id from products where category_id is not null limit 1")
-    r = mod.form('/admin/categories', f'/admin/categories/{busy}', need={'_method': 'DELETE'})
+    page = mod.get('/admin/categories')
+    rec.check(not any(f['action'].endswith(f'/admin/categories/{busy}') and ['_method', 'DELETE'] in f['fields'] for f in forms_of(page.text)),
+              'delete offered for a category with products')
+    r = mod.post(f'/admin/categories/{busy}', {'_method': 'DELETE'}, token_from='/admin/categories')
     rec.check(env.scalar(f'select count(*) from categories where id={busy}') == '1', 'category with products deleted')
     rec.check('still has products' in flashes(r), f'message: {flashes(r)}')
     mod.form('/admin/categories', f'/admin/categories/{cid}', need={'_method': 'DELETE'})
@@ -397,7 +400,7 @@ def commission_ui(rec, ctx):
 def bulk(rec, ctx):
     mod = admin('moderator@sim.test')
     ids = [int(x[0]) for x in env.sql("select id from products where status='active' order by id desc limit 3")]
-    pending_no_files = env.scalar("""select p.id from products p where status='pending_review'
+    pending_no_files = env.scalar("""select p.id from products p where status='pending_review' and delivery_type='instant'
         and not exists (select 1 from product_files f where f.product_id=p.id) and not exists (select 1 from product_license_keys k where k.product_id=p.id) limit 1""")
     page = mod.get('/admin/products')
     form = mod.find_form(page, '/admin/bulk/products')
@@ -432,8 +435,10 @@ def currencies(rec, ctx):
     rate = float(env.scalar("select rate from exchange_rates where base='USD' and quote='EUR' order by id desc limit 1"))
     email, b = buyer(36)
     rec.check(env.scalar(f"select currency from users where email='{email}'") == 'EUR', 'buyer36 is expected to hold EUR')
-    env.sql(f"update users set balance_minor=50000 where email='{email}'")
-    env.sql(f"insert into balance_transactions (user_id, amount_minor, currency, type, balance_after_minor, note) select id, 0, 'EUR', 'admin_adjustment', 50000, 'simulation top-up' from users where email='{email}'")
+    uid = env.scalar(f"select id from users where email='{email}'")
+    staff_form(admin('finance@sim.test'), f'/admin/users/{uid}', f'/admin/users/{uid}/balance',
+               {'direction': 'credit', 'amount': '500.00', 'currency': 'EUR', 'reason': 'Simulation top-up'})
+    rec.check(balance(email) >= 50000, 'EUR top-up failed')
     p = instant_product("price_minor < 3000")
     b.form('/cart', '/cart/currency', {'currency': 'EUR'})
     shop.add_to_cart(b, p)
@@ -515,7 +520,63 @@ def reports(rec, ctx):
         r = fin.get(path)
         rec.check(r.duration_ms < 3000, f'{path} took {r.duration_ms} ms')
     rep = fin.get(f'/admin/reports?from=2020-01-01&to={today}')
-    gross = int(env.scalar("select coalesce(sum(total_minor),0) from orders where currency='USD' and status in ('paid','delivered','partially_refunded','refunded')"))
-    rec.ev(f'SQL USD gross {money(gross)}')
-    rec.check(money(gross) in rep.text.replace(',', ''), f'report does not show the USD gross {money(gross)}')
+    net = int(env.scalar("select coalesce(sum(total_minor - refunded_minor),0) from orders where currency='USD' and status in ('paid','delivered','partially_refunded','refunded')"))
+    rec.ev(f'SQL USD net revenue {money(net)}')
+    rec.check(money(net) in rep.text.replace(',', ''), f'report does not show the USD net revenue {money(net)}')
     rec.check('match' in fin.get('/admin/reconciliation').text.lower(), 'reconciliation page does not report a match')
+
+
+@scenario(9, 'Concurrent money operations', 'Double-clicks and two staff members acting at the same moment',
+          'A double-clicked payout request creates one payout; two simultaneous refunds never exceed the order total; '
+          'the last use of a coupon goes to one buyer only; delivering a manual item twice at once keeps one delivery', 'blocker')
+def concurrency(rec, ctx):
+    staff_form(admin(), '/admin/settings', '/admin/settings', {'payout_hold_days': '0'})
+    sid = env.scalar("select id from users where email='seller10@sim.test'")
+    paid_order(40, product=instant_product(f'seller_id={sid}'), qty=5)
+    available = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='USD'"))
+    s = shop.login('seller10@sim.test')
+    form = s.find_form(s.get('/seller/payouts'), '/seller/payouts')
+    before = int(env.scalar(f'select count(*) from payouts where seller_id={sid}'))
+    parallel([lambda: s.submit(form, {'amount': money(available), 'currency': 'USD'}) for _ in range(3)])
+    made = int(env.scalar(f'select count(*) from payouts where seller_id={sid}')) - before
+    rec.check(made == 1, f'{made} payouts from one double-click (available {money(available)})')
+    rec.check(int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='USD'")) >= 0, 'seller balance negative')
+
+    email, b, oid = paid_order(41, qty=2)
+    wait_status(oid, 'delivered')
+    total = shop.order_row(oid)['total']
+    fin, mgr = admin('finance@sim.test'), admin('manager@sim.test')
+    for c in (fin, mgr):
+        shop.confirm_password(c)
+    forms = [(c, c.find_form(c.get(f'/admin/orders/{oid}'), f'/admin/orders/{oid}/refunds')) for c in (fin, mgr)]
+    parallel([lambda c=c, f=f: c.submit(f, {'method': 'balance', 'amount': money(total * 3 // 4), 'reason': 'race'}) for c, f in forms])
+    row = shop.order_row(oid)
+    rec.check(row['refunded'] <= total, f"refunded {row['refunded']} of {total}")
+    rec.check(row['refunded'] == total * 3 // 4, f"expected exactly one refund to succeed, refunded {row['refunded']}")
+
+    staff_form(admin('finance@sim.test'), '/admin/coupons', '/admin/coupons', {'code': 'LASTONE', 'type': 'percent', 'value': '10', 'max_redemptions': '1'})
+    racers = []
+    for n in (42, 43):
+        _, c = buyer(n)
+        shop.add_to_cart(c, instant_product())
+        c.form('/checkout', '/checkout/coupon', {'code': 'LASTONE'})
+        racers.append((c, c.find_form(c.get('/checkout'), '/checkout')))
+    parallel([lambda c=c, f=f: c.submit(f, {'payment_method': 'crypto', 'crypto': 'BTC', 'accept_terms': '1'}) for c, f in racers])
+    used = env.scalar("select count(*) from orders o join coupons c on c.id=o.coupon_id where c.code='LASTONE'")
+    rec.check(used == '1', f'coupon with one redemption used {used} times')
+    rec.check(env.scalar("select redemptions_count from coupons where code='LASTONE'") == '1', 'redemption count wrong')
+
+    p = shop.product("status='active' and delivery_type='manual' and currency='USD' and (stock is null or stock > 0)")
+    email, b = buyer(44)
+    shop.add_to_cart(b, p)
+    r, moid = shop.checkout(b, 'crypto', 'BTC')
+    shop.pay(moid)
+    wait_status(moid, 'paid')
+    item = items_of(moid)[0]['id']
+    s2 = shop.login(env.scalar(f"select email from users where id={p['seller_id']}"))
+    f = s2.find_form(s2.get('/seller'), f'/seller/items/{item}/deliver')
+    parallel([lambda t=t: s2.submit(f, {'payload': f'Delivery text {t}'}) for t in ('A', 'B')])
+    wait_status(moid, 'delivered', timeout=30)
+    time.sleep(3)
+    rec.check(len(env.mails(email, 'delivered')) == 1, f"{len(env.mails(email, 'delivered'))} delivery mails for one item")
+    rec.check(int(env.scalar(f"select count(*) from audit_log where action like 'delivery%' and target_id='{item}'")) <= 1, 'item delivered twice')
