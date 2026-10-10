@@ -232,14 +232,16 @@ def restore(rec, ctx):
     rec.check(env.scalar("select name from users where email='buyer13@sim.test'") != 'Changed After Backup', 'post-backup change survived')
     rec.check(env.scalar('select count(*) from product_files') == files_before, 'file rows differ')
     old = env.scalar("select o.public_id from orders o where o.status='delivered' order by id limit 1")
-    owner = env.scalar(f"select u.email from users u join orders o on o.buyer_id=u.id where o.public_id='{old}'")
-    c = shop.login(owner, who='after-restore')
-    page = c.get(f'/orders/{old}')
-    import re
-    dl = re.search(r'href="([^"]+/files/\d+\?[^"]*)"', page.text)
-    if dl:
-        r = c.get(dl.group(1).replace('&amp;', '&'))
-        rec.check(r.status == 200 and len(r.raw) > 0, f'download after restore: {r.status}')
+    if old:  # a delivered order from before the backup: its files must download again
+        owner = env.scalar(f"select u.email from users u join orders o on o.buyer_id=u.id where o.public_id='{old}'")
+        c = shop.login(owner, who='after-restore')
+        page = c.get(f'/orders/{old}')
+        import re
+        dl = re.search(r'href="([^"]+/files/\d+\?[^"]*)"', page.text)
+        if dl:
+            r = c.get(dl.group(1).replace('&amp;', '&'))
+            rec.check(r.status == 200 and len(r.raw) > 0, f'download after restore: {r.status}')
+            rec.step(f'file of pre-backup order {old} downloads after the restore')
     _, b2 = buyer(14)
     shop.add_to_cart(b2, instant_product())
     r, oid2 = shop.checkout(b2, 'crypto', 'BTC')
