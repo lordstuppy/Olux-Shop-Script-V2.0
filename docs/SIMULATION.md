@@ -263,6 +263,18 @@ The features added by the go-live check (docs/READINESS.md), on the production s
 
 Also from this round on, any `N+1 query` warning in the app log fails the scenario that caused it.
 
+### Phase 11: notification centre, live updates, review replies (`phases/p11_live.py`)
+
+The people are registered through the real sign-up and email verification. The JavaScript side (swapping the page, toasts, sound, other tabs, lost connection) is in `tests/browser/live.spec.js`.
+
+| Scenario | What is checked |
+|---|---|
+| Notification centre | "Placed" and "paid" entries; the badge equals the unread count; opening marks read and goes to the order; read all clears the badge; another user gets 404; a seller with sale emails off has the sale in the list and no email |
+| Without the mail server | A ticket reply shows in the list and the badge while the mail server is down; the email arrives once it is back |
+| Staff entries | A forged callback alert reaches super admin and manager only |
+| Live endpoint | 401 for guests; the order version changes on payment and equals the version on the page; no version for pages the user may not see; internal notes do not change the customer version, replies do; `no-store`; the 31st request in a minute gets 429 |
+| Review replies | Seller told about the review; reply shown under it; one email and one entry for the reviewer, linking to the review; edits not announced; another seller refused; moderator removal audited |
+
 ## Bugs found and fixed
 
 | # | Severity | Found in | Problem | Fix | Regression test |
@@ -311,6 +323,8 @@ Also from this round on, any `N+1 query` warning in the app log fails the scenar
 | 42 | major | go-live check (own new code) | Health alerts used `send()`, which still queues a `ShouldQueue` mailable, so "queue worker down" alerts could never arrive | `sendNow()` | `NotificationsTest`, phase 10 gateway scenario with the worker stopped |
 | 43 | minor | go-live check | Layout overflow at 320/375 px on 6 pages (visually hidden table labels escaped the scroll box); touch targets under 44 px; form-field borders below 3:1 contrast; gzip off behind proxies forwarding HTTP/1.0 | CSS fixes; `gzip_http_version 1.0`, `gzip_proxied any` | Chromium pass at 6 widths; axe in light and dark mode; phase 10 nginx scenario |
 | 44 | minor | phase 10 | The 404 page for an unknown URL ignored a visitor's dark colour choice (rendered before cookies are decrypted) | `Theme::current` decrypts the cookie itself | `ReadinessTest`, phase 10 nginx scenario |
+| 45 | minor | browser tests (live updates) | The unread badge stayed visible with "0": `.badge { display: inline-block }` overrode the `hidden` attribute | `[hidden] { display: none !important }` | `tests/browser/live.spec.js` |
+| 46 | minor | PHPUnit (live updates) | A staff-only ticket note changed the version a customer's page reported, revealing that staff did something | Customer versions use only status and visible messages | `NotificationCentreTest`, phase 11 live scenario |
 
 Harness defects found along the way are not listed: wrong test data choices, k6 per-VU counters, and process supervision on the host backend. They are in the git history.
 

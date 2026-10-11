@@ -23,6 +23,7 @@ Scheduled tasks (`routes/console.php`):
 | `shop:recover-stuck-orders` | every minute | Re-queues delivery and invoice jobs of orders paid over 3 minutes ago that still have undelivered instant items or no invoice (jobs lost in a crash between payment and queueing) |
 | `shop:prune-saved-carts` | daily 04:20 | Deletes saved carts not changed for 30 days (`SHOP_SAVED_CART_DAYS`) |
 | `shop:staff-digest` | every 15 minutes | Emails the staff address a "needs attention" summary when new work arrived: seller applications, products submitted for review, payout requests, tickets and customer replies, locked accounts |
+| `shop:prune-notifications` | daily 04:30 | Deletes read notification-centre entries after 90 days and all entries after a year |
 | `shop:health-alerts` | every 5 minutes | Emails the staff address about each critical check on `/admin/health` (at most hourly per check; sent directly, not through the queue) |
 | health heartbeats | every minute / 5 minutes | Scheduler heartbeat, and a no-op queue job so `/admin/health` can tell an idle worker from a stopped one |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |
@@ -199,6 +200,21 @@ managers and super admins can retry it (one or all) or delete it once the
 mail server works again. The dashboard shows the count. Failed jobs are
 pruned after 30 days.
 
+## Notification centre and live updates
+
+- Every user-facing email is sent through `App\Services\Notifier`, which also
+  writes an entry in the user's notification centre (`user_notifications`,
+  shown at `/notifications` with a badge in the header). Entries do not
+  depend on the mail server.
+- Staff alerts are also entries for super admins and managers.
+- Signed-in browsers with JavaScript poll `GET /live` every 10 seconds while
+  the tab is visible and was used in the last 20 minutes; idle tabs stop,
+  so sessions still expire. Each poll is a handful of indexed queries.
+  Expect about 6 requests a minute per active user; `/live` is limited to
+  30 a minute per user.
+- If `/live` is blocked (for example by a proxy rule), the shop keeps working
+  as before; pages simply do not update themselves.
+
 ## System health
 
 `/admin/health` (super admin, manager, finance) shows the following, each
@@ -346,6 +362,7 @@ separately from the backups.
 | Application logs | 30 days | `LOG_DAILY_DAYS` |
 | Failed jobs | 30 days | `routes/console.php` |
 | Saved carts of signed-in buyers | 30 days after the last change | `SHOP_SAVED_CART_DAYS` |
+| Notification-centre entries | read: 90 days; all: 1 year | `shop:prune-notifications` |
 | Password reset tokens | 60 minutes | `config/auth.php` |
 | Sessions | 120 minutes idle | `SESSION_LIFETIME` |
 | Orders, payments, invoices, audit log | kept (accounting) | define in your retention policy |

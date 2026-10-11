@@ -41,7 +41,7 @@ All messages are email. They are queued, retried 5 times over about
 | Dispute opened: confirmation to the buyer | **Added** |
 | Dispute resolved, escalated, new message | Verified |
 | Support ticket reply | Verified |
-| Seller response to a review | Not possible: sellers cannot reply to reviews (see section 8) |
+| Seller response to a review | **Added** later on request: sellers reply on /seller/reviews; the reviewer gets one email and one notification (see section 9) |
 
 ### Seller
 
@@ -73,15 +73,8 @@ docs/OPERATIONS.md, "Staff alerts".
 
 ### Channels, preferences, reliability
 
-- **Channels:** email only.
-  - **In-app notification centre: Declined.** Every event already appears
-    where the person works:
-    - buyers: order, dispute and ticket pages;
-    - sellers: their dashboard;
-    - staff: the "Needs attention" counts on the dashboard.
-
-    A second inbox would duplicate these pages. Listed in section 8 as a
-    possible future feature.
+- **Channels:** email and, added later on request, the in-app notification
+  centre with an unread badge, live updates and an optional sound (section 9).
   - **Browser push: Declined.** It needs JavaScript, a service worker and
     VAPID keys, for little gain over email.
 - **Preferences: Added.**
@@ -117,6 +110,9 @@ and a test covers it.
 
 ## 3. Real-time updates
 
+Live updates by polling were **added later on request** (section 9). The
+reasoning below is why polling was chosen over WebSockets.
+
 **Declined: WebSocket push.** The shop is server-rendered and built to work
 without JavaScript. A WebSocket server, such as Laravel Reverb, would add:
 
@@ -140,7 +136,8 @@ What exists instead:
   immediate alerts bring staff back when something needs them.
 
 If live updates become a requirement, the cheapest step is a small polling
-script on the order and dashboard pages, not WebSockets. Listed in section 8.
+script on the order and dashboard pages, not WebSockets. That is what was
+built (section 9).
 
 ## 4. Responsive design
 
@@ -258,27 +255,24 @@ Ordered by how much they matter for going live.
    requests must be handled by staff from the admin pages and the
    database. Account deletion was ruled out earlier, but erasure requests
    still need a written procedure.
-4. **Seller replies to reviews**, with a notification to the reviewer.
-5. **Licence tiers or variants per product** (personal, commercial,
+4. **Licence tiers or variants per product** (personal, commercial,
    extended). Today each tier must be a separate product.
-6. **Telling buyers about product updates.** Sellers can replace files, but
+5. **Telling buyers about product updates.** Sellers can replace files, but
    buyers are not notified that a new version is available.
-7. **In-app notification centre** (an unread badge and a list), if the
-   email-only approach turns out to be insufficient.
-8. **Live updates on order and dashboard pages.** A small polling script
-   would be the first step (see section 3).
-9. **Seller storefront page** with a profile, description and all products.
+6. **Seller storefront page** with a profile, description and all products.
    Today the catalogue filter by seller does this job.
-10. **Seller self-service:** bulk product import (CSV) and per-product
+7. **Seller self-service:** bulk product import (CSV) and per-product
     sales analytics.
-11. **Abandoned-cart and wishlist price-drop emails** (opt-in). Saved carts
+8. **Abandoned-cart and wishlist price-drop emails** (opt-in). Saved carts
     and wishlists already store what is needed.
-12. **More languages.** The UI is fully translatable, but only English
+9. **More languages.** The UI is fully translatable, but only English
     exists.
-13. **Stronger bot protection on registration** if honeypot and rate limits
+10. **Stronger bot protection on registration** if honeypot and rate limits
     prove insufficient: a self-hosted proof-of-work challenge, which keeps
     the no-third-party rule.
-14. **Affiliate or referral programme.**
+11. **Affiliate or referral programme.**
+12. **Browser push notifications** for people who are not on the site,
+    if the notification centre and email turn out not to be enough.
 
 Still open from the earlier simulation (docs/SIMULATION.md):
 
@@ -288,3 +282,70 @@ Still open from the earlier simulation (docs/SIMULATION.md):
 - a security test by a person;
 - checks on real phones;
 - sign-off by a second engineer.
+
+## 9. Added on request: notification centre, live updates, review replies
+
+Built after the go-live check, at the owner's request.
+
+- **Notification centre.**
+  - Every event a user is emailed about is also an entry in their list
+    (`/notifications`), with an unread badge in the header.
+  - Opening an entry marks it read and goes to the order, dispute, ticket,
+    payout or product. "Mark all as read" clears the badge.
+  - Entries are written in the same transaction as the event, so they
+    exist even while the mail server is down.
+  - A seller who turned sale or review emails off still sees those events
+    in the list.
+  - Staff alerts reach the lists of super admins and managers.
+  - Links to email-change and payout-address confirmations stay email-only,
+    because they are secrets.
+  - Read entries are deleted after 90 days and all entries after a year.
+- **Notification sound.** A short tone made in the browser (no audio
+  file). It can be switched on or off in account settings and plays once
+  per new notification, in one tab only.
+- **Live updates by polling** (no WebSocket server). While a tab is visible
+  and was used in the last 20 minutes, `enhance.js` asks `/live` every
+  10 seconds for:
+  - the unread count and the newest notification;
+  - the wallet balance;
+  - a version of the page being shown.
+
+  When the page version changes, the page content is fetched again and
+  swapped in place: order status, sales, disputes, tickets, payouts,
+  reviews and the admin dashboard and lists. While someone is filling in a
+  form, the page is never replaced; a "This page has new information. Show
+  it" message appears instead. Other tabs get the badge and balance
+  without polling themselves. "Connection lost" shows after two failed
+  polls and clears when the server answers again. The version uses the
+  page's own access rules and only indexed columns, and a customer's
+  version never reveals staff-only notes. `/live` allows 30 requests a
+  minute per user. Without JavaScript, pages are current whenever they
+  load, as before.
+- **Seller replies to reviews.**
+  - Sellers answer reviews on `/seller/reviews`; the reply is shown under
+    the review.
+  - The reviewer gets one email and one notification for the first reply;
+    edits are not announced.
+  - Hidden reviews cannot be answered, and other sellers cannot answer.
+  - Moderators can remove a reply, which is audited.
+
+Testing:
+
+- PHPUnit: 262 tests, including 9 new ones.
+- Browser tests (`tests/browser`, 19 tests), including 4 new ones with
+  JavaScript on:
+  - the order page updates in place when the payment arrives, with a
+    toast, the sound and the badge;
+  - a form being filled in is not replaced;
+  - the badge follows in another tab;
+  - a lost connection is shown and clears.
+- Simulation phase 11 (5 scenarios) on the production stack; see
+  docs/SIMULATION.md.
+
+Bugs found while testing, all fixed:
+
+- A badge with nothing unread still showed "0", because `.badge` overrode
+  the `hidden` attribute.
+- A staff-only note changed the version a customer's ticket page reported.
+- A freshly created user object read the new sound setting as off.
+

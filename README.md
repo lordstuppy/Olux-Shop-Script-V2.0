@@ -12,8 +12,9 @@ rebuilt.
 
 Every page, and the full browse, cart, checkout, login and order flow, works
 with JavaScript disabled. One optional deferred script adds live search
-suggestions, double-submit protection, a password show/hide button and a busy
-indicator on slow form submits. Pages follow the device's light or dark
+suggestions, double-submit protection, a password show/hide button, a busy
+indicator on slow form submits, and live updates for signed-in users
+(polling every 10 seconds, no WebSocket server). Pages follow the device's light or dark
 colour scheme; a footer setting overrides it (stored in a cookie, no
 JavaScript needed).
 
@@ -103,13 +104,14 @@ payout API) are described in [docs/OPERATIONS.md](docs/OPERATIONS.md).
   - After purchase: downloads with limits, subscriptions with expiry and reminders, invoices.
   - Help: disputes on a purchased item, tickets.
   - Account: gift cards, 2FA, email change, session management, light or dark colour scheme.
+  - Notification centre with an unread badge and an optional sound; pages update themselves (polling) when an order is paid or delivered, a ticket or dispute is answered, or the balance changes.
 - **Sellers:**
   - Onboarding.
   - Products with files, licence keys and images, virus-scanned and reviewed by staff.
   - Manual delivery, sales, and responding to disputes.
   - Ledger-based payouts (disputed earnings are held), payout address change with confirmation.
   - The effective commission is shown per product.
-  - Email for every sale and review, each of which can be turned off.
+  - Email for every sale and review, each of which can be turned off; replies to reviews.
 - **Platform revenue:** a commission on every sale. The rate is set per product, per seller, per category or globally (the most specific wins) and frozen on the order line.
 - **Staff:** five tiers behind 2FA: super admin, manager, finance, moderator, support.
   - Analytics dashboard: revenue trend, order volume, top products and sellers, active sellers, gateway health.
