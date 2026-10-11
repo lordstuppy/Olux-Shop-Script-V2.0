@@ -16,6 +16,7 @@ use App\Services\PaymentService;
 use App\Services\RefundService;
 use App\Services\ShkeeperPayoutService;
 use App\Support\Money;
+use App\Support\SelfDealing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -93,6 +94,7 @@ class OrderController extends Controller
     public function deliverItem(Request $request, Order $order, OrderItem $item, DeliveryService $delivery): RedirectResponse
     {
         abort_unless($item->order_id === $order->id, 404);
+        SelfDealing::assertNotSelf($request->user(), $order->buyer_id, $item->seller_id);
         $data = $request->validate(['payload' => ['required', 'string', 'max:10000']]);
         $delivery->deliverManually($item, $request->user(), $data['payload'], asStaff: true);
 
@@ -136,6 +138,7 @@ class OrderController extends Controller
             'destination' => ['nullable', 'required_if:method,shkeeper', 'string', 'max:255'],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
+        SelfDealing::assertNotPartyToOrder($request->user(), $order);
         try {
             $amount = Money::parseInput($data['amount'], $order->currency);
         } catch (InvalidArgumentException) {

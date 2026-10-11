@@ -7,6 +7,9 @@ use Throwable;
 
 class ShkeeperException extends RuntimeException
 {
+    /** Set when Shkeeper itself answered 404 with its JSON error body ("not found"). */
+    public bool $shkeeperNotFound = false;
+
     /**
      * @param  bool  $outcomeUnknown  the request may have reached Shkeeper (timeout, dropped
      *                                connection, 5xx): a transfer might be under way, so it must

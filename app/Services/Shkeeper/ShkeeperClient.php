@@ -166,7 +166,8 @@ class ShkeeperClient
         }
         $taskId = (string) $response->json('task_id');
         if ($taskId === '') {
-            throw new ShkeeperException('Shkeeper payout response has no task_id.');
+            // Shkeeper answered 2xx, so it may have queued the transfer anyway.
+            throw new ShkeeperException('Shkeeper payout response has no task_id.', outcomeUnknown: true);
         }
 
         return $taskId;
@@ -183,8 +184,10 @@ class ShkeeperClient
         try {
             $response = $this->send('GET', '/api/v1/'.rawurlencode($crypto).'/payout/status?external_id='.rawurlencode($externalId));
         } catch (ShkeeperException $e) {
-            if ($e->getCode() === 404) {
-                return null; // Shkeeper has no payout with this external id
+            // Only Shkeeper's own JSON "not found" answer proves it has no such
+            // payout; a 404 page from a proxy or a wrong base URL proves nothing.
+            if ($e->getCode() === 404 && $e->shkeeperNotFound) {
+                return null;
             }
             throw $e;
         }
@@ -265,7 +268,9 @@ class ShkeeperClient
 
         if (! $response->successful()) {
             GatewayLog::record('api', 'error', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed(), 'message' => 'HTTP '.$response->status()]);
-            throw new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.", $response->status());
+            $e = new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.", $response->status());
+            $e->shkeeperNotFound = $response->status() === 404 && $response->json('status') === 'error';
+            throw $e;
         }
         if ($response->json('status') === 'error') {
             $message = mb_substr((string) ($response->json('message') ?? $response->json('msg')), 0, 200);

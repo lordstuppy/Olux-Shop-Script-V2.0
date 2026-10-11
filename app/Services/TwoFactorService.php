@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Support\KeyedHash;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -18,6 +20,9 @@ use PragmaRX\Google2FA\Google2FA;
 class TwoFactorService
 {
     private const RECOVERY_CODES = 8;
+
+    /** Codes one account may try per hour, at sign-in and in account settings together (about 240 guesses a day). */
+    public const CODES_PER_HOUR = 10;
 
     public function __construct(
         private readonly Google2FA $google2fa,
@@ -72,7 +77,7 @@ class TwoFactorService
 
     public function disable(User $user, string $code): void
     {
-        if (! $this->verify($user, $code)) {
+        if (! $this->verifyLimited($user, $code)) {
             throw new UserFacingException(__('That code is not valid. Enter a current authenticator code or an unused recovery code.'));
         }
         $user->forceFill([
@@ -89,7 +94,7 @@ class TwoFactorService
     public function regenerateRecoveryCodes(User $user, string $code): array
     {
         // Lasting bypass codes need proof of the second factor, like turning it off.
-        if (! $this->verify($user, $code)) {
+        if (! $this->verifyLimited($user, $code)) {
             throw new UserFacingException(__('That code is not valid. Enter a current authenticator code or an unused recovery code.'));
         }
         $codes = $this->newRecoveryCodes();
@@ -98,6 +103,34 @@ class TwoFactorService
         $this->notifier->send($user, new AccountSecurityMail($user, 'recovery_codes_regenerated'));
 
         return $codes;
+    }
+
+    /**
+     * verify() with a per-account budget: 5 codes a minute and CODES_PER_HOUR an
+     * hour, counted before the check so parallel requests cannot slip under
+     * it, whatever the IP. The owner is emailed when the hourly budget runs out.
+     */
+    public function verifyLimited(User $user, string $code): bool
+    {
+        $key = 'two-factor:'.$user->id;
+        $hourKey = 'two-factor-hour:'.$user->id;
+        $perMinute = RateLimiter::hit($key, 60);
+        $perHour = RateLimiter::hit($hourKey, 3600);
+        if ($perHour === self::CODES_PER_HOUR + 1) {
+            Log::warning('Two-factor codes paused for user {user_id} after {count} codes in an hour', ['user_id' => $user->id, 'count' => self::CODES_PER_HOUR]);
+            $this->notifier->send($user, new AccountSecurityMail($user, 'two_factor_locked'));
+        }
+        if ($perMinute > 5 || $perHour > self::CODES_PER_HOUR) {
+            $wait = max(RateLimiter::availableIn($key), $perHour > self::CODES_PER_HOUR ? RateLimiter::availableIn($hourKey) : 0);
+            throw new UserFacingException(__('Too many incorrect codes. Wait :seconds seconds and try again.', ['seconds' => $wait]));
+        }
+        if (! $this->verify($user, $code)) {
+            return false;
+        }
+        RateLimiter::clear($key);
+        RateLimiter::clear($hourKey);
+
+        return true;
     }
 
     /**

@@ -113,6 +113,12 @@ class DeliveryService
         if ($locked->isDelivered()) {
             return;
         }
+        // Checked again under the row lock: a refund locks the same rows, so one
+        // that committed after deliver() looked is seen here.
+        $orderStatus = Order::query()->whereKey($locked->order_id)->first(['id', 'status'])?->status;
+        if ($locked->isFullyRefunded() || ! in_array($orderStatus, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {
+            return;
+        }
 
         $product = $locked->product()->with('activeFiles')->first();
         $payload = ['type' => 'instant', 'files' => [], 'license_keys' => []];

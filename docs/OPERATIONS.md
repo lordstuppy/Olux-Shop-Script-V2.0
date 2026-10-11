@@ -320,6 +320,25 @@ is meant for development only.
 - `/.well-known/security.txt` names `SHOP_SECURITY_EMAIL` as the
   vulnerability contact (RFC 9116).
 
+## Reverse proxy, client addresses and TLS
+
+The shop builds every link from `APP_URL` (never from the request's Host
+header), and it learns the client's address and scheme only from proxies it
+trusts. Set these together, or downloads and email-verification links fail
+with 403 (their signature includes the scheme and host the shop sees):
+
+| Setting | Where | Value |
+|---|---|---|
+| `APP_URL` | app `.env` | The public `https://` address customers use (one host; redirect `www` to it or the other way round) |
+| `NGINX_TRUSTED_PROXY` | environment of the `web` service | Address or CIDR of the TLS terminator / load balancer in front of nginx. Default `127.0.0.1/32` = nobody: use it only when nginx itself terminates TLS for clients |
+| `TRUSTED_PROXIES` | app `.env` | Not needed with the bundled nginx: it already hands PHP the client address (`REMOTE_ADDR`) and scheme (`HTTPS`) and replaces every client-sent `X-Forwarded-*` header. Only set it if PHP-FPM is reached through a different proxy |
+
+Never set `NGINX_TRUSTED_PROXY` to a whole private range when clients can
+reach nginx through Docker's userland proxy: they would all appear to come
+from the bridge gateway and could choose their own IP address. After a
+change, sign in from outside and check that **Account > Sessions** shows your
+real address.
+
 ## Backups
 
 `scripts/backup.sh [dir]` writes a timestamped directory containing:

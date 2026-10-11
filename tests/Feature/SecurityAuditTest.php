@@ -479,6 +479,129 @@ class SecurityAuditTest extends TestCase
             && $c['route'] === 'admin.settings.index' && $c['user_id'] === $support->id)->once();
     }
 
+    private function processingPayout(?string $taskId): Payout
+    {
+        config(['services.shkeeper.payouts_enabled' => true, 'services.shkeeper.payout_username' => 'u', 'services.shkeeper.payout_password' => 'p',
+            'shop.staff_alert_email' => 'ops@shop.test']);
+        $seller = $this->sellerWithProfile();
+
+        return Payout::create(['seller_id' => $seller->id, 'amount_minor' => 5000, 'currency' => 'USD', 'destination' => 'bc1qsellerpayoutaddress',
+            'status' => PayoutStatus::Processing, 'provider' => 'shkeeper', 'crypto' => 'BTC', 'attempt' => 1, 'provider_reference' => $taskId, 'processed_at' => now()]);
+    }
+
+    // SEC-35 (independent review): a transfer Shkeeper accepted is never failed by the "never arrived" rule.
+    public function test_sec35_accepted_transfers_are_not_failed_by_the_timeout_rule(): void
+    {
+        Mail::fake();
+        $payout = $this->processingPayout('task-9');
+        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response(['status' => 'error', 'message' => 'payout not found'], 404)]);
+        $this->travel(2)->hours();
+        app(ShkeeperPayoutService::class)->reconcile();
+        $this->assertSame(PayoutStatus::Processing, $payout->fresh()->status);
+    }
+
+    public function test_sec35_a_proxy_404_does_not_prove_a_transfer_was_never_sent(): void
+    {
+        Mail::fake();
+        $unsent = $this->processingPayout(null);
+        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response('<html>Not Found</html>', 404)]);
+        $this->travel(1)->hours();
+        app(ShkeeperPayoutService::class)->reconcile();
+        $this->assertSame(PayoutStatus::Processing, $unsent->fresh()->status);
+    }
+
+    public function test_sec35_success_after_an_assumed_failure_is_not_lost(): void
+    {
+        Mail::fake();
+        $payout = $this->processingPayout(null);
+        $payout->forceFill(['status' => PayoutStatus::Failed, 'failure_reason' => 'never sent'])->save();
+        $this->assertSame('processed', app(ShkeeperPayoutService::class)->handleResult('payout-'.$payout->id, 'SUCCESS', 'tx-late'));
+        $this->assertSame(PayoutStatus::Paid, $payout->fresh()->status);
+        Mail::assertQueued(StaffAlertMail::class);
+    }
+
+    public function test_sec35_reply_without_task_id_leaves_the_payout_processing(): void
+    {
+        Mail::fake();
+        config(['services.shkeeper.payouts_enabled' => true, 'services.shkeeper.payout_username' => 'u', 'services.shkeeper.payout_password' => 'p']);
+        $seller = $this->sellerWithProfile();
+        $payout = Payout::create(['seller_id' => $seller->id, 'amount_minor' => 5000, 'currency' => 'USD', 'destination' => 'bc1qsellerpayoutaddress', 'status' => PayoutStatus::Approved]);
+        Http::fake([
+            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['crypto_amount' => '0.001', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/payout' => Http::response(['status' => 'success']),
+        ]);
+        $this->assertThrows(fn () => app(ShkeeperPayoutService::class)->sendPayout($payout, User::factory()->admin()->create()), UserFacingException::class);
+        $this->assertSame(PayoutStatus::Processing, $payout->fresh()->status);
+    }
+
+    // SEC-36 (independent review): the per-account code budget also covers turning 2FA off and new recovery codes.
+    public function test_sec36_two_factor_budget_covers_account_settings(): void
+    {
+        Mail::fake();
+        $user = User::factory()->withTwoFactor()->create();
+        $this->actingAs($user)->confirmPassword();
+        for ($i = 1; $i <= 10; $i++) {
+            if ($i === 6) {
+                $this->travel(61)->seconds();
+            }
+            $this->postForm(route('account.two-factor.recovery'), ['code' => '000000'])->assertSessionHas('error');
+        }
+        $this->travel(61)->seconds();
+        $this->confirmPassword();
+        $this->postForm(route('account.two-factor.recovery'), ['code' => $this->otp(UserFactory::TWO_FACTOR_SECRET)])
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'Too many incorrect codes'));
+        Mail::assertQueued(AccountSecurityMail::class, fn ($m) => $m->event === 'two_factor_locked');
+    }
+
+    public function test_sec36_enabling_two_factor_is_not_a_password_oracle(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $this->get('/account/two-factor');
+        for ($i = 0; $i < 5; $i++) {
+            $this->postForm('/account/two-factor', ['code' => '123456', 'current_password' => 'guess-'.$i])->assertSessionHasErrors('current_password');
+        }
+        $this->postForm('/account/two-factor', ['code' => '123456', 'current_password' => 'guess-x'])->assertStatus(429);
+    }
+
+    // SEC-37 (independent review): staff never refund, deliver, pay or credit themselves.
+    public function test_sec37_staff_cannot_act_on_their_own_orders_payouts_or_balance(): void
+    {
+        Mail::fake();
+        $finance = User::factory()->staff(UserRole::Finance)->withBalance(5000)->create();
+        $order = $this->pendingOrder($finance);
+        app(PaymentService::class)->payWithBalance($order, $finance);
+        $this->actingAs($finance)->confirmPassword();
+        $this->postForm(route('admin.orders.refund', $order), ['amount' => '50.00', 'method' => 'balance'])
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'Another team member'));
+        $this->assertSame(0, $order->fresh()->refunded_minor);
+
+        $this->postForm(route('admin.users.balance', $finance), ['direction' => 'credit', 'amount' => '100.00', 'currency' => 'USD', 'reason' => 'x'])
+            ->assertSessionHas('error');
+        $this->assertSame(0, $finance->fresh()->balance_minor);
+
+        $payout = Payout::create(['seller_id' => $finance->id, 'amount_minor' => 5000, 'currency' => 'USD', 'destination' => 'bc1q', 'status' => PayoutStatus::Requested]);
+        $this->postForm(route('admin.payouts.approve', $payout))->assertSessionHas('error');
+        $this->assertSame(PayoutStatus::Requested, $payout->fresh()->status);
+    }
+
+    // SEC-38 (independent review): the refund check is repeated under the item row lock.
+    public function test_sec38_a_line_refunded_before_delivery_gets_nothing(): void
+    {
+        Mail::fake();
+        $product = Product::factory()->create(['price_minor' => 2000, 'stock' => 1]);
+        $buyer = User::factory()->withBalance(2000)->create();
+        $order = $this->pendingOrder($buyer, $product);
+        app(PaymentService::class)->payWithBalance($order, $buyer);
+        $item = $order->items()->firstOrFail();
+        $this->assertFalse($item->isDelivered());
+        // The order is still "paid" while its only line is already refunded in full.
+        $item->forceFill(['refunded_minor' => $item->netMinor()])->save();
+        $product->licenseKeys()->create(['key_encrypted' => 'KEY-1', 'key_fingerprint' => hash('sha256', 'KEY-1')]);
+        app(DeliveryService::class)->deliver($order->fresh());
+        $this->assertFalse($item->fresh()->isDelivered());
+        $this->assertSame(1, $product->licenseKeys()->whereNull('order_item_id')->count());
+    }
+
     // SEC-27: Shkeeper credentials never follow a redirect to another host.
     public function test_sec27_shkeeper_client_does_not_follow_redirects(): void
     {

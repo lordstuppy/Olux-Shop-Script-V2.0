@@ -11,6 +11,7 @@ use App\Services\AuditLogger;
 use App\Services\BalanceService;
 use App\Services\UserService;
 use App\Support\Money;
+use App\Support\SelfDealing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +75,7 @@ class UserController extends Controller
 
     public function adjustBalance(Request $request, User $user, BalanceService $balances, AuditLogger $audit): RedirectResponse
     {
+        SelfDealing::assertNotSelf($request->user(), $user->id);
         $data = $request->validate([
             'direction' => ['required', Rule::in(['credit', 'debit'])],
             'amount' => ['required', 'string', 'max:16'],

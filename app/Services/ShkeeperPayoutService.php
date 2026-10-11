@@ -16,6 +16,7 @@ use App\Models\Payout;
 use App\Models\User;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Support\Money;
+use App\Support\SelfDealing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -49,6 +50,7 @@ class ShkeeperPayoutService
     public function sendPayout(Payout $payout, User $admin): void
     {
         $this->assertEnabled();
+        SelfDealing::assertNotSelf($admin, $payout->seller_id);
         if (! in_array($payout->status, [PayoutStatus::Approved, PayoutStatus::Failed], true)) {
             throw new UserFacingException(__('Payout #:id must be approved before it can be sent.', ['id' => $payout->id]));
         }
@@ -173,7 +175,20 @@ class ShkeeperPayoutService
         if (preg_match('/^refund-(\d+)$/', $externalId, $m)) {
             $payment = Payment::query()->whereKey((int) $m[1])->where('kind', PaymentKind::Refund->value)
                 ->where('provider', PaymentProvider::Shkeeper->value)->first();
-            if ($payment === null || $payment->status !== PaymentStatus::Pending) {
+            if ($payment === null) {
+                return 'ignored';
+            }
+            if ($payment->status === PaymentStatus::Failed && $status === 'SUCCESS') {
+                // Recorded as failed, but the money went out: the refundable amount may
+                // already have been refunded again. Never booked automatically.
+                $this->alerts->send(__('Crypto refund #:id was sent after all', ['id' => $payment->id]), [
+                    __('The shop recorded this refund as failed, but Shkeeper now reports it as sent (transaction :txid).', ['txid' => $txid ?? '-']),
+                    __('Check whether the buyer was refunded again in the meantime, then correct the order.'),
+                ], route('admin.orders.show', $payment->order), 'refund-late-success:'.$payment->id);
+
+                return 'ignored';
+            }
+            if ($payment->status !== PaymentStatus::Pending) {
                 return 'ignored';
             }
             if ($status === 'SUCCESS') {
@@ -201,15 +216,22 @@ class ShkeeperPayoutService
         }
         $updated = 0;
         $unknown = __('Shkeeper has no record of this transfer :minutes minutes after it was requested, so it was never sent.', ['minutes' => self::UNKNOWN_AFTER_MINUTES]);
+        // The "never sent" rule only applies when the transfer request itself had
+        // no answer (no task id). Once Shkeeper accepted it, only Shkeeper's own
+        // FAIL fails it.
         foreach (Payout::query()->with('seller')->where('status', PayoutStatus::Processing->value)->where('provider', 'shkeeper')->limit(100)->get() as $payout) {
-            $updated += $this->poll($payout->crypto, $payout->externalId(), $payout->processed_at,
+            $accepted = (string) $payout->provider_reference !== '';
+            $updated += $this->poll($payout->crypto, $payout->externalId(), $accepted ? null : $payout->processed_at,
                 fn () => $this->payoutFailed($payout, $unknown));
+            $this->alertIfStuck('payout', $payout->id, $payout->processed_at, route('admin.payouts.index'));
         }
         $pending = Payment::query()->where('kind', PaymentKind::Refund->value)->where('provider', PaymentProvider::Shkeeper->value)
             ->where('status', PaymentStatus::Pending->value)->limit(100)->get();
         foreach ($pending as $payment) {
-            $updated += $this->poll((string) $payment->crypto, 'refund-'.$payment->id, $payment->created_at,
+            $accepted = (string) ($payment->raw_payload_json['task_id'] ?? '') !== '';
+            $updated += $this->poll((string) $payment->crypto, 'refund-'.$payment->id, $accepted ? null : $payment->created_at,
                 fn () => $this->refunds->failPending($payment, $unknown));
+            $this->alertIfStuck('refund', $payment->id, $payment->created_at, route('admin.orders.show', $payment->order));
         }
 
         return $updated;
@@ -263,11 +285,36 @@ class ShkeeperPayoutService
         return $this->handleResult($externalId, $result['status'], $result['txid']) === 'processed' ? 1 : 0;
     }
 
+    /** A transfer still unresolved after a day needs a person: Shkeeper may be unreachable or misconfigured. */
+    private function alertIfStuck(string $kind, int $id, ?\DateTimeInterface $since, string $url): void
+    {
+        if ($since === null || $since > now()->subHours(24)) {
+            return;
+        }
+        $this->alerts->send(__('Shkeeper :kind #:id unresolved for over a day', ['kind' => $kind, 'id' => $id]), [
+            __('The shop cannot get a result for this transfer from Shkeeper. Check it in the Shkeeper admin.'),
+            __('Do not pay or refund it another way until you know whether it was sent.'),
+        ], $url, 'transfer-stuck:'.$kind.':'.$id, 24 * 60);
+    }
+
     private function payoutSucceeded(Payout $payout, ?string $txid): string
     {
-        $changed = $this->payouts->transitionAutomated($payout, PayoutStatus::Paid, [PayoutStatus::Processing], null, [
+        $wasFailed = $payout->status === PayoutStatus::Failed;
+        // Failed too: a failure the shop assumed (no answer) can turn out to be a sent transfer.
+        $changed = $this->payouts->transitionAutomated($payout, PayoutStatus::Paid, [PayoutStatus::Processing, PayoutStatus::Failed], null, [
             'reference' => $txid ?: $payout->provider_reference,
         ]);
+        if ($changed && $wasFailed) {
+            $this->alerts->send(__('Payout #:id was sent after all', ['id' => $payout->id]), [
+                __('It was recorded as failed, but Shkeeper reports it as sent (transaction :txid); it is now marked paid.', ['txid' => $txid ?? '-']),
+                __('If the seller was paid another way in the meantime, recover the second payment.'),
+            ], route('admin.payouts.index'), 'payout-late-success:'.$payout->id);
+        }
+        if (! $changed && $payout->fresh()?->status === PayoutStatus::Paid && $txid !== null && $payout->fresh()->reference !== $txid) {
+            $this->alerts->send(__('Payout #:id: possible double payment', ['id' => $payout->id]), [
+                __('The payout is marked paid with reference :reference, and Shkeeper also reports transaction :txid.', ['reference' => (string) $payout->fresh()->reference, 'txid' => $txid]),
+            ], route('admin.payouts.index'), 'payout-double:'.$payout->id);
+        }
         if ($changed) {
             Log::info('Payout {payout_id} of {amount} confirmed by Shkeeper', ['payout_id' => $payout->id, 'amount' => Money::format($payout->amount_minor, $payout->currency)]);
             $this->notifier->send($payout->seller, new PayoutStatusMail($payout->fresh()));

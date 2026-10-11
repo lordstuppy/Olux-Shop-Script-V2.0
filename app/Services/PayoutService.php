@@ -12,6 +12,7 @@ use App\Models\Payout;
 use App\Models\SellerLedgerEntry;
 use App\Models\User;
 use App\Support\Money;
+use App\Support\SelfDealing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -249,6 +250,7 @@ class PayoutService
 
     private function transition(Payout $payout, PayoutStatus $to, User $admin, array $from, ?string $reference = null, ?string $note = null): void
     {
+        SelfDealing::assertNotSelf($admin, $payout->seller_id);
         DB::transaction(function () use ($payout, $to, $admin, $from, $reference, $note) {
             $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->status, $from, true)) {

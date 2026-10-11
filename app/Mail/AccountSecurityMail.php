@@ -52,7 +52,7 @@ class AccountSecurityMail extends Mailable implements InAppNotice, ShouldQueue
             'two_factor_enabled' => __('Two-factor authentication was turned on.'),
             'two_factor_disabled' => __('Two-factor authentication was turned off.'),
             'recovery_codes_regenerated' => __('New two-factor recovery codes were created; the old ones no longer work.'),
-            'two_factor_locked' => __('Too many wrong two-factor codes were entered after your password, so sign-in is paused for a while. Your password is known to whoever tried: change it now.'),
+            'two_factor_locked' => __('Too many wrong two-factor codes were entered for your account, so two-factor checks are paused for up to an hour. Whoever tried knows your password or has a signed-in session: change your password and sign out other sessions now.'),
             default => __('A security setting of your account changed.'),
         };
     }

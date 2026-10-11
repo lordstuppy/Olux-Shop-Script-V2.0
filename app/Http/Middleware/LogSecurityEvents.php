@@ -28,12 +28,24 @@ class LogSecurityEvents
                 'event' => self::STATUSES[$status],
                 'status' => $status,
                 'method' => $request->method(),
-                'route' => $request->route()?->getName() ?? 'unnamed',
+                'route' => $this->routeLabel($request),
                 'user_id' => $request->user()?->id,
                 'ip' => $request->ip(),
             ]);
         }
 
         return $response;
+    }
+
+    /** Route name, or the route pattern (e.g. "reset-password/{token}") for unnamed routes: never the actual values. */
+    private function routeLabel(Request $request): string
+    {
+        $route = $request->route();
+        if ($route === null) {
+            return 'none';
+        }
+        $name = (string) $route->getName();
+
+        return $name !== '' && ! str_starts_with($name, 'generated::') ? $name : '/'.ltrim($route->uri(), '/');
     }
 }
