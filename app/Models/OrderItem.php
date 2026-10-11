@@ -56,6 +56,12 @@ class OrderItem extends Model
         return $this->grossMinor() - $this->discount_minor;
     }
 
+    /** The whole charge for this line went back to the buyer: no more downloads, keys or reviews. */
+    public function isFullyRefunded(): bool
+    {
+        return $this->refunded_minor > 0 && $this->refunded_minor >= $this->netMinor();
+    }
+
     public function accessExpired(): bool
     {
         return $this->access_expires_at !== null && $this->access_expires_at->isPast();

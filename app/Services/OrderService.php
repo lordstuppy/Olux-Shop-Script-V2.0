@@ -147,8 +147,8 @@ class OrderService
     /**
      * Minimum and maximum order totals from the gateway settings, in the
      * default currency. Totals in other currencies are converted with the
-     * configured rate; without a rate the limits cannot be compared and are
-     * not applied. Free (fully discounted) orders are always allowed.
+     * configured rate; without a rate the order is refused while limits are
+     * set. Free (fully discounted) orders are always allowed.
      */
     private function assertWithinOrderLimits(int $totalMinor, string $currency): void
     {
@@ -160,7 +160,9 @@ class OrderService
         $base = (string) config('shop.default_currency');
         if ($currency !== $base) {
             if ($this->converter->rate($currency, $base) === null) {
-                return;
+                // Without a rate the limits cannot be checked; refusing keeps a
+                // currency switch from becoming a way around the maximum.
+                throw new UserFacingException(__('Orders in :currency are not possible right now. Switch the cart to :base and try again.', ['currency' => $currency, 'base' => $base]));
             }
             $totalMinor = $this->converter->convert($totalMinor, $currency, $base)[0];
         }

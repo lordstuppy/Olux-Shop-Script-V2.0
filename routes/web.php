@@ -181,10 +181,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/products/{product:id}/submit', [Seller\ProductController::class, 'submit'])->name('products.submit');
         Route::post('/products/{product:id}/pause', [Seller\ProductController::class, 'pause'])->name('products.pause');
         Route::post('/products/{product:id}/resume', [Seller\ProductController::class, 'resume'])->name('products.resume');
-        Route::post('/products/{product:id}/files', [Seller\ProductController::class, 'uploadFile'])->name('products.files.store');
+        Route::post('/products/{product:id}/files', [Seller\ProductController::class, 'uploadFile'])->middleware('throttle:uploads')->name('products.files.store');
         Route::delete('/products/{product:id}/files/{file}', [Seller\ProductController::class, 'deleteFile'])->name('products.files.destroy');
-        Route::post('/products/{product:id}/keys', [Seller\ProductController::class, 'addKeys'])->name('products.keys.store');
-        Route::post('/products/{product:id}/images', [Seller\ProductController::class, 'uploadImage'])->name('products.images.store');
+        Route::post('/products/{product:id}/keys', [Seller\ProductController::class, 'addKeys'])->middleware('throttle:uploads')->name('products.keys.store');
+        Route::post('/products/{product:id}/images', [Seller\ProductController::class, 'uploadImage'])->middleware('throttle:uploads')->name('products.images.store');
         Route::delete('/products/{product:id}/images/{image}', [Seller\ProductController::class, 'deleteImage'])->name('products.images.destroy');
         Route::get('/sales', [Seller\SalesController::class, 'index'])->name('sales');
         Route::post('/items/{item}/deliver', [Seller\SalesController::class, 'deliver'])->name('items.deliver');

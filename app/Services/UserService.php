@@ -6,6 +6,7 @@ use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\UserFacingException;
+use App\Mail\AccountSecurityMail;
 use App\Mail\EmailChangeConfirmMail;
 use App\Mail\EmailChangeNoticeMail;
 use App\Mail\LoginLockedMail;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -85,6 +87,11 @@ class UserService
             }
         }
 
+        if ($user === null) {
+            // Same work as a real check, so the response time does not tell
+            // whether an account exists for this email.
+            Hash::check($password, self::dummyHash());
+        }
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
             Log::notice('Failed login for email hash {email_hash}', ['email_hash' => hash('sha256', Str::lower($email))]);
             $this->countFailedLogin($email, $user);
@@ -194,6 +201,13 @@ class UserService
         Log::info('Password reset requested; broker status {status}', ['status' => $status]);
     }
 
+    private static function dummyHash(): string
+    {
+        static $hash = null;
+
+        return $hash ??= Hash::make(Str::random(40));
+    }
+
     public function resetPassword(string $email, string $token, string $password): void
     {
         $status = Password::reset(
@@ -207,6 +221,7 @@ class UserService
                 DB::table('sessions')->where('user_id', $user->id)->delete();
                 self::clearLoginLock($user->email);
                 $this->audit->log('user.password_reset', $user, [], $user);
+                $this->notifier->send($user, new AccountSecurityMail($user, 'password_reset'));
                 event(new PasswordReset($user));
             },
         );
@@ -299,6 +314,7 @@ class UserService
     public function approveSeller(SellerProfile $profile, User $admin, ?int $commissionBps = null): void
     {
         DB::transaction(function () use ($profile, $admin, $commissionBps) {
+            $this->assertPendingApplication($profile);
             $profile->forceFill([
                 'status' => SellerProfileStatus::Approved,
                 'reviewed_by' => $admin->id,
@@ -316,14 +332,30 @@ class UserService
 
     public function rejectSeller(SellerProfile $profile, User $admin, string $note): void
     {
-        $profile->forceFill([
-            'status' => SellerProfileStatus::Rejected,
-            'reviewed_by' => $admin->id,
-            'reviewed_at' => now(),
-            'review_note' => $note,
-        ])->save();
-        $this->audit->log('seller.rejected', $profile, ['note' => $note], $admin);
-        $this->notifier->send($profile->user, new SellerApplicationMail($profile));
+        DB::transaction(function () use ($profile, $admin, $note) {
+            $this->assertPendingApplication($profile);
+            $profile->forceFill([
+                'status' => SellerProfileStatus::Rejected,
+                'reviewed_by' => $admin->id,
+                'reviewed_at' => now(),
+                'review_note' => $note,
+            ])->save();
+            $this->audit->log('seller.rejected', $profile, ['note' => $note], $admin);
+            $this->notifier->send($profile->user, (new SellerApplicationMail($profile))->afterCommit());
+        });
+    }
+
+    /**
+     * Approve and reject decide an open application only. Re-approving an
+     * approved seller would reset a commission rate that only super admins
+     * may set; rejecting one would leave the seller role and listings in place.
+     */
+    private function assertPendingApplication(SellerProfile $profile): void
+    {
+        $status = SellerProfile::query()->whereKey($profile->id)->lockForUpdate()->first()?->status;
+        if ($status !== SellerProfileStatus::Pending) {
+            throw new UserFacingException(__('The application from :name was already decided.', ['name' => $profile->display_name]));
+        }
     }
 
     public function setRole(User $user, UserRole $role, User $admin): void
@@ -344,7 +376,9 @@ class UserService
         if ($user->role->isStaff() && $admin->role !== UserRole::Admin) {
             throw new UserFacingException(__('Only a super admin can change the status of a staff account.'));
         }
-        $user->forceFill(['status' => $status])->save();
+        // A new remember token on every status change: "keep me signed in"
+        // cookies from before a suspension never come back to life on reactivation.
+        $user->forceFill(['status' => $status, 'remember_token' => Str::random(60)])->save();
         if ($status === UserStatus::Suspended) {
             DB::table('sessions')->where('user_id', $user->id)->delete();
         }

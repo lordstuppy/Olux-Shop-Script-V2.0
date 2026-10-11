@@ -12,7 +12,9 @@ RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 FROM php:8.3-fpm-alpine AS app
 
 # GD needs WebP: product images are re-encoded to WebP (ProductImageService).
-RUN apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo libwebp postgresql-libs fcgi \
+# apk upgrade: take Alpine security fixes released after the base image was built.
+RUN apk upgrade --no-cache \
+    && apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo libwebp postgresql-libs fcgi \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev libwebp-dev postgresql-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd opcache bcmath \
@@ -25,7 +27,9 @@ COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint
 
 WORKDIR /var/www/html
 COPY --from=vendor --chown=www-data:www-data /app /var/www/html
-RUN rm -rf tests/browser/node_modules \
+# Not needed at run time: Laravel's repository-split tool (a Go binary with an
+# old Go runtime that image scanners flag) and the browser test packages.
+RUN rm -rf tests/browser/node_modules vendor/laravel/framework/bin \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/invoices storage/app/private/products \
     && chown -R www-data:www-data storage bootstrap/cache
 

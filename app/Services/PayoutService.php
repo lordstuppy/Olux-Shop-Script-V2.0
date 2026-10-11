@@ -67,13 +67,23 @@ class PayoutService
      */
     public function balances(User $seller): array
     {
-        $cutoff = now()->subDays((int) config('shop.payout_hold_days'));
-
         $totals = SellerLedgerEntry::query()->where('seller_id', $seller->id)
             ->groupBy('currency')->selectRaw('currency, SUM(amount_minor) AS total')->pluck('total', 'currency');
-        $pending = SellerLedgerEntry::query()->where('seller_id', $seller->id)
-            ->whereIn('type', ['sale', 'commission'])->where('created_at', '>', $cutoff)
-            ->groupBy('currency')->selectRaw('currency, SUM(amount_minor) AS total')->pluck('total', 'currency');
+
+        // A line's earning is held until the item was delivered, the payout hold
+        // after payment has passed and the buyer's dispute window (which starts at
+        // delivery) has closed: money a buyer can still claim back is never paid out.
+        $paidCutoff = now()->subDays((int) config('shop.payout_hold_days'));
+        $windowCutoff = now()->subDays((int) config('shop.dispute_window_days'));
+        $pending = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('order_items.seller_id', $seller->id)->where('order_items.seller_earning_minor', '>', 0)
+            ->whereIn('orders.status', [OrderStatus::Paid->value, OrderStatus::Delivered->value, OrderStatus::PartiallyRefunded->value])
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('disputes')
+                ->whereColumn('disputes.order_item_id', 'order_items.id')->whereIn('disputes.status', DisputeStatus::openValues()))
+            ->where(fn ($q) => $q->where('orders.paid_at', '>', $paidCutoff)
+                ->orWhereNull('order_items.delivered_at')
+                ->orWhere('order_items.delivered_at', '>', $windowCutoff))
+            ->groupBy('orders.currency')->selectRaw('orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total')->pluck('total', 'currency');
 
         // Earnings of lines under an open dispute stay held until it is resolved.
         $disputed = DB::table('disputes')->join('order_items', 'order_items.id', '=', 'disputes.order_item_id')

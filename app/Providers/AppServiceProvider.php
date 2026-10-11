@@ -196,6 +196,11 @@ class AppServiceProvider extends ServiceProvider
             ->response($throttled(__('You are submitting forms too quickly. Wait a moment and try again.'))));
 
         // Live updates poll every 10 s from the visible tab; room for a few windows.
+        // Seller file, image and key uploads: each can be 50 MB, a virus scan and an image decode.
+        RateLimiter::for('uploads', fn (Request $request) => [
+            Limit::perMinute(10)->by('uploads-m:'.($request->user()?->id ?? $request->ip())),
+            Limit::perHour($limits['uploads_per_hour'])->by('uploads-h:'.($request->user()?->id ?? $request->ip())),
+        ]);
         RateLimiter::for('live', fn (Request $request) => Limit::perMinute(30)->by('live:'.($request->user()?->id ?? $request->ip())));
 
         RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute($limits['webhook'])->by('webhook:'.$request->ip()));

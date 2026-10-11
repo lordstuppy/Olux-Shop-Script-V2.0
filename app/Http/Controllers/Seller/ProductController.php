@@ -165,6 +165,7 @@ class ProductController extends Controller
             'file.max' => __('The file is larger than :max MB.', ['max' => $maxMb]),
         ]);
         $upload = $request->file('file');
+        $this->assertStorageRoom($product, (int) $upload->getSize());
 
         $path = (string) $product->id.'/'.Str::random(40).'.'.strtolower($upload->getClientOriginalExtension());
         $checksum = hash_file('sha256', $upload->getRealPath());
@@ -272,7 +273,7 @@ class ProductController extends Controller
     private function validated(Request $request): array
     {
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:160'],
+            'title' => ['required', 'string', 'max:160', 'not_regex:/[\r\n]/'],
             'description' => ['required', 'string', 'max:20000'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'price' => ['required', 'string', 'max:16'],
@@ -306,6 +307,20 @@ class ProductController extends Controller
     }
 
     /** New files, images or keys on a product that is (or can return to being) on sale need a new review. */
+    /** Per-product file count and per-seller storage quota, checked before anything is written. */
+    private function assertStorageRoom(Product $product, int $bytes): void
+    {
+        $max = (int) config('shop.max_product_files');
+        if ($product->files()->whereNull('retired_at')->count() >= $max) {
+            throw new UserFacingException(__('A product can deliver at most :max files. Remove one first.', ['max' => $max]));
+        }
+        $quotaMb = (int) config('shop.seller_storage_mb');
+        $used = (int) ProductFile::query()->whereIn('product_id', Product::query()->select('id')->where('seller_id', $product->seller_id))->sum('size');
+        if ($used + $bytes > $quotaMb * 1024 * 1024) {
+            throw new UserFacingException(__('Your files would use more than your :max MB of storage. Remove files you no longer sell, or contact support for more space.', ['max' => number_format($quotaMb)]));
+        }
+    }
+
     private function markForReviewIfActive(Product $product): void
     {
         if (in_array($product->status, [ProductStatus::Active, ProductStatus::Paused], true)) {

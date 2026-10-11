@@ -49,7 +49,7 @@ class OrderController extends Controller
         $downloads = [];
         if (auth()->id() === $order->buyer_id && in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {
             foreach ($order->items as $item) {
-                if ($item->accessExpired() || $item->download_count >= $item->product->downloadLimit()) {
+                if ($item->isFullyRefunded() || $item->accessExpired() || $item->download_count >= $item->product->downloadLimit()) {
                     continue;
                 }
                 foreach ($item->delivered_payload['files'] ?? [] as $fileRef) {

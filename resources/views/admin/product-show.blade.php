@@ -49,7 +49,7 @@
                             <td><x-status :value="$file->scan_status" :label="\App\Support\Labels::scanStatus($file->scan_status)" /> {{ $file->scan_detail }}</td>
                             <td>{{ $file->retired_at ? __('Retired') : __('Delivered to new orders') }}</td>
                             <td>
-                                @if ($file->scan_status !== 'infected')
+                                @if (in_array($file->scan_status, ['clean', 'skipped'], true))
                                     <a href="{{ route('admin.products.files.download', [$product->id, $file->id]) }}">{{ __('Download') }}<span class="visually-hidden"> {{ $file->original_name }}</span></a>
                                 @endif
                             </td>

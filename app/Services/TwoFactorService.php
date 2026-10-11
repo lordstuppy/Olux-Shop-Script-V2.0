@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Exceptions\UserFacingException;
+use App\Mail\AccountSecurityMail;
 use App\Models\User;
 use App\Support\KeyedHash;
 use chillerlan\QRCode\QRCode;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -20,6 +22,7 @@ class TwoFactorService
     public function __construct(
         private readonly Google2FA $google2fa,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     public function generateSecret(): string
@@ -43,6 +46,10 @@ class TwoFactorService
      */
     public function enable(User $user, string $secret, string $code): array
     {
+        // Replacing an active setup goes through "turn off" (which needs a current code) first.
+        if ($user->fresh()?->hasTwoFactor()) {
+            throw new UserFacingException(__('Two-factor authentication is already on.'));
+        }
         // Passing 0 (not null) makes the library return the matched time step
         // instead of true, so the setup code cannot be replayed at sign-in.
         $step = $this->google2fa->verifyKeyNewer($secret, $this->normalize($code), 0, 1);
@@ -58,6 +65,7 @@ class TwoFactorService
             'two_factor_last_step' => (int) $step,
         ])->save();
         $this->audit->log('user.two_factor_enabled', $user, [], $user);
+        $this->notifier->send($user, new AccountSecurityMail($user, 'two_factor_enabled'));
 
         return $codes;
     }
@@ -74,14 +82,20 @@ class TwoFactorService
             'two_factor_last_step' => null,
         ])->save();
         $this->audit->log('user.two_factor_disabled', $user, [], $user);
+        $this->notifier->send($user, new AccountSecurityMail($user, 'two_factor_disabled'));
     }
 
     /** @return list<string> */
-    public function regenerateRecoveryCodes(User $user): array
+    public function regenerateRecoveryCodes(User $user, string $code): array
     {
+        // Lasting bypass codes need proof of the second factor, like turning it off.
+        if (! $this->verify($user, $code)) {
+            throw new UserFacingException(__('That code is not valid. Enter a current authenticator code or an unused recovery code.'));
+        }
         $codes = $this->newRecoveryCodes();
         $user->forceFill(['two_factor_recovery_codes' => array_map([$this, 'hashRecoveryCode'], $codes)])->save();
         $this->audit->log('user.two_factor_recovery_regenerated', $user, [], $user);
+        $this->notifier->send($user, new AccountSecurityMail($user, 'recovery_codes_regenerated'));
 
         return $codes;
     }
@@ -97,29 +111,39 @@ class TwoFactorService
         }
 
         $code = $this->normalize($input);
-        if (preg_match('/^\d{6}$/', $code)) {
-            $step = $this->google2fa->verifyKeyNewer($user->two_factor_secret, $code, $user->two_factor_last_step ?? 0, 1);
-            if (! is_int($step)) {
+
+        // Under a row lock, so two parallel requests cannot both use the same
+        // time step or the same recovery code.
+        return DB::transaction(function () use ($user, $code) {
+            $locked = User::query()->whereKey($user->id)->lockForUpdate()->first();
+            if ($locked === null || ! $locked->hasTwoFactor()) {
                 return false;
             }
-            $user->forceFill(['two_factor_last_step' => (int) $step])->save();
 
-            return true;
-        }
-
-        $candidates = KeyedHash::candidates($code);
-        $remaining = $user->two_factor_recovery_codes ?? [];
-        foreach ($remaining as $i => $stored) {
-            if (collect($candidates)->contains(fn ($hash) => hash_equals($stored, $hash))) {
-                unset($remaining[$i]);
-                $user->forceFill(['two_factor_recovery_codes' => array_values($remaining)])->save();
-                $this->audit->log('user.two_factor_recovery_used', $user, ['remaining' => count($remaining)], $user);
+            if (preg_match('/^\d{6}$/', $code)) {
+                $step = $this->google2fa->verifyKeyNewer($locked->two_factor_secret, $code, $locked->two_factor_last_step ?? 0, 1);
+                if (! is_int($step)) {
+                    return false;
+                }
+                $user->forceFill(['two_factor_last_step' => (int) $step])->save();
 
                 return true;
             }
-        }
 
-        return false;
+            $candidates = KeyedHash::candidates($code);
+            $remaining = $locked->two_factor_recovery_codes ?? [];
+            foreach ($remaining as $i => $stored) {
+                if (collect($candidates)->contains(fn ($hash) => hash_equals($stored, $hash))) {
+                    unset($remaining[$i]);
+                    $user->forceFill(['two_factor_recovery_codes' => array_values($remaining)])->save();
+                    $this->audit->log('user.two_factor_recovery_used', $user, ['remaining' => count($remaining)], $user);
+
+                    return true;
+                }
+            }
+
+            return false;
+        });
     }
 
     private function normalize(string $input): string

@@ -70,6 +70,9 @@
             <div class="two-col">
                 <section class="card" aria-labelledby="resolve-refund">
                     <h3 id="resolve-refund">{{ __('Refund this item') }}</h3>
+                    @cannot('orders.manage')
+                        <p class="hint">{{ __('Refunds need a manager or the finance team. Add an internal note asking them to refund this item.') }}</p>
+                    @else
                     <form method="post" action="{{ route('admin.disputes.resolve', $dispute) }}" class="stack">
                         @csrf
                         <input type="hidden" name="action" value="refund">
@@ -83,6 +86,7 @@
                         <x-textarea name="note" :id="'refund-note'" :label="__('Note to both parties')" maxlength="5000" />
                         <button type="submit">{{ __('Refund and close') }}</button>
                     </form>
+                    @endcannot
                 </section>
                 <section class="card" aria-labelledby="resolve-replace">
                     <h3 id="resolve-replace">{{ __('Send a replacement') }}</h3>

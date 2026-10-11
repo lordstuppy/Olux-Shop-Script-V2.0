@@ -61,6 +61,10 @@ class UserController extends Controller
 
     public function revokeSessions(Request $request, User $user, AuditLogger $audit): RedirectResponse
     {
+        // Like suspending: only a super admin acts on staff accounts.
+        if ($user->role->isStaff() && $request->user()->role !== UserRole::Admin) {
+            throw new UserFacingException(__('Only a super admin can sign out a staff account.'));
+        }
         $count = DB::table('sessions')->where('user_id', $user->id)->delete();
         $user->forceFill(['remember_token' => Str::random(60)])->save();
         $audit->log('user.sessions_revoked_by_staff', $user, ['count' => $count], $request->user());

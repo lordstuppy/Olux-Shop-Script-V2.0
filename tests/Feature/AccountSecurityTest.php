@@ -130,8 +130,11 @@ class AccountSecurityTest extends TestCase
 
         $this->get('/account/two-factor')->assertOk()->assertSee('data:image/svg+xml;base64', false);
         $secret = session('two_factor.setup_secret');
-        $this->postForm('/account/two-factor', ['code' => '000000'])->assertSessionHas('error');
-        $this->postForm('/account/two-factor', ['code' => $this->otp($secret)])->assertSessionHas('two_factor.recovery_codes');
+        $this->postForm('/account/two-factor', ['code' => '000000', 'current_password' => 'correct-horse-battery-1'])->assertSessionHas('error');
+        // A stolen session alone cannot turn it on: the password is needed too.
+        $this->postForm('/account/two-factor', ['code' => $this->otp($secret), 'current_password' => 'wrong-password-123'])->assertSessionHasErrors('current_password');
+        $this->assertFalse($user->fresh()->hasTwoFactor());
+        $this->postForm('/account/two-factor', ['code' => $this->otp($secret), 'current_password' => 'correct-horse-battery-1'])->assertSessionHas('two_factor.recovery_codes');
         $codes = session('two_factor.recovery_codes');
         $this->assertCount(8, $codes);
         $this->assertTrue($user->fresh()->hasTwoFactor());
@@ -297,7 +300,7 @@ class AccountSecurityTest extends TestCase
         $admin = User::factory()->admin()->create();
         [, $code] = app(GiftCardService::class)->create(1000, 'USD', $admin);
         $user = User::factory()->withTwoFactor()->create();
-        $recovery = app(TwoFactorService::class)->regenerateRecoveryCodes($user);
+        $recovery = app(TwoFactorService::class)->regenerateRecoveryCodes($user, $this->otp(UserFactory::TWO_FACTOR_SECRET));
 
         $oldKey = config('app.key');
         config(['app.key' => 'base64:'.base64_encode(random_bytes(32)), 'app.previous_keys' => [$oldKey]]);

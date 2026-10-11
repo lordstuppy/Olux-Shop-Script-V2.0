@@ -40,7 +40,7 @@ class TicketController extends Controller
     public function store(Request $request, TicketService $tickets): RedirectResponse
     {
         $data = $request->validate([
-            'subject' => ['required', 'string', 'max:160'],
+            'subject' => ['required', 'string', 'max:160', 'not_regex:/[\r\n]/'],
             'body' => ['required', 'string', 'max:5000'],
             'category' => ['required', Rule::enum(TicketCategory::class)],
             'order' => ['nullable', 'uuid'],

@@ -22,8 +22,9 @@
         <p>{{ __('Two-factor authentication is') }} <strong>{{ __('on') }}</strong> {{ __('since :date.', ['date' => $user->two_factor_confirmed_at->format('Y-m-d')]) }} {{ trans_choice('{1} :count unused recovery code left.|[0,*] :count unused recovery codes left.', $remaining) }}</p>
 
         <h2>{{ __('Recovery codes') }}</h2>
-        <form method="post" action="{{ route('account.two-factor.recovery') }}">
+        <form method="post" action="{{ route('account.two-factor.recovery') }}" class="stack">
             @csrf
+            <x-field name="code" :id="'recovery-code'" :label="__('Current authentication or recovery code')" autocomplete="one-time-code" maxlength="20" required />
             <button type="submit" class="btn-secondary">{{ __('Create new recovery codes') }}</button>
         </form>
 
@@ -49,6 +50,7 @@
         <form method="post" action="{{ route('account.two-factor.enable') }}" class="stack">
             @csrf
             <x-field name="code" :label="__('6-digit code from your app')" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required />
+            <x-field name="current_password" type="password" :label="__('Current password')" autocomplete="current-password" required />
             <button type="submit">{{ __('Turn on two-factor authentication') }}</button>
         </form>
     @endif

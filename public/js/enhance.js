@@ -368,7 +368,11 @@
                 if (!fresh || fresh.innerHTML === content.innerHTML) {
                     return;
                 }
-                content.innerHTML = fresh.innerHTML;
+                // Move the parsed nodes instead of re-serialising them through
+                // innerHTML, which can turn inert markup into live markup (mXSS).
+                content.replaceChildren.apply(content, Array.prototype.map.call(fresh.childNodes, function (node) {
+                    return document.importNode(node, true);
+                }));
                 document.title = doc.title;
                 dirty = false;
                 enhance(content);

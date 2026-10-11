@@ -34,9 +34,13 @@ class DeliveryService
 
     public function deliver(Order $order): void
     {
+        // A refunded order (or line) gets nothing, also when a retry runs late.
+        if (! in_array($order->fresh()?->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {
+            return;
+        }
         $items = $order->items()->with('product')->get();
         foreach ($items as $item) {
-            if ($item->isDelivered() || $item->product->delivery_type === DeliveryType::Manual) {
+            if ($item->isDelivered() || $item->isFullyRefunded() || $item->product->delivery_type === DeliveryType::Manual) {
                 continue;
             }
             try {

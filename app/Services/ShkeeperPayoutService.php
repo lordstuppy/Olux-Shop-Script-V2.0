@@ -16,6 +16,7 @@ use App\Models\Payout;
 use App\Models\User;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Support\Money;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,10 +24,14 @@ use Illuminate\Support\Facades\Log;
  * API. Every transfer still needs a staff action (and a recent password);
  * nothing is sent automatically by a schedule.
  *
- * External ids: "payout-{id}" for seller payouts, "refund-{payment id}" for refunds.
+ * External ids: "payout-{id}" (then "payout-{id}-a2", ... for later attempts)
+ * for seller payouts, "refund-{payment id}" for refunds.
  */
 class ShkeeperPayoutService
 {
+    /** A transfer Shkeeper still does not know this long after the request was never created. */
+    private const UNKNOWN_AFTER_MINUTES = 30;
+
     public function __construct(
         private readonly ShkeeperClient $client,
         private readonly PayoutService $payouts,
@@ -58,19 +63,57 @@ class ShkeeperPayoutService
 
         try {
             $cryptoAmount = $this->client->quote($crypto, $payout->amount_minor, $payout->currency);
-            $taskId = $this->client->createPayout($crypto, $cryptoAmount, $payout->destination, $this->fee($crypto), $payout->externalId(), $this->callbackUrl());
         } catch (ShkeeperException $e) {
-            Log::error('Shkeeper payout {payout_id} failed to start: {reason}', ['payout_id' => $payout->id, 'reason' => $e->getMessage()]);
             throw new UserFacingException(__('Shkeeper did not accept payout #:id: :reason', ['id' => $payout->id, 'reason' => $e->getMessage()]));
         }
 
-        $this->payouts->transitionAutomated($payout, PayoutStatus::Processing, [PayoutStatus::Approved, PayoutStatus::Failed], $admin, [
-            'provider' => 'shkeeper',
-            'crypto' => $crypto,
-            'crypto_amount' => $cryptoAmount,
-            'provider_reference' => $taskId,
-            'failure_reason' => null,
-        ]);
+        // Claim the payout before any money moves: a second click, a second
+        // admin or a parallel "Reject" now finds it Processing and stops.
+        $claimed = DB::transaction(function () use ($payout, $admin, $crypto, $cryptoAmount) {
+            $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($locked->status, [PayoutStatus::Approved, PayoutStatus::Failed], true)) {
+                return false;
+            }
+            $locked->forceFill([
+                'status' => PayoutStatus::Processing,
+                'provider' => 'shkeeper',
+                'crypto' => $crypto,
+                'crypto_amount' => $cryptoAmount,
+                'provider_reference' => null,
+                'failure_reason' => null,
+                'attempt' => $locked->attempt + 1,
+                'processed_by' => $admin->id,
+                'processed_at' => now(),
+            ])->save();
+            $payout->setRawAttributes($locked->getAttributes(), true);
+            $this->audit->log('payout.processing', $locked, ['provider' => 'shkeeper', 'crypto' => $crypto, 'crypto_amount' => $cryptoAmount, 'external_id' => $locked->externalId()], $admin);
+
+            return true;
+        });
+        if (! $claimed) {
+            throw new UserFacingException(__('Payout #:id was changed by someone else in the meantime. Reload the page.', ['id' => $payout->id]));
+        }
+
+        try {
+            $taskId = $this->client->createPayout($crypto, $cryptoAmount, $payout->destination, $this->fee($crypto), $payout->externalId(), $this->callbackUrl());
+        } catch (ShkeeperException $e) {
+            Log::error('Shkeeper payout {payout_id} failed to start: {reason}', ['payout_id' => $payout->id, 'reason' => $e->getMessage()]);
+            if ($e->outcomeUnknown) {
+                // The transfer may be under way: keep it Processing so nobody sends or rejects it,
+                // and let the status poll (shop:reconcile-payouts) settle it.
+                $this->alerts->send(__('Payout #:id: Shkeeper did not answer', ['id' => $payout->id]), [
+                    __('The transfer may or may not have started. Do not pay it manually.'),
+                    __('The shop asks Shkeeper for its status every 5 minutes and updates the payout.'),
+                ], route('admin.payouts.index'), 'payout-unknown:'.$payout->id);
+
+                throw new UserFacingException(__('Shkeeper did not answer in time, so payout #:id may already be on its way. It stays "processing" until Shkeeper reports the result; do not pay it manually.', ['id' => $payout->id]));
+            }
+            $this->payouts->transitionAutomated($payout, PayoutStatus::Failed, [PayoutStatus::Processing], $admin, ['failure_reason' => mb_substr($e->getMessage(), 0, 500)]);
+
+            throw new UserFacingException(__('Shkeeper did not accept payout #:id: :reason', ['id' => $payout->id, 'reason' => $e->getMessage()]));
+        }
+
+        $payout->forceFill(['provider_reference' => $taskId])->save();
     }
 
     public function sendRefund(Order $order, int $amountMinor, string $crypto, string $destination, User $admin, ?string $reason, ?OrderItem $item = null): Payment
@@ -85,6 +128,13 @@ class ShkeeperPayoutService
             $cryptoAmount = $this->client->quote($crypto, $amountMinor, $order->currency);
             $taskId = $this->client->createPayout($crypto, $cryptoAmount, trim($destination), $this->fee($crypto), 'refund-'.$payment->id, $this->callbackUrl());
         } catch (ShkeeperException $e) {
+            if ($e->outcomeUnknown) {
+                // Possibly sent: the refund stays pending (and counts against the refundable
+                // amount) until the status poll reports SUCCESS or FAIL.
+                Log::error('Shkeeper refund {payment_id} outcome unknown: {reason}', ['payment_id' => $payment->id, 'reason' => $e->getMessage()]);
+
+                throw new UserFacingException(__('Shkeeper did not answer in time, so the refund may already be on its way. It stays pending until Shkeeper reports the result; do not refund this again.'));
+            }
             $this->refunds->failPending($payment, $e->getMessage());
             throw new UserFacingException(__('Shkeeper did not accept the refund transfer: :reason Nothing was refunded.', ['reason' => $e->getMessage()]));
         }
@@ -104,10 +154,13 @@ class ShkeeperPayoutService
     public function handleResult(string $externalId, string $status, ?string $txid): string
     {
         $status = strtoupper($status);
-        if (preg_match('/^payout-(\d+)$/', $externalId, $m)) {
+        if (preg_match('/^payout-(\d+)(?:-a\d+)?$/', $externalId, $m)) {
             $payout = Payout::with('seller')->find((int) $m[1]);
             if ($payout === null) {
                 return 'ignored';
+            }
+            if ($externalId !== $payout->externalId()) {
+                return $this->staleAttempt($payout, $externalId, $status, $txid);
             }
 
             return match ($status) {
@@ -147,19 +200,45 @@ class ShkeeperPayoutService
             return 0;
         }
         $updated = 0;
-        foreach (Payout::query()->where('status', PayoutStatus::Processing->value)->where('provider', 'shkeeper')->limit(100)->get() as $payout) {
-            $updated += $this->poll($payout->crypto, $payout->externalId());
+        $unknown = __('Shkeeper has no record of this transfer :minutes minutes after it was requested, so it was never sent.', ['minutes' => self::UNKNOWN_AFTER_MINUTES]);
+        foreach (Payout::query()->with('seller')->where('status', PayoutStatus::Processing->value)->where('provider', 'shkeeper')->limit(100)->get() as $payout) {
+            $updated += $this->poll($payout->crypto, $payout->externalId(), $payout->processed_at,
+                fn () => $this->payoutFailed($payout, $unknown));
         }
         $pending = Payment::query()->where('kind', PaymentKind::Refund->value)->where('provider', PaymentProvider::Shkeeper->value)
             ->where('status', PaymentStatus::Pending->value)->limit(100)->get();
         foreach ($pending as $payment) {
-            $updated += $this->poll((string) $payment->crypto, 'refund-'.$payment->id);
+            $updated += $this->poll((string) $payment->crypto, 'refund-'.$payment->id, $payment->created_at,
+                fn () => $this->refunds->failPending($payment, $unknown));
         }
 
         return $updated;
     }
 
-    private function poll(?string $crypto, string $externalId): int
+    /**
+     * A result for an earlier attempt than the one in flight. It never changes
+     * the payout, but a SUCCESS means that earlier transfer did go out after
+     * all, so the seller may now be paid twice: staff must check.
+     */
+    private function staleAttempt(Payout $payout, string $externalId, string $status, ?string $txid): string
+    {
+        Log::warning('Shkeeper result {status} for earlier attempt {external_id} of payout {payout_id} ignored', ['status' => $status, 'external_id' => $externalId, 'payout_id' => $payout->id]);
+        if ($status === 'SUCCESS') {
+            $this->alerts->send(__('Payout #:id: an earlier transfer attempt succeeded', ['id' => $payout->id]), [
+                __('Shkeeper reports :external as sent (transaction :txid), but the payout was sent again since.', ['external' => $externalId, 'txid' => $txid ?? '-']),
+                __('Check both transfers in Shkeeper; the seller may have been paid twice.'),
+            ], route('admin.payouts.index'), 'payout-stale:'.$externalId);
+        }
+
+        return 'ignored';
+    }
+
+    /**
+     * @param  callable(): mixed  $neverArrived  called when Shkeeper still does not know the
+     *                                           transfer long after it was requested (the request
+     *                                           that timed out never reached it)
+     */
+    private function poll(?string $crypto, string $externalId, ?\DateTimeInterface $requestedAt, callable $neverArrived): int
     {
         if ($crypto === null || $crypto === '') {
             return 0;
@@ -172,6 +251,12 @@ class ShkeeperPayoutService
             return 0;
         }
         if ($result === null) {
+            if ($requestedAt !== null && $requestedAt < now()->subMinutes(self::UNKNOWN_AFTER_MINUTES)) {
+                $neverArrived();
+
+                return 1;
+            }
+
             return 0;
         }
 

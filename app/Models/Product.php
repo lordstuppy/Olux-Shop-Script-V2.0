@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DeliveryType;
 use App\Enums\ProductStatus;
+use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,17 +98,18 @@ class Product extends Model
             || $this->licenseKeys()->exists();
     }
 
-    /** Listed products: active, and their seller's account is not suspended. */
+    /** Listed products: active, and their seller's account is active and still allowed to sell (not demoted to buyer). */
     public function scopeVisible(Builder $query): Builder
     {
         return $query->where('products.status', ProductStatus::Active->value)
-            ->whereExists(fn ($q) => $q->from('users')->whereColumn('users.id', 'products.seller_id')->where('users.status', UserStatus::Active->value));
+            ->whereExists(fn ($q) => $q->from('users')->whereColumn('users.id', 'products.seller_id')
+                ->where('users.status', UserStatus::Active->value)->where('users.role', '!=', UserRole::Buyer->value));
     }
 
     public function isPurchasable(): bool
     {
         return $this->status === ProductStatus::Active && ($this->stock === null || $this->stock > 0)
-            && $this->seller()->where('status', UserStatus::Active->value)->exists();
+            && $this->seller()->where('status', UserStatus::Active->value)->where('role', '!=', UserRole::Buyer->value)->exists();
     }
 
     public function isSoldOut(): bool

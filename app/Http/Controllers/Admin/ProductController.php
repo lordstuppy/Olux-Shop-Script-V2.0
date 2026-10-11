@@ -44,6 +44,8 @@ class ProductController extends Controller
     {
         abort_unless($file->product_id === $product->id, 404);
         abort_if($file->scan_status === 'infected', 410, __('This file was removed because it failed the virus scan.'));
+        // Not onto a reviewer's computer before the scanner has passed it.
+        abort_unless(in_array($file->scan_status, ['clean', 'skipped'], true), 409, __('This file has not passed the virus scan yet. Download it once the scan reports it clean.'));
         $audit->log('product.file_inspected', $product, ['file_id' => $file->id]);
 
         return Storage::disk('products')->download($file->storage_path, $file->original_name);

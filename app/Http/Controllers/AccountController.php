@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountSecurityMail;
 use App\Services\AuditLogger;
+use App\Services\Notifier;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -31,7 +34,7 @@ class AccountController extends Controller
 
     public function updateProfile(Request $request): RedirectResponse
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:80']]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:80', 'not_regex:/[\r\n]/']]);
         $request->user()->update(['name' => $data['name']]);
 
         return back()->with('success', __('Display name updated.'));
@@ -81,7 +84,10 @@ class AccountController extends Controller
         $request->session()->regenerate();
         // Database sessions: drop every other session of this user.
         DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
+        // A reset link requested before the change must not set a new password afterwards.
+        PasswordBroker::broker()->deleteToken($user);
         $audit->log('user.password_changed', $user, [], $user);
+        app(Notifier::class)->send($user, new AccountSecurityMail($user, 'password_changed'));
 
         return back()->with('success', __('Password changed. Other sessions were signed out.'));
     }

@@ -195,13 +195,18 @@ class DisputeService
      */
     public function resolveWithRefund(Dispute $dispute, User $staff, int $amountMinor, array $how, string $note): void
     {
+        // Moderators decide disputes, but moving money is a refund power
+        // (orders.manage: admin, manager, finance), like on the order page.
+        if (! $staff->can('orders.manage')) {
+            throw new UserFacingException(__('Refunds need a manager or the finance team. Add an internal note asking them to refund this item.'));
+        }
         $this->exclusively($dispute, fn () => $this->refundNow($dispute, $staff, $amountMinor, $how, $note));
     }
 
     /** @param  array{method: string, reference?: ?string, crypto?: ?string, destination?: ?string}  $how */
     private function refundNow(Dispute $dispute, User $staff, int $amountMinor, array $how, string $note): void
     {
-        $this->assertResolvable($dispute);
+        $this->assertResolvable($dispute, $staff);
         $order = $dispute->order;
         $item = $dispute->item;
         $reason = __('Dispute #:id', ['id' => $dispute->id]);
@@ -217,7 +222,7 @@ class DisputeService
     public function resolveWithReplacement(Dispute $dispute, User $staff, ?string $text, string $note): void
     {
         $this->exclusively($dispute, function () use ($dispute, $staff, $text, $note) {
-            $this->assertResolvable($dispute);
+            $this->assertResolvable($dispute, $staff);
             $summary = $this->delivery->replace($dispute->item, $text, $staff);
             $this->close($dispute, $staff, DisputeStatus::Resolved, DisputeResolution::Replacement, $note !== '' ? $note : $summary);
         });
@@ -229,7 +234,7 @@ class DisputeService
             throw new UserFacingException(__('Explain to the buyer why the dispute is rejected.'));
         }
         $this->exclusively($dispute, function () use ($dispute, $staff, $note) {
-            $this->assertResolvable($dispute);
+            $this->assertResolvable($dispute, $staff);
             $this->close($dispute, $staff, DisputeStatus::Resolved, DisputeResolution::Rejected, $note);
         });
     }
@@ -259,8 +264,12 @@ class DisputeService
         };
     }
 
-    private function assertResolvable(Dispute $dispute): void
+    private function assertResolvable(Dispute $dispute, ?User $staff = null): void
     {
+        // Staff who are the buyer or the seller of the case never decide it.
+        if ($staff !== null && in_array($staff->id, [$dispute->buyer_id, $dispute->seller_id], true)) {
+            throw new UserFacingException(__('You are a party to dispute #:id, so another team member has to resolve it.', ['id' => $dispute->id]));
+        }
         if (! $dispute->fresh()->isOpen()) {
             throw new UserFacingException(__('Dispute #:id is already closed.', ['id' => $dispute->id]));
         }

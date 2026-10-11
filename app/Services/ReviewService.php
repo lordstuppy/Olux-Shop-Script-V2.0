@@ -26,7 +26,7 @@ class ReviewService
     {
         return OrderItem::query()->where('product_id', $product->id)
             ->whereHas('order', fn ($q) => $q->where('buyer_id', $user->id)->whereIn('status', ['paid', 'delivered', 'partially_refunded']))
-            ->latest('id')->first();
+            ->latest('id')->get()->first(fn (OrderItem $item) => ! $item->isFullyRefunded());
     }
 
     public function submit(User $user, Product $product, int $rating, string $title, string $body): ProductReview

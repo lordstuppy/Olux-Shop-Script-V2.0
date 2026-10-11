@@ -15,13 +15,15 @@ class Payout extends Model
         return [
             'status' => PayoutStatus::class,
             'amount_minor' => 'integer',
+            'attempt' => 'integer',
             'processed_at' => 'datetime',
         ];
     }
 
+    /** Shkeeper external id of the current transfer attempt: payout-{id}, then payout-{id}-a2, -a3, ... */
     public function externalId(): string
     {
-        return 'payout-'.$this->id;
+        return 'payout-'.$this->id.((int) $this->attempt > 1 ? '-a'.$this->attempt : '');
     }
 
     public function seller(): BelongsTo

@@ -4,16 +4,32 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # New releases wait a week before a PR opens: most malicious package
+    # versions are found and pulled within days.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
   - package-ecosystem: npm
     directory: /tests/browser
     schedule:
       interval: weekly
+    # New releases wait a week before a PR opens: most malicious package
+    # versions are found and pulled within days.
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    # New releases wait a week before a PR opens: most malicious package
+    # versions are found and pulled within days.
+    cooldown:
+      default-days: 7
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    # New releases wait a week before a PR opens: most malicious package
+    # versions are found and pulled within days.
+    cooldown:
+      default-days: 7

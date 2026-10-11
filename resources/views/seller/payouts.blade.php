@@ -6,7 +6,7 @@
 
 @section('content')
     <h1>{{ __('Payouts') }}</h1>
-    <p>{{ __('Earnings become available :days days after a sale.', ['days' => $holdDays]) }} {{ __('Payouts go to') }} <span class="mono">{{ $profile?->payout_address }}</span>.</p>
+    <p>{{ __('Earnings for an item become available once it is delivered, at least :days days have passed since payment and the buyer\'s :window-day dispute window after delivery has closed.', ['days' => $holdDays, 'window' => $windowDays]) }} {{ __('Payouts go to') }} <span class="mono">{{ $profile?->payout_address }}</span>.</p>
 
     @if ($balances === [])
         <p>{{ __('No earnings yet.') }}</p>

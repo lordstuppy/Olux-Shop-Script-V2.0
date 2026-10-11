@@ -146,7 +146,7 @@ class ShkeeperClient
         Log::info('ShkeeperClient: createPayout {external_id} of {amount} {crypto}', ['external_id' => $externalId, 'amount' => $cryptoAmount, 'crypto' => $crypto]);
 
         try {
-            $response = $this->http->acceptJson()->timeout($this->timeout)->connectTimeout(5)
+            $response = $this->http->acceptJson()->timeout($this->timeout)->connectTimeout(5)->withoutRedirecting()
                 ->withBasicAuth($this->payoutUsername, $this->payoutPassword)
                 ->post($this->baseUrl.'/api/v1/'.rawurlencode($crypto).'/payout', [
                     'amount' => $cryptoAmount,
@@ -156,10 +156,13 @@ class ShkeeperClient
                     'callback_url' => $callbackUrl,
                 ]);
         } catch (ConnectionException $e) {
-            throw new ShkeeperException("Shkeeper is unreachable: {$e->getMessage()}", 0, $e);
+            // Only "could not resolve" (6) and "could not connect" (7) prove the request never arrived.
+            $neverSent = (bool) preg_match('/cURL error [67]\b/', $e->getMessage());
+            throw new ShkeeperException("Shkeeper is unreachable: {$e->getMessage()}", 0, $e, outcomeUnknown: ! $neverSent);
         }
         if (! $response->successful() || $response->json('status') === 'error') {
-            throw new ShkeeperException('Shkeeper payout request failed: HTTP '.$response->status().' '.mb_substr((string) ($response->json('msg') ?? $response->json('message')), 0, 200));
+            throw new ShkeeperException('Shkeeper payout request failed: HTTP '.$response->status().' '.mb_substr((string) ($response->json('msg') ?? $response->json('message')), 0, 200),
+                outcomeUnknown: $response->serverError());
         }
         $taskId = (string) $response->json('task_id');
         if ($taskId === '') {
@@ -177,7 +180,14 @@ class ShkeeperClient
     public function payoutStatus(string $crypto, string $externalId): ?array
     {
         $this->assertCrypto($crypto);
-        $response = $this->send('GET', '/api/v1/'.rawurlencode($crypto).'/payout/status?external_id='.rawurlencode($externalId));
+        try {
+            $response = $this->send('GET', '/api/v1/'.rawurlencode($crypto).'/payout/status?external_id='.rawurlencode($externalId));
+        } catch (ShkeeperException $e) {
+            if ($e->getCode() === 404) {
+                return null; // Shkeeper has no payout with this external id
+            }
+            throw $e;
+        }
         // Shkeeper answers with the payout record: id, external_id, crypto, status (SUCCESS, IN_PROGRESS, FAIL), amount, destination, txid.
         if ($response->json('external_id') === null) {
             return null;
@@ -255,7 +265,7 @@ class ShkeeperClient
 
         if (! $response->successful()) {
             GatewayLog::record('api', 'error', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed(), 'message' => 'HTTP '.$response->status()]);
-            throw new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.");
+            throw new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.", $response->status());
         }
         if ($response->json('status') === 'error') {
             $message = mb_substr((string) ($response->json('message') ?? $response->json('msg')), 0, 200);
@@ -269,7 +279,8 @@ class ShkeeperClient
 
     private function request(bool $authenticated): PendingRequest
     {
-        $request = $this->http->acceptJson()->timeout($this->timeout)->connectTimeout(5);
+        // Never follow redirects: the API key and payout credentials must not travel to another host.
+        $request = $this->http->acceptJson()->timeout($this->timeout)->connectTimeout(5)->withoutRedirecting();
 
         return $authenticated ? $request->withHeaders(['X-Shkeeper-Api-Key' => (string) $this->apiKey]) : $request;
     }

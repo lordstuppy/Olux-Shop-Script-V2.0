@@ -6,6 +6,7 @@ use App\Exceptions\UserFacingException;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -33,9 +34,17 @@ class SessionController extends Controller
         if (! $deleted) {
             throw new UserFacingException(__('That session no longer exists.'));
         }
+        // A "keep me signed in" cookie on that device would sign it straight back
+        // in, so the remember token changes too (it is one per account); this
+        // device keeps its own cookie by being remembered again.
+        $user->forceFill(['remember_token' => Str::random(60)])->save();
+        $guard = Auth::guard();
+        if ($request->hasCookie($guard->getRecallerName())) {
+            $guard->login($user, true);
+        }
         $audit->log('user.session_revoked', $user, [], $user);
 
-        return back()->with('success', __('The session was signed out.'));
+        return back()->with('success', __('The session was signed out. Devices that were kept signed in have to sign in again.'));
     }
 
     public function destroyOthers(Request $request, AuditLogger $audit): RedirectResponse

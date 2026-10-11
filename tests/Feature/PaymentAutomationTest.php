@@ -65,7 +65,8 @@ class PaymentAutomationTest extends TestCase
         $buyer = User::factory()->withBalance($price)->create();
         $order = app(OrderService::class)->createFromCart($buyer, [$product->id => 1], 'USD', (string) Str::uuid());
         app(PaymentService::class)->payWithBalance($order, $buyer);
-        $this->travel(8)->days();
+        // Past the payout hold and the buyer's dispute window.
+        $this->travel(15)->days();
 
         return $seller;
     }

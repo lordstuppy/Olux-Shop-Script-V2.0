@@ -56,6 +56,16 @@ class DisputeTest extends TestCase
         DeliverOrder::dispatchSync($this->order->id);
     }
 
+    /** What the seller could withdraw once the buyer's dispute window has closed (the clock is reset afterwards). */
+    private function availableAfterWindow(User $seller): int
+    {
+        $this->travel((int) config('shop.dispute_window_days') + 1)->days();
+        $available = app(PayoutService::class)->balances($seller)['USD']['available'];
+        $this->travelBack();
+
+        return $available;
+    }
+
     private function productFromNewSeller(array $attributes): Product
     {
         $seller = User::factory()->seller()->create();
@@ -91,8 +101,7 @@ class DisputeTest extends TestCase
     public function test_buyer_opens_a_dispute_and_the_sellers_earnings_are_held(): void
     {
         $seller = $this->keyProduct->seller;
-        $before = app(PayoutService::class)->balances($seller)['USD']['available'];
-        $this->assertSame(3600, $before);
+        $this->assertSame(3600, $this->availableAfterWindow($seller));
 
         $this->actingAs($this->buyer)->get(route('orders.show', $this->order))->assertSee('Report a problem with this item');
         $this->get(route('disputes.create', [$this->order, $this->keyItem()]))->assertOk()->assertSee('What went wrong?');
@@ -110,7 +119,7 @@ class DisputeTest extends TestCase
         $this->assertSame(3600, $balance['disputed']);
         $this->assertSame(0, $balance['available']);
         // The other seller in the same order is not affected.
-        $this->assertSame(5400, app(PayoutService::class)->balances($this->otherSellerProduct->seller)['USD']['available']);
+        $this->assertSame(5400, $this->availableAfterWindow($this->otherSellerProduct->seller));
 
         $this->get(route('orders.show', $this->order))->assertSee('Dispute #'.$dispute->id);
         $this->get(route('disputes.show', $dispute))->assertOk()->assertSee('The key says it is already in use.');
@@ -192,7 +201,7 @@ class DisputeTest extends TestCase
 
         $payouts = app(PayoutService::class);
         $this->assertSame(['total' => 0, 'pending' => 0, 'disputed' => 0, 'available' => 0], $payouts->balances($this->keyProduct->seller)['USD']);
-        $this->assertSame(5400, $payouts->balances($this->otherSellerProduct->seller)['USD']['available']);
+        $this->assertSame(5400, $this->availableAfterWindow($this->otherSellerProduct->seller));
         $this->assertSame([], $payouts->reconcile());
         Mail::assertQueued(DisputeResolvedMail::class, 2);
 
@@ -212,7 +221,7 @@ class DisputeTest extends TestCase
         $this->assertSame(DisputeResolution::Replacement, $dispute->fresh()->resolution);
         $this->assertStringContainsString('1 new licence key', $dispute->fresh()->resolution_note);
         $this->actingAs($this->buyer)->get(route('orders.show', $this->order))->assertSee($payload['license_keys'][0]);
-        $this->assertSame(3600, app(PayoutService::class)->balances($this->keyProduct->seller)['USD']['available']);
+        $this->assertSame(3600, $this->availableAfterWindow($this->keyProduct->seller));
     }
 
     public function test_rejection_needs_a_reason_and_releases_the_hold(): void
@@ -223,8 +232,30 @@ class DisputeTest extends TestCase
             ->assertSessionHas('error', 'Explain to the buyer why the dispute is rejected.');
         $this->postForm(route('admin.disputes.resolve', $dispute), ['action' => 'reject', 'note' => 'The key was activated by you on 3 devices.'])->assertSessionHas('success');
         $this->assertSame(DisputeResolution::Rejected, $dispute->fresh()->resolution);
-        $this->assertSame(3600, app(PayoutService::class)->balances($this->keyProduct->seller)['USD']['available']);
+        $this->assertSame(3600, $this->availableAfterWindow($this->keyProduct->seller));
         $this->actingAs($this->buyer)->get(route('disputes.show', $dispute))->assertSee('The key was activated by you on 3 devices.');
+    }
+
+    // SEC-02: moderators decide disputes but cannot move money; nobody decides their own case.
+    public function test_sec02_moderator_cannot_refund_and_parties_cannot_resolve(): void
+    {
+        $dispute = $this->openDispute('refund');
+        $this->staff(UserRole::Moderator);
+        $this->get(route('disputes.show', $dispute))->assertSee('Refunds need a manager or the finance team')->assertDontSee('Refund and close');
+        $this->postForm(route('admin.disputes.resolve', $dispute), ['action' => 'refund', 'amount' => '40.00', 'method' => 'balance'])
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'Refunds need a manager'));
+        $this->postForm(route('admin.disputes.resolve', $dispute), ['action' => 'refund', 'amount' => '40.00', 'method' => 'shkeeper', 'crypto' => 'BTC', 'destination' => 'bc1qmoderatorwallet'])
+            ->assertSessionHas('error');
+        $this->assertSame(0, $this->keyItem()->refunded_minor);
+        $this->assertSame(0, $this->buyer->fresh()->balance_minor);
+        $this->assertTrue($dispute->fresh()->isOpen());
+
+        // A staff member who is the buyer of the case cannot resolve it either.
+        $this->buyer->forceFill(['role' => UserRole::Manager, 'two_factor_secret' => 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP', 'two_factor_recovery_codes' => [], 'two_factor_confirmed_at' => now()])->save();
+        $this->actingAs($this->buyer->fresh())->confirmPassword();
+        $this->postForm(route('admin.disputes.resolve', $dispute), ['action' => 'refund', 'amount' => '40.00', 'method' => 'balance'])
+            ->assertSessionHas('error', fn ($m) => str_contains($m, 'You are a party'));
+        $this->assertSame(0, $this->buyer->fresh()->balance_minor);
     }
 
     public function test_buyer_can_withdraw(): void

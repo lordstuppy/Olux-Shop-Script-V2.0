@@ -65,7 +65,7 @@ class AuthController extends Controller
             $request->merge(['email' => Str::lower(trim($request->input('email')))]);
         }
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
+            'name' => ['required', 'string', 'max:80', 'not_regex:/[\r\n]/'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', 'max:255', Password::min(12)->letters()->numbers()],
             'accept_terms' => ['accepted'],

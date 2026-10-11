@@ -54,6 +54,8 @@
                                 @endif
                             @elseif (auth()->id() !== $order->buyer_id)
                                 {{ __('Delivered :time UTC.', ['time' => $item->delivered_at->format('Y-m-d H:i')]) }}
+                            @elseif ($item->isFullyRefunded())
+                                <span class="muted">{{ __('This item was refunded; its downloads and keys are no longer available.') }}</span>
                             @else
                                 @php $payload = $item->delivered_payload ?? []; @endphp
                                 @if ($item->access_expires_at)

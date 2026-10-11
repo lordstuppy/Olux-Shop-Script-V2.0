@@ -22,7 +22,9 @@ return [
 
     /*
     | Seller earnings become available for payout this many days after the
-    | sale, which leaves room for refunds.
+    | sale, which leaves room for refunds. Independently, a line's earning is
+    | held until the item is delivered and its dispute window has closed
+    | (PayoutService::balances).
     */
     'payout_hold_days' => (int) env('SHOP_PAYOUT_HOLD_DAYS', 7),
 
@@ -76,6 +78,7 @@ return [
         'checkout' => (int) env('RATE_LIMIT_CHECKOUT', 10),
         'redeem' => (int) env('RATE_LIMIT_REDEEM', 5),
         'forms' => (int) env('RATE_LIMIT_FORMS', 30),
+        'uploads_per_hour' => (int) env('RATE_LIMIT_UPLOADS_PER_HOUR', 60),
         'webhook' => (int) env('RATE_LIMIT_WEBHOOK', 120),
         'search' => (int) env('RATE_LIMIT_SEARCH', 60),
     ],
@@ -107,6 +110,16 @@ return [
 
     // Downloads allowed per purchased item (products may override).
     'max_downloads_per_item' => (int) env('SHOP_MAX_DOWNLOADS', 10),
+
+    // Absolute URLs (links in emails, the Shkeeper callback URL) are built from
+    // APP_URL, never from the request's Host header. Off only for local
+    // development and tests, where the app is reached under several hosts.
+    'pin_app_url' => (bool) env('SHOP_PIN_APP_URL', ! in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)),
+
+    // Files a product may deliver at once and the total size of all files a
+    // seller keeps (MB); both bound what one seller account can store.
+    'max_product_files' => (int) env('SHOP_MAX_PRODUCT_FILES', 20),
+    'seller_storage_mb' => (int) env('SHOP_SELLER_STORAGE_MB', 5120),
 
     // Images per product and maximum upload size per image (KB).
     'max_product_images' => 6,

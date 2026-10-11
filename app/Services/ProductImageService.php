@@ -24,7 +24,8 @@ class ProductImageService
 
     private const THUMB = 480;
 
-    private const MAX_PIXELS = 40000000;
+    // 25 megapixels decode to about 100 MB in GD, well inside memory_limit.
+    private const MAX_PIXELS = 25000000;
 
     public function store(Product $product, UploadedFile $upload, ?string $alt): ProductImage
     {
@@ -38,7 +39,7 @@ class ProductImageService
         }
         [$width, $height] = $info;
         if ($width < 1 || $height < 1 || $width * $height > self::MAX_PIXELS) {
-            throw new UserFacingException(__('The image dimensions are not supported (at most 40 megapixels).'));
+            throw new UserFacingException(__('The image dimensions are not supported (at most 25 megapixels).'));
         }
 
         $source = @imagecreatefromstring((string) file_get_contents($upload->getRealPath()));

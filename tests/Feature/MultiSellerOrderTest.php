@@ -42,6 +42,7 @@ class MultiSellerOrderTest extends TestCase
 
         // Each seller earns from their own line at their own rate, and gets their own sale email.
         $payouts = app(PayoutService::class);
+        $this->travel(15)->days(); // past the dispute window
         $this->assertSame(2700, $payouts->balances($first)['USD']['available']);
         $this->assertSame(1600, $payouts->balances($second)['USD']['available']);
         Mail::assertQueued(SellerSaleMail::class, fn ($m) => $m->hasTo($first->email));

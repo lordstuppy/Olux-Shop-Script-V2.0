@@ -37,6 +37,7 @@ class CartController extends Controller
         $data = $request->validate([
             'quantity' => ['required', 'integer', 'min:0', 'max:'.config('shop.max_quantity_per_line')],
         ]);
+        $this->assertKnown($product, $cart);
         $cart->update($product, (int) $data['quantity']);
 
         $message = (int) $data['quantity'] === 0
@@ -48,9 +49,20 @@ class CartController extends Controller
 
     public function remove(Product $product, CartService $cart): RedirectResponse
     {
+        $this->assertKnown($product, $cart);
         $cart->remove($product->id);
 
         return redirect()->route('cart.show')->with('success', __('Removed ":title" from your cart.', ['title' => $product->title]));
+    }
+
+    /**
+     * Unlisted products (drafts, under review, disabled, suspended seller) are
+     * only answered for when they are already in this cart, so the messages
+     * cannot be used to read their titles or stock by walking product ids.
+     */
+    private function assertKnown(Product $product, CartService $cart): void
+    {
+        abort_unless(array_key_exists($product->id, $cart->rawItems()) || Product::query()->visible()->whereKey($product->id)->exists(), 404);
     }
 
     public function currency(Request $request, CartService $cart): RedirectResponse

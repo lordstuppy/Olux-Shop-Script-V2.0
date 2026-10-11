@@ -24,7 +24,7 @@ class SellerApplicationController extends Controller
     public function store(Request $request, UserService $users): RedirectResponse
     {
         $data = $request->validate([
-            'display_name' => ['required', 'string', 'max:80'],
+            'display_name' => ['required', 'string', 'max:80', 'not_regex:/[\r\n]/'],
             'payout_currency' => ['required', Rule::in(Money::supported())],
             'payout_crypto' => ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9_-]+$/'],
             'payout_address' => ['required', 'string', 'min:10', 'max:255', 'regex:/^[A-Za-z0-9:_.-]+$/'],

@@ -72,7 +72,12 @@ class RefundAndPayoutTest extends TestCase
         $this->postForm(route('seller.payouts.store'), ['amount' => '50.00', 'currency' => 'USD'])
             ->assertSessionHas('error', 'Requested 50.00 USD but only 0.00 USD is available for payout.');
 
+        // After the 7-day hold the buyer's 14-day dispute window is still open,
+        // so the money a buyer could still claim back stays on hold.
         $this->travel(8)->days();
+        $this->assertSame(0, app(PayoutService::class)->balances($seller)['USD']['available']);
+        $this->assertSame(9000, app(PayoutService::class)->balances($seller)['USD']['pending']);
+        $this->travel(7)->days();
         $balances = app(PayoutService::class)->balances($seller);
         $this->assertSame(9000, $balances['USD']['available']);
 
@@ -93,7 +98,7 @@ class RefundAndPayoutTest extends TestCase
     {
         $seller = User::factory()->seller()->create();
         $this->paidOrder(10000, 1, $seller);
-        $this->travel(8)->days();
+        $this->travel(15)->days();
         $payout = app(PayoutService::class)->requestPayout($seller, 9000, 'USD');
 
         $this->actingAs(User::factory()->admin()->create())->confirmPassword();

@@ -33,7 +33,9 @@ class WishlistController extends Controller
 
     public function destroy(Request $request, Product $product): RedirectResponse
     {
-        WishlistItem::query()->where('user_id', $request->user()->id)->where('product_id', $product->id)->delete();
+        $removed = WishlistItem::query()->where('user_id', $request->user()->id)->where('product_id', $product->id)->delete();
+        // Name the product only when it was on this wishlist (unlisted titles stay private).
+        abort_if($removed === 0 && ! Product::query()->visible()->whereKey($product->id)->exists(), 404);
 
         return back()->with('success', __('":title" removed from your wishlist.', ['title' => $product->title]));
     }

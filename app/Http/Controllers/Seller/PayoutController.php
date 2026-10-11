@@ -24,6 +24,7 @@ class PayoutController extends Controller
             'payouts' => Payout::query()->where('seller_id', $seller->id)->latest('id')->paginate(20),
             'profile' => $seller->sellerProfile,
             'holdDays' => (int) config('shop.payout_hold_days'),
+            'windowDays' => (int) config('shop.dispute_window_days'),
         ]);
     }
 

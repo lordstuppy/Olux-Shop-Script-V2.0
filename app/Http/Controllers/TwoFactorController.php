@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\UserFacingException;
+use App\Mail\AccountSecurityMail;
 use App\Models\User;
+use App\Services\Notifier;
 use App\Services\TwoFactorService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +18,9 @@ class TwoFactorController extends Controller
 {
     private const SETUP_KEY = 'two_factor.setup_secret';
 
+    /** Two-factor codes one account may try per hour at sign-in (about 240 guesses a day at most). */
+    private const CODES_PER_HOUR = 10;
+
     /** Step two of signing in. */
     public function challenge(Request $request): View|RedirectResponse
     {
@@ -26,7 +31,7 @@ class TwoFactorController extends Controller
         return view('auth.two-factor-challenge');
     }
 
-    public function verifyChallenge(Request $request, TwoFactorService $twoFactor, UserService $users): RedirectResponse
+    public function verifyChallenge(Request $request, TwoFactorService $twoFactor, UserService $users, Notifier $notifier): RedirectResponse
     {
         $user = $this->pendingUser($request);
         if ($user === null) {
@@ -34,16 +39,26 @@ class TwoFactorController extends Controller
         }
         $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
 
+        // Counted before the check, so parallel requests cannot all slip under the
+        // limit: 5 codes a minute and 10 an hour per account, whatever the IP.
         $key = 'two-factor:'.$user->id;
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw new UserFacingException(__('Too many incorrect codes. Wait :seconds seconds and try again.', ['seconds' => RateLimiter::availableIn($key)]));
+        $hourKey = 'two-factor-hour:'.$user->id;
+        $perMinute = RateLimiter::hit($key, 60);
+        $perHour = RateLimiter::hit($hourKey, 3600);
+        if ($perHour === self::CODES_PER_HOUR + 1) {
+            Log::warning('Two-factor sign-in paused for user {user_id} after {count} codes in an hour', ['user_id' => $user->id, 'count' => self::CODES_PER_HOUR]);
+            $notifier->send($user, new AccountSecurityMail($user, 'two_factor_locked'));
+        }
+        if ($perMinute > 5 || $perHour > self::CODES_PER_HOUR) {
+            $wait = max(RateLimiter::availableIn($key), $perHour > self::CODES_PER_HOUR ? RateLimiter::availableIn($hourKey) : 0);
+            throw new UserFacingException(__('Too many incorrect codes. Wait :seconds seconds and try again.', ['seconds' => $wait]));
         }
         if (! $twoFactor->verify($user, $data['code'])) {
-            RateLimiter::hit($key, 60);
             Log::notice('Invalid two-factor code for user {user_id}', ['user_id' => $user->id]);
             throw new UserFacingException(__('That code is not valid. Enter the current 6-digit code from your authenticator app, or a recovery code.'));
         }
         RateLimiter::clear($key);
+        RateLimiter::clear($hourKey);
 
         $pending = $request->session()->pull('login.two_factor');
         $users->completeLogin($user, (bool) ($pending['remember'] ?? false), $request);
@@ -75,7 +90,12 @@ class TwoFactorController extends Controller
 
     public function enable(Request $request, TwoFactorService $twoFactor): RedirectResponse
     {
-        $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
+        // The password too: a stolen session alone must not be able to bind the
+        // account to the thief's authenticator and lock the owner out.
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:20'],
+            'current_password' => ['required', 'current_password'],
+        ], ['current_password.current_password' => __('The current password is incorrect.')]);
         $secret = $request->session()->get(self::SETUP_KEY);
         if (! is_string($secret)) {
             throw new UserFacingException(__('The setup expired. Scan the new QR code and try again.'));
@@ -103,7 +123,8 @@ class TwoFactorController extends Controller
 
     public function regenerate(Request $request, TwoFactorService $twoFactor): RedirectResponse
     {
-        $codes = $twoFactor->regenerateRecoveryCodes($request->user());
+        $data = $request->validate(['code' => ['required', 'string', 'max:20']]);
+        $codes = $twoFactor->regenerateRecoveryCodes($request->user(), $data['code']);
 
         return redirect()->route('account.two-factor')
             ->with('two_factor.recovery_codes', $codes)
