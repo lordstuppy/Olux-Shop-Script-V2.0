@@ -87,6 +87,8 @@
 }
 
 * { box-sizing: border-box; }
+/* The hidden attribute always wins over display rules such as .badge. */
+[hidden] { display: none !important; }
 body { margin: 0; }
 img, svg { max-width: 100%; height: auto; }
 a { color: var(--brand); }
