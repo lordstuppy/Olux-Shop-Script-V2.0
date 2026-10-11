@@ -1,0 +1,18 @@
+{
+  "revision": "7e3e81b9934708f6d6a8e4f72f7566ae8aec2afe",
+  "working_tree_dirty": false,
+  "generated": "2026-10-11T22:16:16Z",
+  "tools": {"semgrep": "1.180.0", "gitleaks": "zricethezav/gitleaks:v8.21.2", "trivy": "aquasec/trivy:0.57.1", "osv": "ghcr.io/google/osv-scanner:v1.9.1"},
+  "status": "PASS",
+  "checks": [
+    {"id":"deps-composer","title":"Composer advisories and abandoned packages","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:23Z","finished":"2026-10-11T22:14:24Z","log":"deps-composer.log"},
+    {"id":"deps-npm","title":"npm advisories (high and critical)","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:24Z","finished":"2026-10-11T22:14:24Z","log":"deps-npm.log"},
+    {"id":"deps-osv","title":"OSV database scan of all lockfiles","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:24Z","finished":"2026-10-11T22:14:25Z","log":"deps-osv.log"},
+    {"id":"secrets-history","title":"Secret scan of the full git history (gitleaks)","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:25Z","finished":"2026-10-11T22:14:56Z","log":"secrets-history.log"},
+    {"id":"secrets-env","title":"No environment files tracked","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:56Z","finished":"2026-10-11T22:14:56Z","log":"secrets-env.log"},
+    {"id":"sast","title":"Static analysis: project rules and Semgrep registry rulesets","status":"PASS","exit_code":0,"started":"2026-10-11T22:14:56Z","finished":"2026-10-11T22:15:05Z","log":"sast.log"},
+    {"id":"iac","title":"Container and infrastructure configuration (Trivy config)","status":"PASS","exit_code":0,"started":"2026-10-11T22:15:05Z","finished":"2026-10-11T22:15:09Z","log":"iac.log"},
+    {"id":"image","title":"Runtime image vulnerabilities, app and web (Trivy image)","status":"PASS","exit_code":0,"started":"2026-10-11T22:15:09Z","finished":"2026-10-11T22:15:58Z","log":"image.log"},
+    {"id":"security-tests","title":"Security regression tests (PHPUnit)","status":"PASS","exit_code":0,"started":"2026-10-11T22:15:58Z","finished":"2026-10-11T22:16:16Z","log":"security-tests.log"}
+  ]
+}

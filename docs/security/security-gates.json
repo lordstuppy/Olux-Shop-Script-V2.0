@@ -1,0 +1,267 @@
+{
+  "audit_date": "2026-10-11",
+  "release_candidate": {
+    "revision": "34fd05c",
+    "images": [
+      "digital-goods-shop:latest (built from 34fd05c)",
+      "digital-goods-shop-web:latest (built from 34fd05c)"
+    ],
+    "note": "Later commits change only documentation and test harnesses."
+  },
+  "owasp_edition": "OWASP Top 10:2025 (November 2025), https://owasp.org/Top10/2025/",
+  "decision": "BLOCKED - DO NOT SHIP",
+  "decision_reason": "No open critical or high finding, but mandatory gates are BLOCKED or NOT VERIFIED: deployment-owned controls (TLS, secrets, database role, branch protection), unapproved exceptions, authenticated DAST and production-size load testing.",
+  "counts": {
+    "PASS": 12,
+    "BLOCKED": 4,
+    "NOT VERIFIED": 2,
+    "NOT APPLICABLE": 1
+  },
+  "findings": {
+    "critical": 0,
+    "high": 5,
+    "medium": 14,
+    "low": 18,
+    "info": 2,
+    "total": 39,
+    "fixed_and_retested": 38,
+    "open": 1,
+    "open_ids": [
+      "SEC-30 (Low)"
+    ]
+  },
+  "gates": [
+    {
+      "id": "G01",
+      "name": "Repository and attack-surface discovery",
+      "status": "PASS",
+      "summary": "All 189 routes inventoried and classified (access, controls, asset); stack, integrations, CI, containers, AI (none) identified",
+      "evidence": [
+        "security-attack-surface.md#7-entry-point-inventory-all-189-routes"
+      ],
+      "residual_risks": []
+    },
+    {
+      "id": "G02",
+      "name": "Threat model and trust boundaries",
+      "status": "PASS",
+      "summary": "Assets, identities, trust boundaries, 11 abuse cases with controls and tests",
+      "evidence": [
+        "security-attack-surface.md#5-threat-model-abuse-cases-and-controls"
+      ],
+      "residual_risks": []
+    },
+    {
+      "id": "G03",
+      "name": "Dependencies and software supply chain",
+      "status": "BLOCKED",
+      "summary": "0 advisories (Composer, npm, OSV); app and web images pass Trivy HIGH/CRITICAL; actions pinned. Blocked only by the unapproved exceptions R-04 (postgres image gosu, not reachable) and R-05 (third-party vendor docs files)",
+      "evidence": [
+        "security-dependencies.md",
+        "evidence/security-gate-results.json"
+      ],
+      "residual_risks": [
+        "R-04",
+        "R-05",
+        "R-06"
+      ]
+    },
+    {
+      "id": "G04",
+      "name": "Authentication, sessions, account recovery",
+      "status": "PASS",
+      "summary": "Brute force, 2FA budget, token reuse, session/remember-token revocation, reset-token lifetime and anti-enumeration timing verified by tests and probes. Open low finding SEC-30 (registration reveals emails) proposed as accepted risk",
+      "evidence": [
+        "security-findings.md",
+        "evidence/dynamic-probes.json"
+      ],
+      "residual_risks": [
+        "R-01"
+      ]
+    },
+    {
+      "id": "G05",
+      "name": "Authorization, privilege escalation, tenant isolation",
+      "status": "PASS",
+      "summary": "Every route parameter has a server-side check; cross-user and cross-role tests (PHPUnit, simulation); self-dealing blocked. Row-level security not used: single application role, isolation enforced in code (justified)",
+      "evidence": [
+        "security-attack-surface.md#6-database-access-and-row-level-security",
+        "security-attack-surface.md#8-object-level-checks-behind-the-route-parameters"
+      ],
+      "residual_risks": [
+        "R-03",
+        "R-08"
+      ]
+    },
+    {
+      "id": "G06",
+      "name": "Input validation and injection",
+      "status": "PASS",
+      "summary": "No interpolated SQL, no unescaped HTML output, text-only mails, CSV formula escaping; Semgrep registry and project rules clean; ZAP active scan: no injection",
+      "evidence": [
+        "evidence/zap-full-scan.md",
+        "evidence/security-gate-results.json"
+      ],
+      "residual_risks": []
+    },
+    {
+      "id": "G07",
+      "name": "CSRF, CORS, browser and transport security",
+      "status": "BLOCKED",
+      "summary": "CSRF (419), no CORS headers, CSP/HSTS/XFO/nosniff/COOP verified on the production images. Blocked: the production TLS terminator is deployment-owned and not available",
+      "evidence": [
+        "evidence/dynamic-probes.json",
+        "evidence/zap-baseline.md"
+      ],
+      "residual_risks": [
+        "R-07"
+      ]
+    },
+    {
+      "id": "G08",
+      "name": "File uploads, downloads, path traversal",
+      "status": "PASS",
+      "summary": "Generated names, private disks, signed + owned downloads, ClamAV fail-closed, 25 MP decode cap, quotas, throttling, 413 above 55 MB, traversal probes 400/403/404",
+      "evidence": [
+        "security-findings.md",
+        "evidence/dynamic-probes.json"
+      ],
+      "residual_risks": [
+        "R-15"
+      ]
+    },
+    {
+      "id": "G09",
+      "name": "SSRF, external requests, webhooks",
+      "status": "PASS",
+      "summary": "No user-controlled outbound URLs; Shkeeper client without redirects; HMAC + timestamp + de-dup verified (401 for unsigned, wrong, stale); callback URL pinned to APP_URL",
+      "evidence": [
+        "evidence/dynamic-probes.json",
+        "security-findings.md"
+      ],
+      "residual_risks": [
+        "R-11"
+      ]
+    },
+    {
+      "id": "G10",
+      "name": "Business logic and financial abuse",
+      "status": "PASS",
+      "summary": "Earnings held through the dispute window, claim-before-transfer with per-attempt ids, unknown outcomes pending, refund caps under locks, self-dealing blocked; simulation scenarios incl. concurrency",
+      "evidence": [
+        "security-remediation-log.md"
+      ],
+      "residual_risks": [
+        "R-02",
+        "R-14",
+        "R-16"
+      ]
+    },
+    {
+      "id": "G11",
+      "name": "API security, abuse prevention, DoS",
+      "status": "NOT VERIFIED",
+      "summary": "Per-route limits verified (cannot be bypassed with forwarded headers), body/header/query limits at nginx. Behaviour under load at production size not verified (4-core sandbox)",
+      "evidence": [
+        "evidence/dynamic-probes.json"
+      ],
+      "residual_risks": [
+        "R-13"
+      ]
+    },
+    {
+      "id": "G12",
+      "name": "Secrets, configuration, infrastructure",
+      "status": "BLOCKED",
+      "summary": "No secret in 96 commits (gitleaks); .env untracked; containers read-only, no capabilities, unprivileged; debug off. Blocked: secret storage, DB role, network egress and backups are deployment-owned",
+      "evidence": [
+        "evidence/security-gate-results.json"
+      ],
+      "residual_risks": [
+        "R-07",
+        "R-08"
+      ]
+    },
+    {
+      "id": "G13",
+      "name": "Logging, monitoring, incident readiness",
+      "status": "PASS",
+      "summary": "Failed logins (hashed email), 2FA abuse, webhook signature failures, 403/419/429, admin actions (audit log), owner security mails; no secrets in logs (checked on the stack)",
+      "evidence": [
+        "security-findings.md#sec-34-refused-requests-not-logged-low-a09"
+      ],
+      "residual_risks": [
+        "R-07"
+      ]
+    },
+    {
+      "id": "G14",
+      "name": "AI and LLM security",
+      "status": "NOT APPLICABLE",
+      "summary": "No model, agent, retrieval or prompt in the repository (searched code and dependencies)",
+      "evidence": [],
+      "residual_risks": []
+    },
+    {
+      "id": "G15",
+      "name": "OWASP Top 10:2025 mapping",
+      "status": "PASS",
+      "summary": "All ten categories assessed with evidence; no ASVS level claimed",
+      "evidence": [
+        "security-owasp-mapping.md"
+      ],
+      "residual_risks": []
+    },
+    {
+      "id": "G16",
+      "name": "Automated SAST, DAST, SCA, IaC, image testing",
+      "status": "NOT VERIFIED",
+      "summary": "All gate scans pass; ZAP baseline and unauthenticated active scan (223 URLs): no failures. Authenticated DAST per role not run",
+      "evidence": [
+        "evidence/security-gate-results.json",
+        "evidence/zap-full-scan.md"
+      ],
+      "residual_risks": [
+        "R-03"
+      ]
+    },
+    {
+      "id": "G17",
+      "name": "Remediation and regression verification",
+      "status": "PASS",
+      "summary": "39 findings: 38 fixed, each with a regression test that failed before the fix (or a probe), 1 open low (SEC-30)",
+      "evidence": [
+        "security-remediation-log.md",
+        "evidence/regression-tests-before-fix.txt"
+      ],
+      "residual_risks": [
+        "R-01"
+      ]
+    },
+    {
+      "id": "G18",
+      "name": "Final independent reassessment",
+      "status": "PASS",
+      "summary": "Independent review of the fix diff (5 problems found and fixed), images rebuilt from the candidate, gate, probes and full simulation re-run on the candidate",
+      "evidence": [
+        "security-findings.md#independent-review-sec-35-to-sec-39"
+      ],
+      "residual_risks": [
+        "R-10"
+      ]
+    },
+    {
+      "id": "G19",
+      "name": "CI/CD enforcement",
+      "status": "BLOCKED",
+      "summary": "CI job 'security' runs scripts/security-gate.sh and fails on any failing or unrunnable check; CODEOWNERS added. Blocked: branch protection and required checks need a repository admin",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        "../../scripts/security-gate.sh"
+      ],
+      "residual_risks": [
+        "R-09"
+      ]
+    }
+  ]
+}

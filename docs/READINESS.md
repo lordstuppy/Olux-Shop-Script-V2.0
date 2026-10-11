@@ -353,3 +353,23 @@ Bugs found while testing, all fixed:
 - A staff-only note changed the version a customer's ticket page reported.
 - A freshly created user object read the new sound setting as off.
 
+
+## 10. Security audit (2026-10-11)
+
+A full security audit with release gates followed this checklist:
+[docs/security/security-audit-summary.md](security/security-audit-summary.md).
+It fixed 38 of 39 findings (none critical, five high) and leaves the release
+**blocked** until the deployment-owned checks, the exception approvals,
+branch protection, authenticated DAST and a production-size load test are
+done ([security-residual-risks.md](security/security-residual-risks.md)).
+Behaviour changes to know before going live:
+
+- Seller earnings are payable only after delivery and the buyer's dispute
+  window (14 days), not 7 days after the sale.
+- Turning on two-factor authentication asks for the password; new recovery
+  codes ask for a current code.
+- Moderators decide disputes but refunds need a manager or finance; staff
+  cannot act on their own orders, payouts or balance.
+- The web container is built from `docker/nginx/Dockerfile`; set
+  `NGINX_TRUSTED_PROXY` when a TLS terminator sits in front of it
+  (docs/OPERATIONS.md, "Reverse proxy, client addresses and TLS").
