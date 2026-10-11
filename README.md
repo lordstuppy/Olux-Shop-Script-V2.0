@@ -191,6 +191,12 @@ php artisan test               # PHPUnit: unit + feature (needs a PostgreSQL dat
 vendor/bin/pint --test         # code style
 ```
 
+The hostile-conditions simulation (88 scenarios as customer, seller and
+staff, including outages and recovery) is described in
+[docs/SIMULATION.md](docs/SIMULATION.md). The go-live checklist, with what
+was checked, what was added and what is still open, is in
+[docs/READINESS.md](docs/READINESS.md).
+
 `tests/live/run.sh` builds the committed code into a separate directory
 (`LIVE_DIR`, default `/tmp/shop-live`) and needs Docker; it uses ports 2525,
 3310, 5433, 8000, 8080, 8081 and 8443. `tests/live/run.sh down` stops it.

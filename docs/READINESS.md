@@ -165,7 +165,7 @@ had created orders.
 | CSS and JS size | One hand-written stylesheet (15 KB, 4.3 KB gzipped) and one deferred script (7 KB), both needed on every page (header search, password fields). Declined: minification and unused-CSS removal would add a build step to save about 1 KB after gzip. |
 | Image optimisation | Verified: uploads are re-encoded to WebP at 1600 px and 480 px. Originals are not kept, on purpose: it removes EXIF data such as GPS positions. |
 | Database indexes | **Fixed**. `order_items.order_id` had no index, so every order page and delivery read the whole `order_items` table. 18 other foreign keys the app queries were also unindexed. A test now fails when a new foreign key has no index, unless it is listed as a deliberate exception. |
-| N+1 queries | **Added**: outside production, touching a relation that was not loaded, on a model from a multi-row query, throws. Two N+1 cases were **Fixed**: the order page and bulk product moderation. |
+| N+1 queries | **Added**: outside production, touching a relation that was not loaded, on a model from a multi-row query, throws; in production the relation still loads and a warning (`N+1 query: lazy loading ...`) is logged once per relation and process. Two N+1 cases were **Fixed**: the order page and bulk product moderation. |
 | Pagination | Verified: lists paginate, exports stream, bulk actions are capped at 500 rows. |
 | Caching | Verified: settings, email templates and announcements are cached and cleared on change. Prices and stock are never cached; checkout reads and locks them in the database. |
 | Response-time budgets | Open. Already known from phase 7: data stayed correct under load, but p95 latency exceeded the budget on the 4-core test machine (no-load pages 55-75 ms). Needs a load test on production-like hardware. |
@@ -189,11 +189,23 @@ had created orders.
 
 - PHPUnit: 252 tests pass. Pint, the ASCII check and the translation
   catalogue check pass.
-- Chromium: 0 horizontal overflows on 51 pages x 6 widths; no console
-  errors; password toggle works with JavaScript and the field stays masked
-  without it; dark and print modes checked in screenshots.
-- Simulation on the rebuilt production image: see docs/SIMULATION.md,
-  "Readiness run".
+- Chromium, 51 pages x 6 widths, including order pages with real orders:
+  - 0 horizontal overflows;
+  - 0 unexpected HTTP errors; the only console messages come from the
+    deliberate 404 test page;
+  - the password toggle works with JavaScript, and the field stays masked
+    without it;
+  - dark and print modes checked in screenshots.
+- The repository's Playwright suite (`tests/browser`), 15 tests:
+  - pages and purchase flows without JavaScript;
+  - axe accessibility scans for guest, buyer, seller and admin pages, in
+    light mode and, as a new project, in dark mode.
+
+  The login helper now asks for the exact "Password" label: the new
+  show/hide button's accessible name ("Show password") also contains the
+  word.
+- Simulation, 88 scenarios on the rebuilt production image (commit
+  `74c112c`): all passed; report `reports/20261011-003717`.
 
 ## 8. Missing major features and improvements
 
