@@ -15,7 +15,7 @@ from simlib import env, shop
 from simlib.http import Client, forms_of
 from simlib.record import scenario
 
-from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, parallel, past_dispute_window, staff_form, wait_status
+from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, parallel, past_dispute_window, seller_available, staff_form, wait_status
 from .p4_seller import create_product
 
 
@@ -491,23 +491,33 @@ def dispute_deadline(rec, ctx):
 
 
 @scenario(9, 'Payout hold period', 'Hold set to 7 days; a new sale for seller09',
-          'The new earning is pending and cannot be paid out; after 7 days (time moved) it becomes available', 'major')
+          'The new earning is held: after 8 days (hold over) it is still held while the buyer can dispute it; '
+          'after 15 days (dispute window closed) it becomes available', 'major')
 def payout_hold(rec, ctx):
     sa = admin()
     staff_form(sa, '/admin/settings', '/admin/settings', {'payout_hold_days': '7'})
     sid = env.scalar("select id from users where email='seller09@sim.test'")
-    env.sql(f"update seller_ledger_entries set created_at=created_at-interval '30 days' where seller_id={sid}")
-    before_total = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='USD'"))
+    past_dispute_window(sid, 30)
+    s = shop.login('seller09@sim.test')
+    before = seller_available(s)
     _, _, oid = paid_order(39, product=instant_product(f'seller_id={sid}'), qty=2)
     wait_status(oid, 'delivered')
     earning = sum(i['earning'] for i in items_of(oid))
-    s = shop.login('seller09@sim.test')
-    r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(before_total + earning), 'currency': 'USD'})
+
+    def age(days):
+        env.sql(f"""update order_items set delivered_at=delivered_at-interval '{days} days' where order_id=(select id from orders where public_id='{oid}');
+                   update orders set paid_at=paid_at-interval '{days} days' where public_id='{oid}'""")
+
+    r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(before + earning), 'currency': 'USD'})
     rec.check('only' in flashes(r) and 'available' in flashes(r), f'held earning paid out: {flashes(r)}')
-    env.sql(f"update seller_ledger_entries set created_at=created_at-interval '8 days' where seller_id={sid}")
-    rec.step('ledger moved 8 days into the past')
-    r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(before_total + earning), 'currency': 'USD'})
-    rec.check(env.scalar(f'select count(*) from payouts where seller_id={sid} and amount_minor={before_total + earning}') == '1', f'payout after the hold: {flashes(r)}')
+    age(8)
+    rec.step('sale moved 8 days into the past: hold over, dispute window still open')
+    r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(before + earning), 'currency': 'USD'})
+    rec.check('only' in flashes(r) and 'available' in flashes(r), f'earning paid out inside the dispute window: {flashes(r)}')
+    age(7)
+    rec.step('sale moved 15 days into the past: dispute window closed')
+    r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(before + earning), 'currency': 'USD'})
+    rec.check(env.scalar(f'select count(*) from payouts where seller_id={sid} and amount_minor={before + earning}') == '1', f'payout after the hold: {flashes(r)}')
     staff_form(sa, '/admin/settings', '/admin/settings', {'payout_hold_days': '0'})
 
 
@@ -534,8 +544,9 @@ def concurrency(rec, ctx):
     staff_form(admin(), '/admin/settings', '/admin/settings', {'payout_hold_days': '0'})
     sid = env.scalar("select id from users where email='seller10@sim.test'")
     paid_order(40, product=instant_product(f'seller_id={sid}'), qty=5)
-    available = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='USD'"))
+    past_dispute_window(sid)
     s = shop.login('seller10@sim.test')
+    available = seller_available(s)
     form = s.find_form(s.get('/seller/payouts'), '/seller/payouts')
     before = int(env.scalar(f'select count(*) from payouts where seller_id={sid}'))
     parallel([lambda: s.submit(form, {'amount': money(available), 'currency': 'USD'}) for _ in range(3)])
