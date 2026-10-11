@@ -219,6 +219,25 @@ had created orders.
   the mail has gone through the queue. **Fixed**, with a regression test
   that renders the mail the way the worker gets it.
 
+### Third round: the new features end to end
+
+- Phase 10 (8 scenarios) ran the go-live features on the production stack (docs/SIMULATION.md):
+  - staff alerts through the real queue and mail server;
+  - a failed email from mail outage to retry on the health page;
+  - the gateway-outage alert with the queue worker stopped;
+  - the digest;
+  - seller preferences;
+  - the dispute confirmation;
+  - nginx and TLS behaviour;
+  - the migrations down and up on a populated database.
+- It found one bug: a visitor who chose dark got a white 404 page for unknown URLs. **Fixed**, with a test.
+- Certification: all 96 scenarios passed 5 consecutive runs on commit `293bde6`. Any N+1 warning in the app log now fails a scenario.
+- One load run afterwards:
+  - data stayed correct;
+  - 0 of 6,439 requests failed;
+  - no N+1 warning and no slow query;
+  - the latency budgets still fail on the 4-core test machine (open, as before).
+
 ## 8. Missing major features and improvements
 
 Ordered by how much they matter for going live.

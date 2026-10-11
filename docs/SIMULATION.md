@@ -379,6 +379,17 @@ The first runs on the image found two bugs that the host backend could not show 
 
 From run 2 on, production logs lazy loading. That caught one N+1 query in the queued seller sale mail, which was fixed before run 3. Run 3 logged no N+1 warning.
 
+**Third round, 2026-10-11 (phases 1-6 and 8-10, 96 scenarios):** 5 consecutive passing runs on code commit `293bde6`, each from a fresh database:
+
+- runs 1-3: `reports/20261011-120222`;
+- runs 4-5: `reports/20261011-131334`.
+
+Phase 10 found one bug before certification (row 44). After this round's changes, one phase 7 load run:
+
+- data: 100 of 100 webhook orders paid exactly once; 20 of 20 mixed-vendor checkouts delivered;
+- 0 of 6,439 requests failed; 0 failed jobs; 0 error logs; 0 N+1 warnings; no statement over 200 ms;
+- latency on the same 4-core machine: admin product list p95 1.24 s, login p95 5.3 s. The budgets still fail, as in the earlier rounds (see below).
+
 **Phase 7 load, 5 runs:**
 
 | Check | Result |
