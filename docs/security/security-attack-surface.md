@@ -46,10 +46,11 @@ the Shkeeper API key and payout credentials; `APP_KEY`; the audit log.
                                SMTP (mail) <----------------------+
 ```
 
-1. **Internet to nginx.** Untrusted input. nginx believes `X-Forwarded-For`
-   only from `NGINX_TRUSTED_PROXY` and gives PHP its own values (SEC-04);
-   Laravel trusts only nginx (`TRUSTED_PROXIES`) and never `X-Forwarded-Host`
-   (SEC-31).
+1. **Internet to nginx.** Untrusted input. nginx believes `X-Forwarded-*`
+   only from `NGINX_TRUSTED_PROXY` and hands PHP the client address
+   (`REMOTE_ADDR`) and scheme (`HTTPS`) itself (SEC-04, SEC-39); Laravel
+   trusts no proxy unless `TRUSTED_PROXIES` is set and never
+   `X-Forwarded-Host` (SEC-31).
 2. **Anonymous to authenticated.** Login, 2FA challenge, password reset,
    email verification. Rate limits per email+IP and IP, account lock,
    2FA budget per account (SEC-11).

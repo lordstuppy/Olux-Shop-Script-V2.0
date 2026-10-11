@@ -1,0 +1,36 @@
+Security regression tests run against the code before the fixes (fixes stashed, tests kept).
+Command: php artisan test --filter 'SecurityAuditTest|test_sec02' with app/, bootstrap/, config/, database/, resources/, routes/, public/, lang/ at c0bae6a~1
+
+FAILED  test_sec02_moderator_cannot_refund_and_parties_cannot_resolve  | Failed asserting that '<!doctype html>\n
+FAILED  test_sec01_host_header_does_not_reach_the_shkeeper_callback_url  | An expected request was not recorded.
+FAILED  test_sec03_undelivered_items_and_open_dispute_windows_hold_earnings  | never delivered
+FAILED  test_sec05_fully_refunded_line_loses_downloads_and_review_rights  | Expected response status code [403] but received 200.
+FAILED  test_sec06_payout_results_are_bound_to_the_attempt  | Failed asserting that two variables reference the same object.
+FAILED  test_sec07_payout_is_processing_before_the_transfer_is_requested  | Failed asserting that two variables reference the same object.
+FAILED  test_sec08_refund_timeout_is_not_treated_as_failed  | Failed asserting that 'Shkeeper did not accept the refund transfer: Shkeeper is unreachable: cURL error 28: Operation timed out after 30001 
+FAILED  test_sec08_unknown_refund_is_failed_only_when_shkeeper_never_saw_it  | Failed asserting that two variables reference the same object.
+FAILED  test_sec08_connection_refused_proves_nothing_was_sent  | ArgumentCountError: Exception::__construct() expects at most 3 arguments, 4 given
+FAILED  test_sec09_reapproving_a_seller_cannot_reset_the_commission_rate  | Session is missing expected key [error].
+FAILED  test_sec10_single_session_sign_out_rotates_the_remember_token  | Failed asserting that two strings are not identical.
+FAILED  test_sec11_two_factor_codes_are_limited_per_hour_and_the_owner_is_warned  | Failed asserting that false is true.
+FAILED  test_sec12_two_factor_cannot_be_replaced_and_recovery_codes_need_a_code  | Session is missing expected key [errors].
+FAILED  test_sec16_to_18_account_changes_invalidate_old_credentials_and_notify  | Failed asserting that two strings are not identical.
+FAILED  test_sec19_cart_and_wishlist_do_not_reveal_unlisted_products  | Expected response status code [404] but received 302.
+FAILED  test_sec20_support_cannot_revoke_staff_sessions  | Session is missing expected key [error].
+FAILED  test_sec21_demoted_seller_products_are_not_listed  | Failed asserting that true is false.
+FAILED  test_sec22_unscanned_files_are_not_downloadable_by_staff  | Expected response status code [409] but received 200.
+FAILED  test_sec23_refunded_orders_are_not_redelivered  | Expected response status code [422] but received 302.
+FAILED  test_sec24_order_limits_apply_without_an_exchange_rate  | Failed asserting that exception of type "App\Exceptions\UserFacingException" is thrown.
+FAILED  test_sec25_line_breaks_are_rejected_in_single_line_fields  | Session missing error: subject
+FAILED  test_sec13_upload_count_and_storage_quota  | Failed asserting that false is true.
+FAILED  test_sec13_uploads_are_rate_limited  | Expected response status code [429] but received 302.
+FAILED  test_sec27_shkeeper_client_does_not_follow_redirects  | a redirect must not be followed
+
+Independent-review findings (SEC-35 to SEC-37): tests run against 66726de (app/ and routes/ stashed).
+FAILED  test_sec35_accepted_transfers_are_not_failed_by_the_timeout_rule  | Failed asserting that two variables reference the same object.
+FAILED  test_sec35_a_proxy_404_does_not_prove_a_transfer_was_never_sent  | Failed asserting that two variables reference the same object.
+FAILED  test_sec35_success_after_an_assumed_failure_is_not_lost  | Failed asserting that two strings are identical.
+FAILED  test_sec35_reply_without_task_id_leaves_the_payout_processing  | Failed asserting that two variables reference the same object.
+FAILED  test_sec36_two_factor_budget_covers_account_settings  | Failed asserting that false is true.
+FAILED  test_sec36_enabling_two_factor_is_not_a_password_oracle  | Expected response status code [429] but received 302.
+FAILED  test_sec37_staff_cannot_act_on_their_own_orders_payouts_or_balance  | Failed asserting that false is true.

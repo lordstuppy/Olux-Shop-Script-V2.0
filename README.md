@@ -227,7 +227,9 @@ text as the key (`__('Your cart')`). The shop ships in English only.
 
 See [SECURITY.md](SECURITY.md) for the disclosure process and a summary of the
 controls: Argon2id, CSRF, rate limits, CSP, signed downloads, audit log and
-webhook verification.
+webhook verification. The security audit with its release gates, findings,
+residual risks and evidence is in [docs/security/](docs/security/security-audit-summary.md);
+run the same automated checks locally with `scripts/security-gate.sh`.
 
 ## Legal pages
 

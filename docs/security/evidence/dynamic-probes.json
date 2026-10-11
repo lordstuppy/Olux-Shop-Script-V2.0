@@ -1,0 +1,561 @@
+[
+ {
+  "id": "CORS",
+  "title": "GET / with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS / with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "GET /live with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 302,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS /live with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "GET /search/suggest?q=a with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS /search/suggest?q=a with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "GET /health with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS /health with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "GET /notifications with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 302,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS /notifications with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "GET /account with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 302,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CORS",
+  "title": "OPTIONS /account with foreign Origin",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "acao": null,
+   "acac": null
+  }
+ },
+ {
+  "id": "CSRF",
+  "title": "POST /cart/items without token",
+  "status": "PASS",
+  "evidence": {
+   "status": 419
+  }
+ },
+ {
+  "id": "CSRF",
+  "title": "POST /theme without token",
+  "status": "PASS",
+  "evidence": {
+   "status": 419
+  }
+ },
+ {
+  "id": "CSRF",
+  "title": "GET /logout is not a state change",
+  "status": "PASS",
+  "evidence": {
+   "status": 405
+  }
+ },
+ {
+  "id": "CSRF",
+  "title": "JSON POST /login without token",
+  "status": "PASS",
+  "evidence": {
+   "status": 419
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /.env",
+  "status": "PASS",
+  "evidence": {
+   "status": 403,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /.env.example",
+  "status": "PASS",
+  "evidence": {
+   "status": 403,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /.git/config",
+  "status": "PASS",
+  "evidence": {
+   "status": 403,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /.git/HEAD",
+  "status": "PASS",
+  "evidence": {
+   "status": 403,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /composer.json",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /composer.lock",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /artisan",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /storage/logs/laravel.log",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /vendor/autoload.php",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /index.php.bak",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /phpinfo.php",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /info.php",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /server-status",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /nginx_status",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /telescope",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /horizon",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /_ignition/health-check",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /_debugbar",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /storage/app/private/products/1/",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /../.env",
+  "status": "PASS",
+  "evidence": {
+   "status": 400,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /%2e%2e/.env",
+  "status": "PASS",
+  "evidence": {
+   "status": 400,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /public/../.env",
+  "status": "PASS",
+  "evidence": {
+   "status": 403,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /docker-compose.yml",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /Dockerfile",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /tests/simulation/sim.env",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /backups/",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /up",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /api/user",
+  "status": "PASS",
+  "evidence": {
+   "status": 404,
+   "leak": false
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /metrics without token",
+  "status": "PASS",
+  "evidence": {
+   "status": 401
+  }
+ },
+ {
+  "id": "EXPOSURE",
+  "title": "GET /health reveals no internals",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "body": "{\"status\":\"ok\"}"
+  }
+ },
+ {
+  "id": "ERRORS",
+  "title": "Malformed input shows no stack trace",
+  "status": "PASS",
+  "evidence": {
+   "status": 302
+  }
+ },
+ {
+  "id": "HEADERS",
+  "title": "No X-Powered-By, no nginx version",
+  "status": "PASS",
+  "evidence": {
+   "server": "nginx",
+   "x-powered-by": null
+  }
+ },
+ {
+  "id": "HOST",
+  "title": "Forged Host header does not reach absolute URLs",
+  "status": "PASS",
+  "evidence": {
+   "status": 200,
+   "hosts_in_links": [
+    "localhost:8443"
+   ]
+  }
+ },
+ {
+  "id": "HOST",
+  "title": "X-Forwarded-Host is ignored",
+  "status": "PASS",
+  "evidence": {
+   "hosts_in_links": [
+    "localhost:8443"
+   ]
+  }
+ },
+ {
+  "id": "LIMITS",
+  "title": "61 MB body is refused before PHP",
+  "status": "PASS",
+  "evidence": {
+   "status": 413
+  }
+ },
+ {
+  "id": "LIMITS",
+  "title": "Very long query string",
+  "status": "PASS",
+  "evidence": {
+   "status": 414
+  }
+ },
+ {
+  "id": "LIMITS",
+  "title": "Oversized header",
+  "status": "PASS",
+  "evidence": {
+   "status": 400
+  }
+ },
+ {
+  "id": "WEBHOOK",
+  "title": "Unsigned payment callback",
+  "status": "PASS",
+  "evidence": {
+   "status": 401
+  }
+ },
+ {
+  "id": "WEBHOOK",
+  "title": "Wrong signature",
+  "status": "PASS",
+  "evidence": {
+   "status": 401
+  }
+ },
+ {
+  "id": "WEBHOOK",
+  "title": "Correct signature but timestamp one hour old",
+  "status": "PASS",
+  "evidence": {
+   "status": 401
+  }
+ },
+ {
+  "id": "WEBHOOK",
+  "title": "Unsigned payout callback",
+  "status": "PASS",
+  "evidence": {
+   "status": 401
+  }
+ },
+ {
+  "id": "RATELIMIT",
+  "title": "Per-email login limit (5/min) holds while X-Forwarded-For rotates",
+  "status": "PASS",
+  "evidence": {
+   "statuses": [
+    302,
+    302,
+    302,
+    302,
+    302,
+    429,
+    429,
+    429
+   ]
+  }
+ },
+ {
+  "id": "RATELIMIT",
+  "title": "Search limiter (60/min) holds while X-Forwarded-For rotates",
+  "status": "PASS",
+  "evidence": {
+   "first_429_at": 59
+  }
+ },
+ {
+  "id": "ENUM",
+  "title": "All timing samples were real login attempts (not throttled)",
+  "status": "PASS",
+  "evidence": {
+   "statuses": [
+    302
+   ]
+  }
+ },
+ {
+  "id": "ENUM",
+  "title": "Login response time does not reveal registered emails",
+  "status": "PASS",
+  "evidence": {
+   "median_known_s": 0.4221,
+   "median_unknown_s": 0.4339
+  }
+ }
+]

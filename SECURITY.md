@@ -60,7 +60,13 @@ Only the latest release on the default branch receives security fixes.
 | Secrets | Environment variables only; `.env` is git-ignored |
 | Proxies | Trusted proxies come from config at request time (safe with `config:cache`) |
 | Containers | Read-only root filesystems, all Linux capabilities dropped, `no-new-privileges`, unprivileged nginx |
-| Dependencies | `composer audit` and `npm audit` in CI; Dependabot for Composer, npm, Actions and Docker |
+| Dependencies | `composer audit` and `npm audit` in CI; Dependabot for Composer, npm, Actions and Docker (7-day cooldown); actions pinned to commit SHAs |
+| Security gate | `scripts/security-gate.sh` (CI job `security`): advisories (Composer, npm, OSV), gitleaks over the full history, Semgrep with project rules (`.semgrep/shop-rules.yml`), Trivy config and image scans of the app and web images. Reports: `docs/security/` |
+| Client address and links | nginx believes `X-Forwarded-*` only from `NGINX_TRUSTED_PROXY` and gives PHP the client address and scheme itself; Laravel never trusts `X-Forwarded-Host`; every absolute URL is built from `APP_URL` (`PinAppUrl`) |
+| Two-factor brute force | At most 5 codes a minute and 10 an hour per account across sign-in, turning 2FA off and new recovery codes; the owner is emailed when the budget runs out. Enabling 2FA needs the password |
+| Self-dealing | Staff never refund, deliver, pay out or credit their own orders, sales, payouts or balance, and never resolve disputes they are part of; dispute refunds need the refund permission |
+| Seller earnings | Payable only after delivery, the payout hold and the buyer's dispute window; Shkeeper transfers are claimed before sending, use one id per attempt, and an unknown outcome stays pending until Shkeeper answers |
+| Security events | 403, 419 and 429 responses are logged with route and user; password, 2FA and reset changes are emailed to the owner |
 
 ## Known operational requirements
 
