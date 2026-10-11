@@ -165,7 +165,7 @@ had created orders.
 | CSS and JS size | One hand-written stylesheet (15 KB, 4.3 KB gzipped) and one deferred script (7 KB), both needed on every page (header search, password fields). Declined: minification and unused-CSS removal would add a build step to save about 1 KB after gzip. |
 | Image optimisation | Verified: uploads are re-encoded to WebP at 1600 px and 480 px. Originals are not kept, on purpose: it removes EXIF data such as GPS positions. |
 | Database indexes | **Fixed**. `order_items.order_id` had no index, so every order page and delivery read the whole `order_items` table. 18 other foreign keys the app queries were also unindexed. A test now fails when a new foreign key has no index, unless it is listed as a deliberate exception. |
-| N+1 queries | **Added**: outside production, touching a relation that was not loaded, on a model from a multi-row query, throws; in production the relation still loads and a warning (`N+1 query: lazy loading ...`) is logged once per relation and process. Two N+1 cases were **Fixed**: the order page and bulk product moderation. |
+| N+1 queries | **Added**: outside production, touching a relation that was not loaded, on a model from a multi-row query, throws; in production the relation still loads and a warning (`N+1 query: lazy loading ...`) is logged once per relation and process. Three N+1 cases were **Fixed**: the order page, bulk product moderation, and the seller sale mail (caught by the production log during the simulation). |
 | Pagination | Verified: lists paginate, exports stream, bulk actions are capped at 500 rows. |
 | Caching | Verified: settings, email templates and announcements are cached and cleared on change. Prices and stock are never cached; checkout reads and locks them in the database. |
 | Response-time budgets | Open. Already known from phase 7: data stayed correct under load, but p95 latency exceeded the budget on the 4-core test machine (no-load pages 55-75 ms). Needs a load test on production-like hardware. |
@@ -204,8 +204,20 @@ had created orders.
   The login helper now asks for the exact "Password" label: the new
   show/hide button's accessible name ("Show password") also contains the
   word.
-- Simulation, 88 scenarios on the rebuilt production image (commit
-  `74c112c`): all passed; report `reports/20261011-003717`.
+- Simulation, 88 scenarios on the rebuilt production image, three runs.
+  Each run started from a fresh database, and all three passed 88 of 88.
+
+  | Run | Commit | Report | Result |
+  |---|---|---|---|
+  | 1 | `74c112c` | `reports/20261011-003717` | 88 of 88 |
+  | 2 | `aa17597` | `reports/20261011-010520` | 88 of 88; the new production N+1 log caught one case (below) |
+  | 3 | `ddd8ae6` | `reports/20261011-013015` | 88 of 88; 0 N+1 warnings |
+
+  The case run 2 caught: the queued seller sale mail was rebuilt with the
+  order lines but not their products, and its template read each line's
+  product. The unit tests could not see it, because it only happens after
+  the mail has gone through the queue. **Fixed**, with a regression test
+  that renders the mail the way the worker gets it.
 
 ## 8. Missing major features and improvements
 

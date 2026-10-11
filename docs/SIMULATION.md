@@ -348,6 +348,14 @@ The first runs on the image found two bugs that the host backend could not show 
 - Every run started from a fresh database.
 - Phase 9 found no application bugs. All its first-round failures were harness errors.
 
+**Readiness run (docs/READINESS.md):** after the go-live checklist changes, the image was rebuilt and the 88 scenarios were run three times. Each run passed 88 of 88:
+
+- run 1: commit `74c112c`, report `20261011-003717`;
+- run 2: commit `aa17597`, report `20261011-010520`;
+- run 3: commit `ddd8ae6`, report `20261011-013015`.
+
+From run 2 on, production logs lazy loading. That caught one N+1 query in the queued seller sale mail, which was fixed before run 3. Run 3 logged no N+1 warning.
+
 **Phase 7 load, 5 runs:**
 
 | Check | Result |
