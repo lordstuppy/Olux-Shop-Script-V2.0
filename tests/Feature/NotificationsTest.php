@@ -10,6 +10,7 @@ use App\Mail\ProductDecisionMail;
 use App\Mail\ReviewReceivedMail;
 use App\Mail\SellerSaleMail;
 use App\Mail\StaffAlertMail;
+use App\Models\Order;
 use App\Models\Payout;
 use App\Models\Product;
 use App\Models\Ticket;
@@ -75,6 +76,21 @@ class NotificationsTest extends TestCase
         $this->buy($product);
         Mail::assertQueued(SellerSaleMail::class, 3);
         $this->get(route('account.settings'))->assertSee('name="notify_sales" value="1" checked', false);
+    }
+
+    public function test_the_sale_mail_loads_products_once_for_all_lines(): void
+    {
+        $seller = User::factory()->seller()->create();
+        $first = $this->instantProductWithFile(['seller_id' => $seller->id, 'price_minor' => 500]);
+        $second = $this->instantProductWithFile(['seller_id' => $seller->id, 'price_minor' => 700]);
+        $buyer = User::factory()->withBalance(1200)->create();
+        $order = app(OrderService::class)->createFromCart($buyer, [$first->id => 1, $second->id => 1], 'USD', (string) Str::uuid());
+
+        // As the queue worker gets it: order lines loaded, their products not.
+        $text = (new SellerSaleMail(Order::with('items')->find($order->id), $seller))->render();
+
+        $this->assertStringContainsString($first->title, $text);
+        $this->assertStringContainsString($second->title, $text);
     }
 
     public function test_an_infected_upload_tells_the_seller_and_staff(): void

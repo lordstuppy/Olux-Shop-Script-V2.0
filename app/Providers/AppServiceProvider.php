@@ -70,7 +70,10 @@ class AppServiceProvider extends ServiceProvider
                 static $seen = [];
                 if (! isset($seen[$key = $model::class.'::'.$relation])) {
                     $seen[$key] = true;
-                    Log::warning('N+1 query: lazy loading {relation} on {model}', ['relation' => $relation, 'model' => $model::class]);
+                    $caller = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 40))
+                        ->first(fn ($frame) => isset($frame['file']) && ! str_contains($frame['file'], DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR));
+                    Log::warning('N+1 query: lazy loading {relation} on {model} at {caller}', ['relation' => $relation, 'model' => $model::class,
+                        'caller' => $caller ? str_replace(base_path().DIRECTORY_SEPARATOR, '', $caller['file']).':'.($caller['line'] ?? 0) : 'unknown']);
                 }
             });
         }

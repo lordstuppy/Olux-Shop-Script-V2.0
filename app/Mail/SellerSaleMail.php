@@ -26,6 +26,9 @@ class SellerSaleMail extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
+        // The view checks each line's product for manual delivery.
+        $this->order->loadMissing('items.product');
+
         return $this->templatedContent('mail.seller-sale');
     }
 
