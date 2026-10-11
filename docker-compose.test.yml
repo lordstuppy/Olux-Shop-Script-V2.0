@@ -105,7 +105,7 @@ services:
   # Host network, so the shop sees each simulated person's own (loopback)
   # address, as a production load balancer passes the client address on.
   tls:
-    image: nginx:1.27-alpine
+    image: nginx:1.30-alpine
     network_mode: host
     volumes:
       - ./docker/test/tls.conf:/etc/nginx/conf.d/default.conf:ro

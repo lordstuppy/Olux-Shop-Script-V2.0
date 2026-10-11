@@ -52,6 +52,8 @@ server {
     location ~* \.(css|js|ico|png|svg|woff2?)$ {
         add_header Cache-Control $static_cache_control;
         add_header X-Content-Type-Options "nosniff" always;
+        # Laravel sets HSTS on pages; static files get it here (browsers ignore it over plain HTTP).
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
         # Text assets only. HTML pages are not compressed on purpose: they carry
         # the CSRF token next to reflected input (the search box), which is what
         # BREACH needs; they are small and dynamic anyway.

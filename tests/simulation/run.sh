@@ -104,7 +104,7 @@ host_up() {
     docker run -d --name shopsim-mailpit --network host axllent/mailpit:v1.21.8 >/dev/null
     host_start_mock
     docker run -d --name shopsim-tls --network host -v "$ROOT/docker/test/host-tls.conf:/etc/nginx/conf.d/default.conf:ro" \
-        -v "$HERE/tls:/etc/nginx/tls:ro" nginx:1.27-alpine >/dev/null
+        -v "$HERE/tls:/etc/nginx/tls:ro" nginx:1.30-alpine >/dev/null
     (cd "$W/app" && php artisan migrate --force -q)
     host_stop_procs
     host_start_procs
@@ -138,6 +138,7 @@ host_reset() {
 build_image() {
     if [ -z "${SIM_BUILD_CA:-}" ]; then
         docker build -t digital-goods-shop:latest "$ROOT"
+        docker build -t digital-goods-shop-web:latest "$ROOT/docker/nginx"
         return
     fi
     mkdir -p "$W"
@@ -149,6 +150,10 @@ build_image() {
     docker build --network host -f "$W/Dockerfile.sim" -t digital-goods-shop:latest \
         --build-arg HTTPS_PROXY="${HTTPS_PROXY:-}" --build-arg https_proxy="${HTTPS_PROXY:-}" \
         --build-arg NO_PROXY="localhost,127.0.0.1" "$ROOT"
+    sed -e '/^FROM /a COPY --chmod=644 .sim-ca.crt /tmp/sim-ca.crt\nUSER root\nRUN cat /tmp/sim-ca.crt >> /etc/ssl/certs/ca-certificates.crt' \
+        "$ROOT/docker/nginx/Dockerfile" > "$W/Dockerfile.web.sim"
+    docker build --network host -f "$W/Dockerfile.web.sim" -t digital-goods-shop-web:latest \
+        --build-arg HTTPS_PROXY="${HTTPS_PROXY:-}" --build-arg https_proxy="${HTTPS_PROXY:-}" "$ROOT"
     rm -f "$ROOT/.sim-ca.crt"
 }
 

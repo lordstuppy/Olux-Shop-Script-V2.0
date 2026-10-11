@@ -5,7 +5,7 @@
 # the console. Used by the CI job "security"; runs the same locally.
 #
 #   scripts/security-gate.sh                 # all checks that need no running app
-#   GATE_IMAGE=digital-goods-shop:latest scripts/security-gate.sh   # plus the image scan
+#   GATE_IMAGE="digital-goods-shop:latest digital-goods-shop-web:latest" scripts/security-gate.sh   # plus image scans
 #
 # Needs: PHP + Composer (vendor installed), Node/npm, Docker, Python 3 with
 # semgrep (pip install semgrep==$SEMGREP_VERSION). Scanner images are pinned.
@@ -108,9 +108,15 @@ check_iac() {
 check_image() {
     [ -n "${GATE_IMAGE:-}" ] || { echo "GATE_IMAGE not set"; return 1; }
     # Fixable HIGH/CRITICAL vulnerabilities in OS packages and bundled binaries fail.
-    # shellcheck disable=SC2046
-    docker run --rm $(proxy_args) $(ca_args) -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image \
-        --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$GATE_IMAGE"
+    # GATE_IMAGE may list several images (app and web), separated by spaces.
+    local rc=0 image
+    for image in $GATE_IMAGE; do
+        echo "--- $image"
+        # shellcheck disable=SC2046
+        docker run --rm $(proxy_args) $(ca_args) -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$image" || rc=1
+    done
+    return $rc
 }
 
 check_security_tests() {
@@ -125,7 +131,7 @@ run_check secrets-env "No environment files tracked" check_env_not_tracked
 run_check sast "Static analysis: project rules and Semgrep registry rulesets" check_semgrep
 run_check iac "Container and infrastructure configuration (Trivy config)" check_iac
 if [ -n "${GATE_IMAGE:-}" ]; then
-    run_check image "Runtime image vulnerabilities (Trivy image)" check_image
+    run_check image "Runtime image vulnerabilities, app and web (Trivy image)" check_image
 fi
 if [ "${GATE_TESTS:-0}" = "1" ]; then
     run_check security-tests "Security regression tests (PHPUnit)" check_security_tests
