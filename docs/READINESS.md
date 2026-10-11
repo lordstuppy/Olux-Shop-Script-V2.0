@@ -341,6 +341,10 @@ Testing:
   - a lost connection is shown and clears.
 - Simulation phase 11 (5 scenarios) on the production stack; see
   docs/SIMULATION.md.
+- Full simulation suite, 101 scenarios: 5 consecutive passing runs on the
+  production image (app code `f043753`). The notification change touched
+  every email path, so the whole suite was repeated, not only the new
+  phase.
 
 Bugs found while testing, all fixed:
 

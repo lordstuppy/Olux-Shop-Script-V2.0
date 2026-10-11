@@ -393,6 +393,13 @@ The first runs on the image found two bugs that the host backend could not show 
 
 From run 2 on, production logs lazy loading. That caught one N+1 query in the queued seller sale mail, which was fixed before run 3. Run 3 logged no N+1 warning.
 
+**Fourth round, 2026-10-11 (phases 1-6 and 8-11, 101 scenarios), after the notification centre, live updates and review replies:** 5 consecutive passing runs on app code commit `f043753` (harness `584ba02`), each from a fresh database:
+
+- runs 1-3: `reports/20261011-150658`;
+- runs 4-5: `reports/20261011-161936`.
+
+No N+1 warning in any run.
+
 **Third round, 2026-10-11 (phases 1-6 and 8-10, 96 scenarios):** 5 consecutive passing runs on code commit `293bde6`, each from a fresh database:
 
 - runs 1-3: `reports/20261011-120222`;
