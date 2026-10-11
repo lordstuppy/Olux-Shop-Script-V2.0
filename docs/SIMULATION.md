@@ -246,6 +246,23 @@ This round covers features the first round touched only lightly. Time-based rule
 | Reports | Pages load for finance; net revenue equals SQL; the reconciliation page reports a match |
 | Concurrency | A triple-clicked payout request makes one payout; two simultaneous refunds succeed once; the last coupon use goes to one buyer; a double delivery happens once |
 
+### Phase 10: go-live features end to end (`phases/p10_readiness.py`)
+
+The features added by the go-live check (docs/READINESS.md), on the production stack. Queue backoffs are skipped by moving the waiting job's `available_at` to now.
+
+| Scenario | What is checked |
+|---|---|
+| Rejected callbacks | Four forged callbacks from four addresses: all 401, exactly one staff alert naming the reason |
+| Failed email | Mail server down while a password reset mail uses its 5 tries; the job lands in failed jobs and on the dashboard; one staff alert once mail works; a manager retries it on `/admin/health`; the buyer gets a working reset link |
+| Gateway outage | Three crypto checkouts fail cleanly; the health check turns critical; `shop:health-alerts` mails staff with the queue worker stopped; no second alert within the hour |
+| Digest | A seller application and a new ticket appear in the next digest; a run with nothing new sends nothing |
+| Seller preferences | No sale or review mail while turned off; mails again once turned on; buyers mailed either way |
+| Dispute confirmation | Buyer, seller and staff each get their own text |
+| nginx and TLS | Colour-scheme cookie is Secure and HttpOnly and applies to later pages and the 404 page; `security.txt` served; `.env`, `.git` and traversal blocked; CSS gzipped and immutable under its hash; HTML not compressed, private |
+| Upgrade | The two go-live migrations down and up on the populated database: no row lost, existing users opted in, indexes back, pages served |
+
+Also from this round on, any `N+1 query` warning in the app log fails the scenario that caused it.
+
 ## Bugs found and fixed
 
 | # | Severity | Found in | Problem | Fix | Regression test |
@@ -288,6 +305,12 @@ This round covers features the first round touched only lightly. Time-based rule
 | 36 | critical | P8 database killed | A payment that committed just before the database died lost its delivery and invoice jobs (queued after commit): the order stayed paid and undelivered forever | `shop:recover-stuck-orders` every minute re-queues them (idempotent jobs) | `StuckOrderRecoveryTest`, phase 8 lost-job step |
 | 37 | critical | first run on the production image | PHP GD in the image was built without WebP, so every product image upload failed (`imagewebp()` missing) | GD built with WebP; the build fails if a needed GD function is missing; `/admin/health` checks it | phase 4 product scenario on the image |
 | 38 | critical | first run on the production image | nginx resolved the app container once at start-up; after the app container was recreated (any redeploy) every request answered 502 until nginx restarted | nginx resolves `app` through Docker's DNS on each request (10 s cache) | verified by recreating the app container under the test stack |
+| 39 | major (perf) | go-live check | `order_items.order_id` and 18 other queried foreign keys had no index: every order page read the whole order-lines table | Index migration | `ReadinessTest::test_foreign_keys_are_indexed` fails on any new unindexed foreign key |
+| 40 | minor (perf) | go-live check | N+1 queries on the order page and in bulk product moderation | Eager loading; lazy loading throws outside production | the whole PHPUnit suite |
+| 41 | minor (perf) | readiness simulation run 2 | N+1 in the queued seller sale mail (lines rebuilt without their products), caught by the production lazy-loading log | `loadMissing('items.product')` | `NotificationsTest::test_the_sale_mail_loads_products_once_for_all_lines`; any N+1 warning now fails a scenario |
+| 42 | major | go-live check (own new code) | Health alerts used `send()`, which still queues a `ShouldQueue` mailable, so "queue worker down" alerts could never arrive | `sendNow()` | `NotificationsTest`, phase 10 gateway scenario with the worker stopped |
+| 43 | minor | go-live check | Layout overflow at 320/375 px on 6 pages (visually hidden table labels escaped the scroll box); touch targets under 44 px; form-field borders below 3:1 contrast; gzip off behind proxies forwarding HTTP/1.0 | CSS fixes; `gzip_http_version 1.0`, `gzip_proxied any` | Chromium pass at 6 widths; axe in light and dark mode; phase 10 nginx scenario |
+| 44 | minor | phase 10 | The 404 page for an unknown URL ignored a visitor's dark colour choice (rendered before cookies are decrypted) | `Theme::current` decrypts the cookie itself | `ReadinessTest`, phase 10 nginx scenario |
 
 Harness defects found along the way are not listed: wrong test data choices, k6 per-VU counters, and process supervision on the host backend. They are in the git history.
 
