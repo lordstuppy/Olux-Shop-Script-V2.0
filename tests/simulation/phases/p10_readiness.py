@@ -262,7 +262,7 @@ def through_nginx(rec, ctx):
 
 
 @scenario(10, 'Upgrade: the go-live migrations on a populated database',
-          'All earlier scenarios left their data; the two newest migrations are rolled back and applied again, as an upgrade from the previous release would',
+          'All earlier scenarios left their data; the three go-live migrations are rolled back and applied again, as an upgrade from the previous release would',
           'Both directions run cleanly; no row is lost; existing users get both email preferences switched on; the new indexes '
           'exist again; the shop keeps serving buyers and staff', 'major')
 def upgrade(rec, ctx):
@@ -276,15 +276,19 @@ def upgrade(rec, ctx):
         return env.scalar(sql) != '0'
     column = "select count(*) from information_schema.columns where table_name='users' and column_name='notify_sales'"
     index = "select count(*) from pg_indexes where indexname='order_items_order_id_index'"
+    centre = "select count(*) from information_schema.tables where table_name='user_notifications'"
     before = counts()
     rec.ev(f'rows before: {before}')
-    env.artisan('migrate:rollback', '--step=2', '--force')
-    rec.check(not has(column) and not has(index), 'rollback left the column or the index')
+    # The three go-live migrations: foreign-key indexes, email preferences, notification centre.
+    env.artisan('migrate:rollback', '--step=3', '--force')
+    rec.check(not has(column) and not has(index) and not has(centre), 'rollback left a column, index or table')
     env.artisan('migrate', '--force')
-    rec.check(has(column) and has(index), 'migration did not add the column or the index')
+    rec.check(has(column) and has(index) and has(centre), 'migration did not add the column, index or table')
     rec.check(counts() == before, f'rows changed: {before} -> {counts()}')
-    rec.check(env.scalar('select count(*) from users where not notify_sales or not notify_reviews') == '0', 'existing users not opted in')
-    rec.check(env.scalar("select count(*) from migrations where migration like '2026_10_13_%'") == '2', 'migrations table')
+    rec.check(env.scalar('select count(*) from users where not notify_sales or not notify_reviews or not notification_sound') == '0',
+              'existing users not opted in')
+    rec.check(env.scalar("select count(*) from migrations where migration like '2026_10_13_%' or migration like '2026_10_14_%'") == '3',
+              'migrations table')
     email, b = buyer(16)
     oid = env.scalar(f"select o.public_id from orders o join users u on u.id=o.buyer_id where u.email='{email}' order by o.id desc limit 1")
     rec.check(b.get(f'/orders/{oid}').status == 200 and admin().get(f'/admin/orders/{oid}').status == 200, 'pages after the upgrade')
