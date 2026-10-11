@@ -34,7 +34,7 @@ let lastAdminStep = 0;
 async function login(page, role) {
     await page.goto('/login');
     await page.getByLabel('Email').fill(pages.accounts[role]);
-    await page.getByLabel('Password').fill(pages.password);
+    await page.getByLabel('Password', { exact: true }).fill(pages.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     if (role === 'admin') {

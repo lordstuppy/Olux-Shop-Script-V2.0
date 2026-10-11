@@ -11,4 +11,9 @@ module.exports = defineConfig({
         baseURL: process.env.SHOP_URL || 'http://127.0.0.1:8000',
         javaScriptEnabled: false,
     },
+    projects: [
+        { name: 'light' },
+        // The accessibility scan (colour contrast included) again with the dark scheme.
+        { name: 'dark', testMatch: /a11y\.spec\.js/, use: { colorScheme: 'dark' } },
+    ],
 });
