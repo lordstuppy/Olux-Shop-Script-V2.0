@@ -5,6 +5,7 @@ use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureStaffTwoFactor;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\LogSecurityEvents;
 use App\Http\Middleware\PinAppUrl;
 use App\Http\Middleware\PreventRequestForgery;
 use App\Http\Middleware\RequireRecentPassword;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
         $middleware->prepend(PinAppUrl::class);
         $middleware->append(SecurityHeaders::class);
+        $middleware->append(LogSecurityEvents::class);
 
         $middleware->web(
             append: [EnsureUserIsActive::class],

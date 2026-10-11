@@ -60,7 +60,20 @@ run_check() {
 }
 
 check_composer_audit() {
-    composer audit --locked --no-interaction --abandoned=fail --format=plain
+    # Up to three tries, but only when the advisory download itself failed
+    # (network error); advisories or abandoned packages fail at once.
+    local try out rc
+    for try in 1 2 3; do
+        out=$(composer audit --locked --no-interaction --abandoned=fail --format=plain 2>&1)
+        rc=$?
+        echo "$out"
+        if [ $rc -eq 0 ] || ! echo "$out" | grep -q 'curl error'; then
+            return $rc
+        fi
+        echo "advisory download failed (try $try), retrying"
+        sleep $((try * 5))
+    done
+    return $rc
 }
 
 check_npm_audit() {

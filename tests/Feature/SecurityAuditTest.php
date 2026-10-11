@@ -36,6 +36,7 @@ use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Queue;
@@ -464,6 +465,18 @@ class SecurityAuditTest extends TestCase
         config(['shop.trusted_proxies' => '10.0.0.0/8']);
         $this->call('GET', 'http://shop.test/_test/ip', [], [], [], ['REMOTE_ADDR' => '10.0.0.5', 'HTTP_X_FORWARDED_FOR' => '203.0.113.7', 'HTTP_X_FORWARDED_HOST' => 'evil.example'])
             ->assertSee('203.0.113.7|shop.test');
+    }
+
+    // SEC-34: refused requests are logged for investigation, without secret-bearing paths.
+    public function test_sec34_refused_requests_are_logged(): void
+    {
+        Log::spy();
+        $this->post('/cart/items', ['product_id' => 1])->assertStatus(419);
+        $support = User::factory()->staff(UserRole::Support)->create();
+        $this->actingAs($support)->get(route('admin.settings.index'))->assertForbidden();
+        Log::shouldHaveReceived('notice')->withArgs(fn ($m, $c = []) => str_starts_with($m, 'Security event') && $c['status'] === 419)->once();
+        Log::shouldHaveReceived('notice')->withArgs(fn ($m, $c = []) => str_starts_with($m, 'Security event') && $c['status'] === 403
+            && $c['route'] === 'admin.settings.index' && $c['user_id'] === $support->id)->once();
     }
 
     // SEC-27: Shkeeper credentials never follow a redirect to another host.
