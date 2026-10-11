@@ -50,6 +50,7 @@ Route::get('/privacy', [PageController::class, 'privacy'])->name('pages.privacy'
 Route::get('/data-retention', [PageController::class, 'retention'])->name('pages.retention');
 Route::get('/sitemap.xml', [PageController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [PageController::class, 'robots'])->name('robots');
+Route::get('/.well-known/security.txt', [PageController::class, 'securityTxt'])->name('security-txt');
 
 Route::get('/sell', [SellerApplicationController::class, 'show'])->name('seller.apply');
 

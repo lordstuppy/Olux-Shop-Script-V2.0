@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SellerProfile;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * The platform earns a commission on every sale. The rate comes from the
@@ -73,16 +72,5 @@ class CommissionService
     public static function percent(int $bps): string
     {
         return number_format($bps / 100, 2).'%';
-    }
-
-    /** For audit targets and messages. */
-    public static function describe(Model $target): string
-    {
-        return match (true) {
-            $target instanceof Product => $target->title,
-            $target instanceof SellerProfile => $target->display_name,
-            $target instanceof Category => $target->name,
-            default => (string) $target->getKey(),
-        };
     }
 }

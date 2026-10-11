@@ -22,6 +22,14 @@ class ReadinessTest extends TestCase
         $this->postForm('/theme', ['theme' => 'neon'])->assertSessionHasErrors('theme');
     }
 
+    public function test_security_txt_names_the_security_contact(): void
+    {
+        config(['shop.security_email' => 'security@shop.test']);
+
+        $this->get('/.well-known/security.txt')->assertOk()->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+            ->assertSee('Contact: mailto:security@shop.test')->assertSee('Expires: '.now()->addYear()->format('Y-m-d'));
+    }
+
     public function test_stylesheet_and_script_urls_carry_a_content_hash(): void
     {
         $hash = substr(hash_file('xxh3', public_path('css/app.css')), 0, 12);

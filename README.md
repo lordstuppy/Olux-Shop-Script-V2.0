@@ -12,7 +12,10 @@ rebuilt.
 
 Every page, and the full browse, cart, checkout, login and order flow, works
 with JavaScript disabled. One optional deferred script adds live search
-suggestions and double-submit protection.
+suggestions, double-submit protection, a password show/hide button and a busy
+indicator on slow form submits. Pages follow the device's light or dark
+colour scheme; a footer setting overrides it (stored in a cookie, no
+JavaScript needed).
 
 ## Stack
 
@@ -99,13 +102,14 @@ payout API) are described in [docs/OPERATIONS.md](docs/OPERATIONS.md).
   - Checkout: session cart with products from several sellers in one order, balance or crypto, coupons, quote refresh.
   - After purchase: downloads with limits, subscriptions with expiry and reminders, invoices.
   - Help: disputes on a purchased item, tickets.
-  - Account: gift cards, 2FA, email change, session management.
+  - Account: gift cards, 2FA, email change, session management, light or dark colour scheme.
 - **Sellers:**
   - Onboarding.
   - Products with files, licence keys and images, virus-scanned and reviewed by staff.
   - Manual delivery, sales, and responding to disputes.
   - Ledger-based payouts (disputed earnings are held), payout address change with confirmation.
   - The effective commission is shown per product.
+  - Email for every sale and review, each of which can be turned off.
 - **Platform revenue:** a commission on every sale. The rate is set per product, per seller, per category or globally (the most specific wins) and frozen on the order line.
 - **Staff:** five tiers behind 2FA: super admin, manager, finance, moderator, support.
   - Analytics dashboard: revenue trend, order volume, top products and sellers, active sellers, gateway health.
@@ -115,7 +119,8 @@ payout API) are described in [docs/OPERATIONS.md](docs/OPERATIONS.md).
   - Payment gateway page: methods, coins, order limits and the gateway log.
   - Money: payments, webhooks, payouts, reconciliation, reports with charts, CSV exports, balance adjustments, coupons, gift cards, exchange rates, commission.
   - Content: categories, product review with file inspection, seller approval, tickets with assignment and internal notes, reviews moderation, announcements.
-  - Administration: editable email templates, settings, system health, audit log.
+  - Administration: editable email templates, settings, system health with failed-job retry, audit log.
+  - Alerts by email to a staff address: rejected payment callbacks, failed jobs, failed payouts and refunds, gateway outages, infected uploads, locked staff accounts, plus a 15-minute "needs attention" digest.
 
 The conversion rules are in [docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
 

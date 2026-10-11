@@ -22,6 +22,8 @@ Scheduled tasks (`routes/console.php`):
 | `shop:prune-gateway-logs` | daily 04:10 | Deletes gateway log entries older than 90 days |
 | `shop:recover-stuck-orders` | every minute | Re-queues delivery and invoice jobs of orders paid over 3 minutes ago that still have undelivered instant items or no invoice (jobs lost in a crash between payment and queueing) |
 | `shop:prune-saved-carts` | daily 04:20 | Deletes saved carts not changed for 30 days (`SHOP_SAVED_CART_DAYS`) |
+| `shop:staff-digest` | every 15 minutes | Emails the staff address a "needs attention" summary when new work arrived: seller applications, products submitted for review, payout requests, tickets and customer replies, locked accounts |
+| `shop:health-alerts` | every 5 minutes | Emails the staff address about each critical check on `/admin/health` (at most hourly per check; sent directly, not through the queue) |
 | health heartbeats | every minute / 5 minutes | Scheduler heartbeat, and a no-op queue job so `/admin/health` can tell an idle worker from a stopped one |
 | `queue:prune-failed` | daily | Keeps failed jobs for 30 days |
 | `auth:clear-resets` | hourly | Removes expired password reset tokens |
@@ -161,6 +163,42 @@ plain-text body of every shop email:
 - **Scope:** an edited text is single-language and used for every
   recipient of that email.
 
+## Staff alerts
+
+Staff alerts go to `SHOP_STAFF_ALERT_EMAIL` (empty means
+`SHOP_SUPPORT_EMAIL`). Use a shared mailbox or a list the on-call people
+read. Alerts that can repeat are throttled so an attack or an outage sends
+one mail per period:
+
+| Alert | When | Throttle |
+|---|---|---|
+| Dispute opened or escalated, or a new message while staff handle it | as it happens | none |
+| Shkeeper callbacks rejected (wrong signature or sender address) | first rejection | 1 hour |
+| Background job failed after all retries (mail, delivery, invoice) | when it gives up | 30 minutes per job type |
+| Shkeeper payout failed / crypto refund failed | Shkeeper reports it | none |
+| Infected upload removed | virus scan | none |
+| Staff account sign-in locked | lock | 1 hour per account |
+| Seller ledger mismatch | nightly reconciliation | 20 hours |
+| Critical health check (including "Shkeeper is not answering") | `shop:health-alerts` | 1 hour per check |
+| Needs-attention digest | `shop:staff-digest` | only when something new arrived |
+
+The health alerts are sent synchronously, so they still arrive when the
+queue worker is down. If the mail server itself is down they cannot be
+sent; the failure is logged at critical level, so your log alerts catch it.
+
+## Email to customers and sellers
+
+Buyers always get emails about their orders, payments, refunds, disputes,
+support replies and account security. Sellers can turn off the per-sale
+and per-review emails under Account > Email notifications; sales and
+reviews stay visible in the seller dashboard.
+
+Emails are queued and retried 5 times over about 20 minutes. A mail that
+still fails stays in the failed jobs list on `/admin/health`, where
+managers and super admins can retry it (one or all) or delete it once the
+mail server works again. The dashboard shows the count. Failed jobs are
+pruned after 30 days.
+
 ## System health
 
 `/admin/health` (super admin, manager, finance) shows the following, each
@@ -168,11 +206,13 @@ with an OK, Check or Problem label:
 
 - **Database:** connection, latency, size, pending migrations.
 - **Background work:** queue worker and scheduler heartbeats, waiting jobs
-  and the age of the oldest, failed jobs.
+  and the age of the oldest, failed jobs. Below the checks: the latest
+  failed jobs with Retry and Delete buttons (super admin, manager).
 - **Storage:** free disk space and the size of uploaded product files,
   writability.
 - **Payments and scanning:** the last successful Shkeeper webhook and API
-  call, ClamAV reachability.
+  call, Shkeeper API errors in the last 15 minutes (critical when the last
+  three calls failed), ClamAV reachability.
 - **Application:** debug mode, HTTPS and config cache in production.
 
 Machines should use `/health` and `/metrics` instead.
@@ -246,6 +286,23 @@ is meant for development only.
   - `shop_queue_failed_jobs` increasing.
   - `shop_exceptions_total` rate.
   - `shop:reconcile-payouts` exiting non-zero.
+
+## Web server, caching and compression
+
+- CSS and JavaScript are linked with a content hash (`?v=...`) and served
+  with `Cache-Control: public, max-age=31536000, immutable`; a deploy that
+  changes a file changes its URL. Without the hash: one hour.
+- nginx gzips CSS, JavaScript and SVG, also behind a TLS terminator that
+  forwards HTTP/1.0. HTML is not compressed on purpose: it contains the
+  CSRF token next to reflected input (the search box), which is what the
+  BREACH attack needs. Pages are small and change per user anyway.
+- HTML responses are `Cache-Control: private, must-revalidate`; prices and
+  stock are always read from the database at checkout, never from a cache.
+- Product images are WebP in two sizes (480 px and 1600 px), served with
+  `srcset` and fixed dimensions; originals are not kept (this also drops
+  EXIF metadata such as GPS positions).
+- `/.well-known/security.txt` names `SHOP_SECURITY_EMAIL` as the
+  vulnerability contact (RFC 9116).
 
 ## Backups
 

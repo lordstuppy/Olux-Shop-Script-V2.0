@@ -28,15 +28,9 @@ enum UserRole: string
         return [self::Support, self::Moderator, self::Finance, self::Manager, self::Admin];
     }
 
-    /** @return list<string> */
-    public static function staffValues(): array
-    {
-        return array_map(fn (self $r) => $r->value, self::staff());
-    }
-
     public function labelKey(): string
     {
-        // "admin" is stored for backwards compatibility; it is the super admin tier.
+        // The stored value "admin" is the super admin tier.
         return $this === self::Admin ? 'Super admin' : ucfirst($this->value);
     }
 }

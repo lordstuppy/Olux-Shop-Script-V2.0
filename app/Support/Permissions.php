@@ -58,12 +58,6 @@ final class Permissions
     ];
 
     /** @return list<string> */
-    public static function abilitiesFor(string $role): array
-    {
-        return array_keys(array_filter(self::MAP, fn (array $roles) => in_array($role, $roles, true)));
-    }
-
-    /** @return list<string> */
     public static function rolesFor(string $ability): array
     {
         return self::MAP[$ability] ?? [];

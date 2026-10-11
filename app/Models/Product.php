@@ -79,11 +79,6 @@ class Product extends Model
         return $this->reviews()->where('status', 'visible')->latest('id');
     }
 
-    public function isSubscription(): bool
-    {
-        return $this->access_days !== null;
-    }
-
     public function downloadLimit(): int
     {
         return $this->download_limit ?? (int) config('shop.max_downloads_per_item');
@@ -118,10 +113,5 @@ class Product extends Model
     public function isSoldOut(): bool
     {
         return $this->stock !== null && $this->stock <= 0;
-    }
-
-    public function hasUnlimitedStock(): bool
-    {
-        return $this->stock === null;
     }
 }

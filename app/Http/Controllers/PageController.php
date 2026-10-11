@@ -33,6 +33,20 @@ class PageController extends Controller
             ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 
+    /** RFC 9116: where to report vulnerabilities (SHOP_SECURITY_EMAIL, see SECURITY.md). */
+    public function securityTxt(): Response
+    {
+        $body = implode("\n", [
+            'Contact: mailto:'.config('shop.security_email'),
+            'Expires: '.now()->addYear()->startOfDay()->toIso8601ZuluString(),
+            'Preferred-Languages: en',
+            'Canonical: '.route('security-txt'),
+            '',
+        ]);
+
+        return response($body, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
     public function robots(): Response
     {
         $body = implode("\n", [

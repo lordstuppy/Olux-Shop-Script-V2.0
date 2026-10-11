@@ -7,7 +7,8 @@
  *  3. Show/hide button (eye) on password fields. Without scripts the fields
  *     simply stay masked: a server-side toggle would have to send the
  *     password back in a page, which is worse than no toggle.
- *  4. Busy indicator on the button that submitted a form, shown when the
+ *  4. Scrolls a sideways section menu (narrow screens) to the current page.
+ *  5. Busy indicator on the button that submitted a form, shown when the
  *     next page takes longer than 200 ms (without scripts the browser's own
  *     loading indicator does this job).
  */
@@ -137,6 +138,13 @@
             field.form.addEventListener('submit', hide);
         }
     });
+
+    // Section menus scroll sideways on narrow screens: show the current entry.
+    var current = document.querySelector('.subnav [aria-current="page"]');
+    var menu = current && current.closest('.nav');
+    if (menu && menu.scrollWidth > menu.clientWidth) {
+        menu.scrollLeft += current.getBoundingClientRect().left - menu.getBoundingClientRect().left - 16;
+    }
 
     var busyTimers = [];
     var clearBusy = function () {
