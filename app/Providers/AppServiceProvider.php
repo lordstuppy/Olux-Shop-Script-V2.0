@@ -26,6 +26,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -59,9 +60,20 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // N+1 guard: outside production, touching an unloaded relation on a model
-        // that came from a multi-row query throws, so tests catch missing eager loads.
-        Model::preventLazyLoading(! $this->app->isProduction());
+        // N+1 guard: touching an unloaded relation on a model that came from a
+        // multi-row query throws outside production, so tests catch missing eager
+        // loads. In production the relation still loads and a warning is logged
+        // once per model, relation and process.
+        Model::preventLazyLoading();
+        if ($this->app->isProduction()) {
+            Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation) {
+                static $seen = [];
+                if (! isset($seen[$key = $model::class.'::'.$relation])) {
+                    $seen[$key] = true;
+                    Log::warning('N+1 query: lazy loading {relation} on {model}', ['relation' => $relation, 'model' => $model::class]);
+                }
+            });
+        }
 
         // Stored settings must never be baked into bootstrap/cache/config.php,
         // and long-running queue workers pick up changes before every job.
