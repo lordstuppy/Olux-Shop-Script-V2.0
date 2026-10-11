@@ -70,7 +70,7 @@ and paid twice.
 | SAST | Semgrep 1.180.0, 9 registry rulesets + 6 project rules: 0 findings |
 | Dynamic probes on the images | 61 of 61 ([evidence/dynamic-probes.json](evidence/dynamic-probes.json)): CORS, CSRF, 28 sensitive paths, headers, cookies, Host and X-Forwarded-* handling, size limits, webhook forgery, rate limits with rotating headers, login timing |
 | ZAP 2.15.0 | Baseline: 0 fail, 48 pass, 9 low/info warnings; active scan (223 URLs): 0 fail, 101 pass, 2 warnings triaged as false positives ([evidence/](evidence/zap-full-scan.md)) |
-| Simulation suite (production images, TLS front end) | SIM_RESULT |
+| Simulation suite (production images, TLS front end) | 101 of 101 scenarios passed (one full run on the candidate; report `tests/simulation/reports/20261011-221630`, git-ignored). An earlier run found SEC-39 |
 
 ## Tests not executed
 

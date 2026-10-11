@@ -554,8 +554,8 @@
   "title": "Login response time does not reveal registered emails",
   "status": "PASS",
   "evidence": {
-   "median_known_s": 0.4221,
-   "median_unknown_s": 0.4339
+   "median_known_s": 0.3472,
+   "median_unknown_s": 0.3314
   }
  }
 ]
