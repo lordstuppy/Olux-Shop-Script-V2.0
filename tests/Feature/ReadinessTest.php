@@ -18,6 +18,9 @@ class ReadinessTest extends TestCase
         $this->withCookie('theme', 'light')->get('/login')->assertSee('data-theme="light"', false);
         $this->withCookie('theme', '"><script>')->get('/')->assertDontSee('data-theme=', false);
 
+        // Unknown URLs render the 404 page without the web middleware (cookie still encrypted).
+        $this->withCookie('theme', 'dark')->get('/no-such-page')->assertNotFound()->assertSee('data-theme="dark"', false);
+
         $this->postForm('/theme', ['theme' => 'system'])->assertCookieExpired('theme');
         $this->postForm('/theme', ['theme' => 'neon'])->assertSessionHasErrors('theme');
     }

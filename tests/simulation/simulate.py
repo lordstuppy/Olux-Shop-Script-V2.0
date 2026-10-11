@@ -20,7 +20,7 @@ sys.path.insert(0, HERE)
 
 from simlib import env, http, record, shop  # noqa: E402
 
-PHASE_MODULES = ['p1_purchase', 'p2_payments', 'p3_accounts', 'p4_seller', 'p5_admin', 'p6_adversarial', 'p8_recovery', 'p9_extended']
+PHASE_MODULES = ['p1_purchase', 'p2_payments', 'p3_accounts', 'p4_seller', 'p5_admin', 'p6_adversarial', 'p8_recovery', 'p9_extended', 'p10_readiness']
 
 
 class Ctx:
@@ -49,7 +49,10 @@ def log_problems(before, ctx):
         exception = context.get('exception')
         if exception and not isinstance(exception, str):
             exception = exception.get('class') if isinstance(exception, dict) else str(exception)
-        if exception and not any(p.search(message) for p in ctx.allowed_logs):
+        if message.startswith('N+1 query'):
+            # Production logs lazy loading instead of throwing; any occurrence is a finding.
+            problems.append(f'{message[:300]} ({context.get("request_id")})')
+        elif exception and not any(p.search(message) for p in ctx.allowed_logs):
             problems.append(f'unhandled exception logged: {exception}: {message[:300]} ({context.get("request_id")})')
         elif exception:
             continue

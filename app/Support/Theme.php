@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Cookie;
+use Throwable;
 
 /**
  * Colour scheme preference. "system" follows the device setting
@@ -18,6 +20,16 @@ final class Theme
     public static function current(Request $request): string
     {
         $value = $request->cookie(self::COOKIE);
+        if (is_string($value) && ! in_array($value, self::CHOICES, true)) {
+            // Error pages for unknown URLs render without the web middleware, so
+            // the cookie is still encrypted; decrypt it the way EncryptCookies does.
+            try {
+                $encrypter = app('encrypter');
+                $value = CookieValuePrefix::validate(self::COOKIE, $encrypter->decrypt($value, false), $encrypter->getAllKeys());
+            } catch (Throwable) {
+                $value = null;
+            }
+        }
 
         return is_string($value) && in_array($value, self::CHOICES, true) ? $value : 'system';
     }
