@@ -7,7 +7,7 @@ from simlib import env, shop
 from simlib.http import Client
 from simlib.record import scenario
 
-from .common import admin, buyer, check_ledger, flashes, instant_product, items_of, money, staff_form, wait_status
+from .common import admin, buyer, check_ledger, flashes, instant_product, items_of, money, past_dispute_window, seller_available, staff_form, wait_status
 from .p3_accounts import links, register
 
 
@@ -151,8 +151,13 @@ def payouts(rec, ctx):
     wait_status(oid, 'delivered')
     c = seller_login(5)
     cur = 'USD'
-    available = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='{cur}'"))
-    rec.ev(f'available {available}')
+    rec.check(seller_available(c, cur) < int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='{cur}'")),
+              'earnings payable while the dispute window is open')
+    past_dispute_window(sid)
+    rec.step('sales moved 15 days into the past (dispute window closed)')
+    total = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='{cur}'"))
+    available = seller_available(c, cur)
+    rec.ev(f'available {available} of ledger total {total}')
     r = c.form('/seller/payouts', '/seller/payouts', {'amount': money(available + 100), 'currency': cur})
     rec.check('exceeds' in flashes(r).lower() or 'available' in flashes(r).lower(), f'over-balance payout: {flashes(r)}')
     r = c.form('/seller/payouts', '/seller/payouts', {'amount': money(available // 2), 'currency': cur})
@@ -162,7 +167,7 @@ def payouts(rec, ctx):
     r = staff_form(fin, '/admin/payouts', f'/admin/payouts/{p1}/reject', {'note': 'Simulation: please confirm your address first.'})
     rec.check(env.scalar(f'select status from payouts where id={p1}') == 'rejected', f'reject: {flashes(r)}')
     after = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='{cur}'"))
-    rec.check(after == available, f'rejected payout did not return the funds: {available} -> {after}')
+    rec.check(after == total, f'rejected payout did not return the funds: {total} -> {after}')
     r = c.form('/seller/payouts', '/seller/payouts', {'amount': money(available // 2), 'currency': cur})
     p2 = env.scalar(f"select id from payouts where seller_id={sid} order by id desc limit 1")
     rec.check(p2 != p1, f'second payout not requested: {flashes(r)}')

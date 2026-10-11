@@ -1,0 +1,71 @@
+# Project rules enforced by scripts/security-gate.sh (and CI job "security").
+# They pin down invariants the security audit verified, so a later change
+# cannot quietly undo them. See docs/security/security-owasp-mapping.md.
+rules:
+  - id: shop-no-unescaped-blade-output
+    languages: [generic]
+    paths:
+      include: ["resources/views/**/*.blade.php"]
+      exclude:
+        - "resources/views/mail/**"          # text-only mails, never rendered as HTML
+        - "resources/views/products/show.blade.php"  # JSON-LD, encoded with JSON_HEX_* flags
+        - "resources/views/pages/sitemap.blade.php"  # constant XML prolog
+    pattern-regex: '\{!!'
+    message: Unescaped Blade output in an HTML view. Use {{ }}; HTML from users is never rendered.
+    severity: ERROR
+
+  - id: shop-no-interpolated-raw-sql
+    languages: [generic]
+    paths:
+      include: ["app/**/*.php", "routes/**/*.php", "database/**/*.php"]
+    pattern-regex: '(?i)(DB::(raw|select|statement|unprepared)|(select|where|orWhere|having|orderBy|groupBy)Raw)\(\s*"[^"]*\$'
+    message: Variable interpolated into raw SQL. Pass values as bindings (?) instead.
+    severity: ERROR
+
+  - id: shop-no-dangerous-functions
+    languages: [php]
+    paths:
+      include: ["app/**", "routes/**", "config/**", "bootstrap/**"]
+    pattern-either:
+      - pattern: unserialize(...)
+      - pattern: eval(...)
+      - pattern: shell_exec(...)
+      - pattern: exec(...)
+      - pattern: system(...)
+      - pattern: passthru(...)
+      - pattern: proc_open(...)
+      - pattern: popen(...)
+      - pattern: Blade::render(...)
+    message: Code execution or deserialisation primitive. Not used anywhere in the app; do not add it.
+    severity: ERROR
+
+  - id: shop-csrf-exceptions-only-signed-webhooks
+    languages: [generic]
+    paths:
+      include: ["bootstrap/app.php"]
+    patterns:
+      - pattern-regex: 'preventRequestForgery\(except:\s*\[[^\]]*\]'
+      - pattern-not-regex: "preventRequestForgery\\(except:\\s*\\['webhooks/shkeeper', 'webhooks/shkeeper/payouts'\\]"
+    message: CSRF exemptions are limited to the two HMAC-signed Shkeeper callbacks.
+    severity: ERROR
+
+  - id: shop-mass-assignment-guard
+    languages: [generic]
+    paths:
+      include: ["app/Models/**"]
+    pattern-regex: '\$guarded\s*=\s*\[\s*\]'
+    message: Models keep $guarded = ['id'] (or a $fillable list); an empty guard allows mass assignment of roles, balances and owners.
+    severity: ERROR
+
+  - id: shop-request-all-into-model
+    languages: [php]
+    paths:
+      include: ["app/**"]
+    pattern-either:
+      - pattern: $M::create($REQ->all())
+      - pattern: $M->fill($REQ->all())
+      - pattern: $M->update($REQ->all())
+      - pattern: $M::create($REQ->input())
+      - pattern: $M->update($REQ->input())
+    message: Raw request data written to a model. Validate and build the attribute array on the server.
+    severity: ERROR

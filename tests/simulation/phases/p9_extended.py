@@ -15,7 +15,7 @@ from simlib import env, shop
 from simlib.http import Client, forms_of
 from simlib.record import scenario
 
-from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, parallel, staff_form, wait_status
+from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, parallel, past_dispute_window, staff_form, wait_status
 from .p4_seller import create_product
 
 
@@ -166,7 +166,8 @@ def payout_address(rec, ctx):
     r = s.form('/seller/payouts', '/seller/payouts', {'amount': '10.00', 'currency': 'USD'})
     rec.check('payouts are possible again after' in flashes(r), f'payout during the waiting period: {flashes(r)}')
     env.sql(f"update seller_profiles set payout_address_changed_at=now()-interval '49 hours' where user_id={sid}")
-    rec.step('waiting period moved 49 hours into the past')
+    past_dispute_window(sid)
+    rec.step('waiting period moved 49 hours and the sales 15 days into the past')
     r = s.form('/seller/payouts', '/seller/payouts', {'amount': '10.00', 'currency': 'USD'})
     rec.check(env.scalar(f"select destination from payouts where seller_id={sid} order by id desc limit 1") == new, f'payout after waiting: {flashes(r)}')
 

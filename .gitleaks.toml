@@ -1,0 +1,24 @@
+# Secret scanning (scripts/security-gate.sh, CI job "security").
+# Default gitleaks rules plus an allowlist of the exact, public test-only
+# values below. Do not allowlist paths: a real secret committed next to them
+# must still be found.
+title = "shop gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixed credentials of the disposable test stacks (never valid anywhere else)"
+regexTarget = "match"
+regexes = [
+  # Shkeeper mock API key of the simulation stack (docker-compose.test.yml) and the live test.
+  '''sim-api-key-0123456789''',
+  '''live-api-key-0123456789''',
+  # TOTP secrets of the five simulation staff accounts (database/seeders/SimulationSeeder.php);
+  # that seeder refuses to run in production without SHOP_SIMULATION=allow-known-passwords.
+  '''UJZDEGXDNCF32EPF3DHODZDOCIS2JHTL''',
+  '''GMXGEDN73U55XTPLPFT7V4SEH2KVJ72C''',
+  '''EUVW75EFR6EDT4SYWB5WKH7DNSIPZZ7F''',
+  '''K4ZRI3R2WYOJFLJOOA7LQSAJ2XUID5ZZ''',
+  '''ZZG6ZDMEN4KHVDGAJGXBENYJQWX6HH75''',
+]

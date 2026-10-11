@@ -191,7 +191,7 @@ def admin_onboarding():
         m = re.search(r'Setup key: <span class="mono">([A-Z2-7 ]+)</span>', page)
     check(m, 'no setup key on two-factor page:\n' + text_of(page)[:500])
     secret = m.group(1).replace(' ', '')
-    a.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(secret)}, page=page)
+    a.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(secret), 'current_password': 'Admin-live-pass-2026'}, page=page)
     codes = re.findall(r'\b[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}\b', a.last[2])
     check(len(codes) >= 8, f'recovery codes not shown: {a.flash()}')
     STATE['admin_secret'] = secret
@@ -530,6 +530,9 @@ def payouts():
     sl.form(urllib.parse.urlparse(link[0]).path, '/seller/payout-address/confirm/' + link[0].rstrip('/').split('/')[-1], page=sl.last[2])
     check(sql("select payout_address from seller_profiles") == 'bc1qnewselleraddress000000000000000000000', 'payout address not changed')
     wait_mail(pos, 'seller@live.test', 'payout address was changed')
+    # Earnings are payable once the buyer's dispute window has closed: move the sales past it.
+    sql("update order_items set delivered_at = delivered_at - interval '15 days' where delivered_at is not null; "
+        "update orders set paid_at = paid_at - interval '15 days' where paid_at is not null")
     sl.get('/seller/payouts')
     sl.form('/seller/payouts', '/seller/payouts', {'amount': '10.00', 'currency': 'USD'})
     payout = sql("select id from payouts order by id desc limit 1")
@@ -554,7 +557,7 @@ def account_security():
     m = re.search(r'Setup key: <span class="mono">([A-Z2-7 ]+)</span>', b.last[2])
     check(m, 'no setup key')
     secret = m.group(1).replace(' ', '')
-    b.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(secret)})
+    b.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(secret), 'current_password': PW})
     codes = re.findall(r'\b[a-zA-Z0-9]{5}-[a-zA-Z0-9]{5}\b', b.last[2])
     check(len(codes) >= 8, 'no recovery codes')
     b2 = Client('buyer-2nd-device')
@@ -635,7 +638,7 @@ def admin_tour():
     confirm_password(sup)
     sup.get('/account/two-factor')
     sec = re.search(r'Setup key: <span class="mono">([A-Z2-7 ]+)</span>', sup.last[2]).group(1).replace(' ', '')
-    sup.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(sec)})
+    sup.form('/account/two-factor', '/account/two-factor', {'code': fresh_totp(sec), 'current_password': PW})
     for p, want in [('/admin', 200), ('/admin/tickets', 200), ('/admin/orders', 200), ('/admin/users', 200), ('/admin/reviews', 200),
                     ('/admin/settings', 403), ('/admin/exports', 403), ('/admin/payouts', 403), ('/admin/gift-cards', 403), ('/admin/coupons', 403)]:
         st, _, _ = sup.go('GET', p)

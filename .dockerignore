@@ -18,3 +18,4 @@ tests/simulation/work
 tests/simulation/reports
 tests/simulation/tls
 tests/simulation/sim.env
+/storage/security-gate

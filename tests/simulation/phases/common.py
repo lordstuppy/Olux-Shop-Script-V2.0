@@ -146,5 +146,22 @@ def money(minor):
     return f'{minor // 100}.{minor % 100:02d}'
 
 
+def past_dispute_window(seller_id, days=15):
+    """Moves the seller's sales back past the payout hold and the buyer's dispute window
+    (earnings are held until both have passed), like the other scenarios skip waiting time."""
+    env.sql(f"""update order_items set delivered_at=delivered_at-interval '{days} days' where seller_id={seller_id} and delivered_at is not null;
+               update orders set paid_at=paid_at-interval '{days} days' where paid_at is not null
+                 and id in (select order_id from order_items where seller_id={seller_id})""")
+
+
+def seller_available(c, cur='USD'):
+    """The payable amount the shop shows the seller (minor units)."""
+    page = c.get('/seller/payouts')
+    m = re.search(r'Available \(' + cur + r'\)</span><strong>([^<]+)</strong>', page.text)
+    if not m:
+        raise Fail(f'no available {cur} balance on /seller/payouts')
+    return int(re.sub(r'[^0-9]', '', m.group(1)))
+
+
 def find_text(r, pattern):
     return re.search(pattern, text_of(r.text))

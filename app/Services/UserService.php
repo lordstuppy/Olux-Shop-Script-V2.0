@@ -201,11 +201,14 @@ class UserService
         Log::info('Password reset requested; broker status {status}', ['status' => $status]);
     }
 
+    /**
+     * A hash made with the current hashing settings, to check unknown emails
+     * against. Cached, because making one costs as much as checking it, and a
+     * PHP-FPM request starts without the previous request's statics.
+     */
     private static function dummyHash(): string
     {
-        static $hash = null;
-
-        return $hash ??= Hash::make(Str::random(40));
+        return Cache::rememberForever('auth.dummy-hash.'.md5((string) json_encode(config('hashing'))), fn () => Hash::make(Str::random(40)));
     }
 
     public function resetPassword(string $email, string $token, string $password): void

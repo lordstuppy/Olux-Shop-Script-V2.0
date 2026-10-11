@@ -95,6 +95,13 @@ services:
     ports:
       - "127.0.0.1:8025:8025"
 
+  # The TLS front end below runs on the host network and reaches nginx through
+  # the published port, i.e. from the Docker bridge gateway: trust that range
+  # here (test stack only; production names its own proxy, see docker-compose.yml).
+  web:
+    environment:
+      NGINX_TRUSTED_PROXY: 172.16.0.0/12
+
   # Host network, so the shop sees each simulated person's own (loopback)
   # address, as a production load balancer passes the client address on.
   tls:

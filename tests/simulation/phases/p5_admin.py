@@ -9,7 +9,7 @@ from simlib import env, shop
 from simlib.http import Client, forms_of, text_of
 from simlib.record import scenario
 
-from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, staff_form, wait_status
+from .common import admin, balance, buyer, check_ledger, flashes, instant_product, items_of, money, past_dispute_window, seller_available, staff_form, wait_status
 from .p3_accounts import register, links
 
 STAFF = {'admin': 'superadmin@sim.test', 'manager': 'manager@sim.test', 'finance': 'finance@sim.test',
@@ -273,7 +273,8 @@ def gateway_payout(rec, ctx):
     sid = env.scalar("select id from users where email='seller01@sim.test'")
     paid_order(45, product=instant_product(f'seller_id={sid}'), qty=3)
     s = shop.login('seller01@sim.test')
-    avail = int(env.scalar(f"select coalesce(sum(amount_minor),0) from seller_ledger_entries where seller_id={sid} and currency='USD'"))
+    past_dispute_window(sid)
+    avail = seller_available(s)
     r = s.form('/seller/payouts', '/seller/payouts', {'amount': money(min(avail, 2000)), 'currency': 'USD'})
     pid = env.scalar(f'select id from payouts where seller_id={sid} order by id desc limit 1')
     rec.check(pid, f'request: {flashes(r)}')

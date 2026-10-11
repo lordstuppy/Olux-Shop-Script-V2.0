@@ -44,6 +44,36 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate
       - run: php artisan test
 
+  # Security release gate (docs/security/security-audit-summary.md): dependency
+  # advisories, secret scan of the full history, static analysis with the
+  # project rules, container configuration and the runtime image. Any failure
+  # or any check that cannot run fails the job; make it a required check.
+  security:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, gd, sodium
+          coverage: none
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: python3 -m pip install --user semgrep==1.180.0
+      - name: Build the runtime image
+        run: docker build -t digital-goods-shop:ci .
+      - name: Security gate
+        run: GATE_IMAGE=digital-goods-shop:ci OUT="$RUNNER_TEMP/security-gate" scripts/security-gate.sh
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-gate
+          path: ${{ runner.temp }}/security-gate
+
   browser:
     runs-on: ubuntu-24.04
     needs: php

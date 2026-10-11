@@ -9,25 +9,26 @@ map $arg_v $static_cache_control {
     default "public, max-age=31536000, immutable";
 }
 
-# Client address and scheme. X-Forwarded-* headers are believed only from a
-# TLS terminator or load balancer on a private network (the realip module
-# replaces $remote_addr with the client it names); from anyone else they are
-# ignored. PHP then gets only the values set below, never the client's own
-# X-Forwarded-* headers, so nobody can pick their IP address (per-IP rate
-# limits, the webhook allowlist, audit IPs) by sending a header.
-set_real_ip_from 127.0.0.1;
-set_real_ip_from 10.0.0.0/8;
-set_real_ip_from 172.16.0.0/12;
-set_real_ip_from 192.168.0.0/16;
+# Template: the nginx image fills in ${NGINX_TRUSTED_PROXY} at start-up (see
+# docker-compose.yml) and writes the result to /etc/nginx/conf.d.
+#
+# Client address and scheme. X-Forwarded-* headers are believed only from the
+# one proxy address or CIDR in NGINX_TRUSTED_PROXY: the TLS terminator or load
+# balancer in front of this server. The default (127.0.0.1/32) trusts nobody,
+# for when nginx itself faces the internet. The realip module replaces
+# $remote_addr with the client the proxy names; PHP then gets only the values
+# set in the PHP location below, never the client's own X-Forwarded-* headers,
+# so nobody can pick their IP address (per-IP rate limits, the webhook
+# allowlist, audit IPs) by sending a header. Do not trust a whole private
+# range: with Docker's userland proxy every client arrives from the bridge
+# gateway, which would then be "trusted".
+set_real_ip_from ${NGINX_TRUSTED_PROXY};
 real_ip_header X-Forwarded-For;
 real_ip_recursive on;
 
 geo $realip_remote_addr $from_trusted_proxy {
-    default         0;
-    127.0.0.1/32    1;
-    10.0.0.0/8      1;
-    172.16.0.0/12   1;
-    192.168.0.0/16  1;
+    default                 0;
+    ${NGINX_TRUSTED_PROXY}  1;
 }
 map "$from_trusted_proxy:$http_x_forwarded_proto" $client_proto {
     default            $scheme;
@@ -80,12 +81,11 @@ server {
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         fastcgi_param DOCUMENT_ROOT $realpath_root;
         include fastcgi_params;
-        # Replace whatever X-Forwarded-* the client sent (see the top of this file).
+        # Replace whatever X-Forwarded-For/-Proto/-Port the client sent (see the top
+        # of this file); Laravel ignores X-Forwarded-Host (TrustProxies).
         fastcgi_param HTTP_X_FORWARDED_FOR $remote_addr;
         fastcgi_param HTTP_X_FORWARDED_PROTO $client_proto;
-        fastcgi_param HTTP_X_FORWARDED_HOST $http_host;
         fastcgi_param HTTP_X_FORWARDED_PORT $client_port if_not_empty;
-        fastcgi_param HTTP_X_FORWARDED_PREFIX "/";
         fastcgi_param HTTP_FORWARDED "" if_not_empty;
         fastcgi_read_timeout 60s;
         # Room for long redirect URLs and cookies in response headers (the

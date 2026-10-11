@@ -1,0 +1,10 @@
+# Changes to the security gate, its policy files and the security reports need
+# a review by the repository owner (enforce with branch protection:
+# "Require review from Code Owners").
+/.github/                 @lordstuppy
+/scripts/security-gate.sh @lordstuppy
+/.semgrep/                @lordstuppy
+/.gitleaks.toml           @lordstuppy
+/docs/security/           @lordstuppy
+/docker/                  @lordstuppy
+/Dockerfile               @lordstuppy

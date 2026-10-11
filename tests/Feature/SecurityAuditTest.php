@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
@@ -448,6 +449,21 @@ class SecurityAuditTest extends TestCase
             $this->postForm(route('seller.products.keys.store', $product->id), ['keys' => 'KEY-'.$i])->assertSessionHas('success');
         }
         $this->postForm(route('seller.products.keys.store', $product->id), ['keys' => 'KEY-X'])->assertStatus(429);
+    }
+
+    // SEC-31: with no trusted proxies configured, a forged Host header must not make every proxy trusted.
+    public function test_sec31_forged_host_does_not_turn_on_proxy_trust(): void
+    {
+        config(['shop.trusted_proxies' => '']);
+        Route::middleware('web')->get('/_test/ip', fn () => request()->ip().'|'.request()->getHost());
+        $spoof = ['REMOTE_ADDR' => '198.51.100.4', 'HTTP_X_FORWARDED_FOR' => '203.0.113.7'];
+        $this->call('GET', 'http://shop.on-forge.com/_test/ip', [], [], [], $spoof)->assertSee('198.51.100.4|');
+        $this->call('GET', 'http://shop.on-vapor.com/_test/ip', [], [], [], $spoof)->assertSee('198.51.100.4|');
+
+        // A trusted proxy may name the client, but never the host.
+        config(['shop.trusted_proxies' => '10.0.0.0/8']);
+        $this->call('GET', 'http://shop.test/_test/ip', [], [], [], ['REMOTE_ADDR' => '10.0.0.5', 'HTTP_X_FORWARDED_FOR' => '203.0.113.7', 'HTTP_X_FORWARDED_HOST' => 'evil.example'])
+            ->assertSee('203.0.113.7|shop.test');
     }
 
     // SEC-27: Shkeeper credentials never follow a redirect to another host.
