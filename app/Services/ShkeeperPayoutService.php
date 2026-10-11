@@ -17,7 +17,6 @@ use App\Models\User;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Support\Money;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Sends approved seller payouts and crypto refunds through Shkeeper's payout
@@ -34,6 +33,7 @@ class ShkeeperPayoutService
         private readonly RefundService $refunds,
         private readonly AuditLogger $audit,
         private readonly StaffAlerts $alerts,
+        private readonly Notifier $notifier,
     ) {}
 
     public static function enabled(): bool
@@ -185,7 +185,7 @@ class ShkeeperPayoutService
         ]);
         if ($changed) {
             Log::info('Payout {payout_id} of {amount} confirmed by Shkeeper', ['payout_id' => $payout->id, 'amount' => Money::format($payout->amount_minor, $payout->currency)]);
-            Mail::to($payout->seller)->queue(new PayoutStatusMail($payout->fresh()));
+            $this->notifier->send($payout->seller, new PayoutStatusMail($payout->fresh()));
         }
 
         return $changed ? 'processed' : 'ignored';

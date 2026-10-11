@@ -39,12 +39,11 @@ class AccountController extends Controller
 
     public function updateNotifications(Request $request): RedirectResponse
     {
-        $request->user()->forceFill([
-            'notify_sales' => $request->boolean('notify_sales'),
-            'notify_reviews' => $request->boolean('notify_reviews'),
-        ])->save();
+        $user = $request->user();
+        $user->forceFill(['notification_sound' => $request->boolean('notification_sound')]
+            + ($user->isSeller() ? ['notify_sales' => $request->boolean('notify_sales'), 'notify_reviews' => $request->boolean('notify_reviews')] : []))->save();
 
-        return back()->with('success', __('Email preferences saved.'));
+        return back()->with('success', __('Notification settings saved.'));
     }
 
     public function requestEmailChange(Request $request, UserService $users): RedirectResponse

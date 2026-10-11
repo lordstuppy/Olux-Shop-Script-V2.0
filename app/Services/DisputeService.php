@@ -43,6 +43,7 @@ class DisputeService
         private readonly ShkeeperPayoutService $shkeeper,
         private readonly DeliveryService $delivery,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /** The date until which the buyer can open a dispute for this line, or null when it is not disputable. */
@@ -107,8 +108,8 @@ class DisputeService
         }
 
         Log::info('Dispute {dispute_id} opened for order {public_id}', ['dispute_id' => $dispute->id, 'public_id' => $order->public_id]);
-        Mail::to($dispute->buyer)->queue(new DisputeOpenedMail($dispute, 'buyer'));
-        Mail::to($dispute->seller)->queue(new DisputeOpenedMail($dispute, 'seller'));
+        $this->notifier->send($dispute->buyer, new DisputeOpenedMail($dispute, 'buyer'));
+        $this->notifier->send($dispute->seller, new DisputeOpenedMail($dispute, 'seller'));
         $this->alertStaff(new DisputeOpenedMail($dispute, 'staff'));
 
         return $dispute;
@@ -139,7 +140,7 @@ class DisputeService
 
         if (! $internal) {
             foreach ($this->otherParties($dispute, $role) as [$recipient, $recipientRole]) {
-                Mail::to($recipient)->queue(new DisputeMessageMail($dispute, $recipientRole, $role));
+                $this->notifier->send($recipient, new DisputeMessageMail($dispute, $recipientRole, $role));
             }
             if ($role !== 'staff' && $dispute->status === DisputeStatus::AwaitingStaff) {
                 $this->alertStaff(new DisputeMessageMail($dispute, 'staff', $role));
@@ -177,8 +178,8 @@ class DisputeService
                 });
                 if ($escalated) {
                     $count++;
-                    Mail::to($dispute->buyer)->queue(new DisputeEscalatedMail($dispute, 'buyer'));
-                    Mail::to($dispute->seller)->queue(new DisputeEscalatedMail($dispute, 'seller'));
+                    $this->notifier->send($dispute->buyer, new DisputeEscalatedMail($dispute, 'buyer'));
+                    $this->notifier->send($dispute->seller, new DisputeEscalatedMail($dispute, 'seller'));
                     $this->alertStaff(new DisputeEscalatedMail($dispute, 'staff'));
                 }
             });
@@ -289,8 +290,8 @@ class DisputeService
             throw new UserFacingException(__('Dispute #:id is already closed.', ['id' => $dispute->id]));
         }
 
-        Mail::to($dispute->buyer)->queue(new DisputeResolvedMail($dispute, 'buyer'));
-        Mail::to($dispute->seller)->queue(new DisputeResolvedMail($dispute, 'seller'));
+        $this->notifier->send($dispute->buyer, new DisputeResolvedMail($dispute, 'buyer'));
+        $this->notifier->send($dispute->seller, new DisputeResolvedMail($dispute, 'seller'));
     }
 
     private function message(Dispute $dispute, ?User $author, string $role, string $body, bool $internal = false): DisputeMessage

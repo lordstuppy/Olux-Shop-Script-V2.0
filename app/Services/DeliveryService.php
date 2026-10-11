@@ -15,7 +15,6 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -30,6 +29,7 @@ class DeliveryService
     public function __construct(
         private readonly OrderService $orders,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     public function deliver(Order $order): void
@@ -87,7 +87,7 @@ class DeliveryService
 
         $order = $item->order()->first();
         $this->completeIfFullyDelivered($order);
-        Mail::to($order->buyer)->queue((new OrderDeliveredMail($order))->afterCommit());
+        $this->notifier->send($order->buyer, (new OrderDeliveredMail($order))->afterCommit());
     }
 
     /**
@@ -207,7 +207,7 @@ class DeliveryService
         });
 
         $this->completeIfFullyDelivered($item->order()->first());
-        Mail::to($item->order->buyer)->queue((new OrderDeliveredMail($item->order))->afterCommit());
+        $this->notifier->send($item->order->buyer, (new OrderDeliveredMail($item->order))->afterCommit());
 
         return __('Replacement delivered: :what.', ['what' => implode(', ', $done)]);
     }

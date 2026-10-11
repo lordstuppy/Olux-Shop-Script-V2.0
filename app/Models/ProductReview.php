@@ -11,7 +11,7 @@ class ProductReview extends Model
 
     protected function casts(): array
     {
-        return ['rating' => 'integer'];
+        return ['rating' => 'integer', 'seller_replied_at' => 'datetime'];
     }
 
     public function product(): BelongsTo

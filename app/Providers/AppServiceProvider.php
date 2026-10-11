@@ -7,11 +7,13 @@ use App\Mail\StaffAlertMail;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Services\CartService;
+use App\Services\Notifier;
 use App\Services\Security\ClamAvScanner;
 use App\Services\Security\VirusScanner;
 use App\Services\Shkeeper\ShkeeperClient;
 use App\Services\StaffAlerts;
 use App\Services\SystemHealthService;
+use App\Support\LivePages;
 use App\Support\Permissions;
 use App\Support\RequestId;
 use App\Support\Settings;
@@ -117,7 +119,7 @@ class AppServiceProvider extends ServiceProvider
         // (a bigint column answers "invalid input syntax" with a 500). Orders use
         // UUIDs and are checked in Order::resolveRouteBinding.
         Route::patterns(array_fill_keys(['ticket', 'dispute', 'item', 'file', 'image', 'payout', 'event', 'announcement',
-            'coupon', 'review', 'user', 'profile', 'product', 'category'], '[0-9]+'));
+            'coupon', 'review', 'user', 'profile', 'product', 'category', 'notification'], '[0-9]+'));
 
         Paginator::defaultView('pagination');
         Paginator::defaultSimpleView('pagination');
@@ -136,6 +138,12 @@ class AppServiceProvider extends ServiceProvider
                 $announcements = [];
             }
             $view->with('announcements', $announcements);
+
+            $user = $request->user();
+            $view->with([
+                'unreadCount' => $user ? app(Notifier::class)->unreadCount($user) : 0,
+                'liveVersion' => $user ? LivePages::version($user, $request->getPathInfo()) : null,
+            ]);
 
             if ($request->hasSession()) {
                 $cart = app(CartService::class);
@@ -186,6 +194,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('forms', fn (Request $request) => Limit::perMinute($limits['forms'])->by('forms:'.($request->user()?->id ?? $request->ip()))
             ->response($throttled(__('You are submitting forms too quickly. Wait a moment and try again.'))));
+
+        // Live updates poll every 10 s from the visible tab; room for a few windows.
+        RateLimiter::for('live', fn (Request $request) => Limit::perMinute(30)->by('live:'.($request->user()?->id ?? $request->ip())));
 
         RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute($limits['webhook'])->by('webhook:'.$request->ip()));
 

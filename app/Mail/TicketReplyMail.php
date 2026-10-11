@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Ticket;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class TicketReplyMail extends Mailable implements ShouldQueue
+class TicketReplyMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -39,5 +40,15 @@ class TicketReplyMail extends Mailable implements ShouldQueue
             'subject' => $this->ticket->subject,
             'ticket_url' => route('tickets.show', $this->ticket),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'ticket';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('tickets.show', $this->ticket);
     }
 }

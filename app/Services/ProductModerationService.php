@@ -7,7 +7,6 @@ use App\Exceptions\UserFacingException;
 use App\Mail\ProductDecisionMail;
 use App\Models\Product;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Staff status changes on products, used by the single and the bulk
@@ -19,7 +18,10 @@ class ProductModerationService
     /** Statuses staff may set. */
     public const STAFF_STATUSES = [ProductStatus::Active, ProductStatus::Disabled, ProductStatus::PendingReview];
 
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
+    ) {}
 
     /**
      * Sets a staff status. $note explains a disable to the seller (stored and
@@ -58,7 +60,7 @@ class ProductModerationService
 
         $seller = $product->seller;
         if ($seller !== null && ($status === ProductStatus::Disabled || ($status === ProductStatus::Active && $old === ProductStatus::PendingReview))) {
-            Mail::to($seller)->queue((new ProductDecisionMail($product, $status === ProductStatus::Active, (string) $product->moderation_note))->afterCommit());
+            $this->notifier->send($seller, (new ProductDecisionMail($product, $status === ProductStatus::Active, (string) $product->moderation_note))->afterCommit());
         }
     }
 }

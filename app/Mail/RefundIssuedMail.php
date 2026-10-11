@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Enums\PaymentProvider;
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Support\Money;
@@ -14,7 +15,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RefundIssuedMail extends Mailable implements ShouldQueue
+class RefundIssuedMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -47,5 +48,15 @@ class RefundIssuedMail extends Mailable implements ShouldQueue
             },
             'order_url' => route('orders.show', $this->order),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'order';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('orders.show', $this->order);
     }
 }

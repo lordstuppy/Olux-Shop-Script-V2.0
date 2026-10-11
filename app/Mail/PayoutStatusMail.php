@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Payout;
 use App\Support\Money;
 use Illuminate\Bus\Queueable;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PayoutStatusMail extends Mailable implements ShouldQueue
+class PayoutStatusMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -44,5 +45,15 @@ class PayoutStatusMail extends Mailable implements ShouldQueue
             'note' => (string) $this->payout->note,
             'payouts_url' => route('seller.payouts'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'payout';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('seller.payouts');
     }
 }

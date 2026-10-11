@@ -18,9 +18,11 @@ use App\Models\SellerProfile;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
 use App\Services\DisputeService;
+use App\Services\Notifier;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
@@ -33,7 +35,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -83,7 +84,7 @@ Artisan::command('shop:subscription-reminders', function () {
         ->whereHas('order', fn ($q) => $q->whereIn('status', ['paid', 'delivered', 'partially_refunded']))
         ->chunkById(200, function ($items) use (&$sent) {
             foreach ($items as $item) {
-                Mail::to($item->order->buyer)->queue(new SubscriptionRenewalMail($item));
+                app(Notifier::class)->send($item->order->buyer, new SubscriptionRenewalMail($item));
                 $item->forceFill(['renewal_reminded_at' => now()])->save();
                 $sent++;
             }
@@ -187,6 +188,12 @@ Artisan::command('shop:health-alerts', function (SystemHealthService $health, St
     return 0;
 })->purpose('Email staff about critical system health checks (at most hourly per check)');
 
+Artisan::command('shop:prune-notifications', function () {
+    $read = UserNotification::query()->whereNotNull('read_at')->where('created_at', '<', now()->subDays(90))->delete();
+    $old = UserNotification::query()->where('created_at', '<', now()->subDays(365))->delete();
+    $this->info("Deleted {$read} read notifications older than 90 days and {$old} older than a year.");
+})->purpose('Delete read notifications after 90 days and all after a year');
+
 Artisan::command('shop:prune-saved-carts', function () {
     $count = DB::table('saved_carts')->where('updated_at', '<', now()->subDays((int) config('shop.saved_cart_days')))->delete();
     $this->info("Deleted {$count} saved carts.");
@@ -246,6 +253,7 @@ Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverl
 Schedule::command('auth:clear-resets')->hourly();
 Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');
 Schedule::command('shop:prune-saved-carts')->dailyAt('04:20');
+Schedule::command('shop:prune-notifications')->dailyAt('04:30');
 Schedule::command('shop:staff-digest')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('shop:health-alerts')->everyFiveMinutes()->withoutOverlapping();
 // Heartbeats for the system health page.

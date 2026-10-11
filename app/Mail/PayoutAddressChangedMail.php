@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\SellerProfile;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class PayoutAddressChangedMail extends Mailable implements ShouldQueue
+class PayoutAddressChangedMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -40,5 +41,15 @@ class PayoutAddressChangedMail extends Mailable implements ShouldQueue
             'crypto' => (string) $this->profile->payout_crypto,
             'pause_hours' => (string) config('shop.payout_address_cooldown_hours'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'payout';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('seller.payout-settings');
     }
 }

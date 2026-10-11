@@ -36,6 +36,7 @@ class UserService
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly StaffAlerts $alerts,
+        private readonly Notifier $notifier,
     ) {}
 
     public function register(string $name, string $email, string $password): User
@@ -133,7 +134,7 @@ class UserService
             $this->audit->log('user.login_locked', $user, ['attempts' => $failures, 'minutes' => (int) $lock['lock_minutes']], null);
             // At most one mail a day, so repeated locks cannot be used to flood the owner.
             if (Cache::add('login-lock-mail:'.$user->id, true, now()->addDay())) {
-                Mail::to($user)->queue(new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
+                $this->notifier->send($user, new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
             }
             if ($user->isStaff()) {
                 $this->alerts->send(__('Sign-in to a staff account was locked'), [
@@ -182,7 +183,7 @@ class UserService
             'last_seen_at' => now(),
         ]);
         if (! $firstDevice) {
-            Mail::to($user)->queue(new NewDeviceLoginMail($user, $device));
+            $this->notifier->send($user, new NewDeviceLoginMail($user, $device));
         }
     }
 
@@ -241,7 +242,7 @@ class UserService
         ])->save();
 
         Mail::to($newEmail)->queue(new EmailChangeConfirmMail($user, route('account.email.confirm', $token)));
-        Mail::to($user->email)->queue(new EmailChangeNoticeMail($user, $newEmail));
+        $this->notifier->send($user, new EmailChangeNoticeMail($user, $newEmail));
         $this->audit->log('user.email_change_requested', $user, ['to_hash' => hash('sha256', $newEmail)], $user);
     }
 
@@ -309,7 +310,7 @@ class UserService
                 $user->forceFill(['role' => UserRole::Seller])->save();
             }
             $this->audit->log('seller.approved', $profile, ['commission_bps' => $commissionBps], $admin);
-            Mail::to($profile->user)->queue((new SellerApplicationMail($profile))->afterCommit());
+            $this->notifier->send($profile->user, (new SellerApplicationMail($profile))->afterCommit());
         });
     }
 
@@ -322,7 +323,7 @@ class UserService
             'review_note' => $note,
         ])->save();
         $this->audit->log('seller.rejected', $profile, ['note' => $note], $admin);
-        Mail::to($profile->user)->queue(new SellerApplicationMail($profile));
+        $this->notifier->send($profile->user, new SellerApplicationMail($profile));
     }
 
     public function setRole(User $user, UserRole $role, User $admin): void

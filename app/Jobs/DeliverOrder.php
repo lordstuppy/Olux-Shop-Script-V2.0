@@ -5,10 +5,10 @@ namespace App\Jobs;
 use App\Mail\OrderPaidMail;
 use App\Models\Order;
 use App\Services\DeliveryService;
+use App\Services\Notifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
@@ -33,7 +33,7 @@ class DeliverOrder implements ShouldQueue
     {
         $order = Order::query()->with('buyer')->findOrFail($this->orderId);
         $delivery->deliver($order);
-        Mail::to($order->buyer)->queue(new OrderPaidMail($order->fresh()));
+        app(Notifier::class)->send($order->buyer, new OrderPaidMail($order->fresh()));
     }
 
     public function failed(Throwable $e): void

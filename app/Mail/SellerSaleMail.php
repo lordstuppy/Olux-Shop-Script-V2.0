@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\Money;
@@ -13,7 +14,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SellerSaleMail extends Mailable implements ShouldQueue
+class SellerSaleMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -46,5 +47,15 @@ class SellerSaleMail extends Mailable implements ShouldQueue
             'sales_url' => route('seller.sales'),
             'dashboard_url' => route('seller.dashboard'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'sale';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('seller.sales');
     }
 }

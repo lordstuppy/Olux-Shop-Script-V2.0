@@ -6,12 +6,12 @@ use App\Enums\ProductStatus;
 use App\Mail\ProductDecisionMail;
 use App\Models\ProductFile;
 use App\Services\AuditLogger;
+use App\Services\Notifier;
 use App\Services\Security\VirusScanner;
 use App\Services\StaffAlerts;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -61,7 +61,7 @@ class ScanProductFile implements ShouldQueue
             ]);
             $audit->log('product.file_infected', $product, ['file_id' => $file->id, 'signature' => $result['detail']]);
             if ($product->seller !== null) {
-                Mail::to($product->seller)->queue(new ProductDecisionMail($product, false, (string) $product->moderation_note));
+                app(Notifier::class)->send($product->seller, new ProductDecisionMail($product, false, (string) $product->moderation_note));
             }
             app(StaffAlerts::class)->send(__('Infected upload removed from ":title"', ['title' => $product->title]), [
                 __('Signature: :signature', ['signature' => (string) $result['detail']]),

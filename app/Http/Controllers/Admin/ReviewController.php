@@ -23,6 +23,13 @@ class ReviewController extends Controller
         return view('admin.reviews', ['reviews' => $query->paginate(30)->withQueryString(), 'filters' => $data]);
     }
 
+    public function removeReply(Request $request, ProductReview $review, ReviewService $reviews): RedirectResponse
+    {
+        $reviews->removeReply($review, $request->user());
+
+        return back()->with('success', __('The seller reply to review #:id was removed.', ['id' => $review->id]));
+    }
+
     public function status(Request $request, ProductReview $review, ReviewService $reviews): RedirectResponse
     {
         $data = $request->validate(['status' => ['required', Rule::in(['visible', 'hidden'])]]);

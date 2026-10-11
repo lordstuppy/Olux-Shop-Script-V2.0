@@ -108,10 +108,16 @@
             <p>{{ trans_choice('{1} Average :rating out of 5 from :count verified buyer.|[2,*] Average :rating out of 5 from :count verified buyers.', $rating['count'], ['rating' => number_format($rating['average'], 1)]) }}</p>
         @endif
         @forelse ($reviews as $review)
-            <article class="message">
+            <article class="message" id="review-{{ $review->id }}">
                 <h3>{{ $review->title }}</h3>
                 <p class="meta"><span aria-label="{{ __(':rating out of 5 stars', ['rating' => $review->rating]) }}">{{ str_repeat('*', $review->rating) }}{{ str_repeat('-', 5 - $review->rating) }}</span> &middot; {{ $review->user->name }} &middot; {{ $review->created_at->format('Y-m-d') }} &middot; {{ __('Verified buyer') }}</p>
                 <div class="description">{{ $review->body }}</div>
+                @if ($review->seller_reply)
+                    <div class="seller-reply">
+                        <p class="meta"><strong>{{ __('Reply from :seller', ['seller' => $product->seller->sellerProfile?->display_name ?? $product->seller->name]) }}</strong> &middot; {{ $review->seller_replied_at->format('Y-m-d') }}</p>
+                        <div class="description">{{ $review->seller_reply }}</div>
+                    </div>
+                @endif
             </article>
         @empty
             <p>{{ __('No reviews yet.') }}</p>

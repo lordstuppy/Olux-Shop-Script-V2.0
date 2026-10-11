@@ -15,7 +15,14 @@
     {{-- Optional enhancement only; the site works with scripts blocked. --}}
     <script src="{{ static_asset('js/enhance.js') }}" defer></script>
 </head>
-<body data-label-show-password="{{ __('Show password') }}" data-label-hide-password="{{ __('Hide password') }}">
+<body data-label-show-password="{{ __('Show password') }}" data-label-hide-password="{{ __('Hide password') }}"
+    @auth
+        data-live="{{ route('live') }}" data-live-version="{{ $liveVersion ?? '' }}" data-live-sound="{{ auth()->user()->notification_sound !== false ? '1' : '0' }}"
+        data-label-live-lost="{{ __('Connection lost. Trying again...') }}" data-label-live-back="{{ __('Connection restored.') }}"
+        data-label-live-updated="{{ __('This page was updated.') }}" data-label-live-pending="{{ __('This page has new information.') }}"
+        data-label-live-show="{{ __('Show it') }}" data-label-live-new="{{ __('New notification:') }}" data-label-close="{{ __('Close') }}"
+    @endauth
+>
 <a class="skip-link" href="#main">{{ __('Skip to main content') }}</a>
 
 <header class="site-header">
@@ -34,7 +41,8 @@
                 <li><a href="{{ route('cart.show') }}" @if(request()->routeIs('cart.*')) aria-current="page" @endif>{{ __('Cart') }} <span class="badge" aria-label="{{ __(':count items in cart', ['count' => $cartCount]) }}">{{ $cartCount }}</span></a></li>
                 @auth
                     <li><a href="{{ route('account.orders') }}" @if(request()->routeIs('account.orders', 'orders.*')) aria-current="page" @endif>{{ __('Orders') }}</a></li>
-                    <li><a href="{{ route('wallet.show') }}" @if(request()->routeIs('wallet.*')) aria-current="page" @endif>{{ __('Wallet') }} ({{ money(auth()->user()->balance_minor, auth()->user()->currency) }})</a></li>
+                    <li><a href="{{ route('notifications.index') }}" @if(request()->routeIs('notifications.*')) aria-current="page" @endif>{{ __('Notifications') }} <span class="badge" data-live-unread @if (! $unreadCount) hidden @endif><span data-live-unread-count>{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span><span class="visually-hidden"> {{ __('unread') }}</span></span></a></li>
+                    <li><a href="{{ route('wallet.show') }}" @if(request()->routeIs('wallet.*')) aria-current="page" @endif>{{ __('Wallet') }} (<span data-live-balance>{{ money(auth()->user()->balance_minor, auth()->user()->currency) }}</span>)</a></li>
                     <li><a href="{{ route('wishlist.index') }}" @if(request()->routeIs('wishlist.*')) aria-current="page" @endif>{{ __('Wishlist') }}</a></li>
                     <li><a href="{{ route('tickets.index') }}" @if(request()->routeIs('tickets.*')) aria-current="page" @endif>{{ __('Support') }}</a></li>
                     @if (auth()->user()->isSeller())
@@ -73,7 +81,9 @@
             </aside>
         @endforeach
         @include('partials.flash')
-        @yield('content')
+        <div id="live-content">
+            @yield('content')
+        </div>
     </div>
 </main>
 

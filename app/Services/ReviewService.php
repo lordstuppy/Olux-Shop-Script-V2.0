@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\UserFacingException;
 use App\Mail\ReviewReceivedMail;
+use App\Mail\ReviewReplyMail;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Reviews from verified buyers only: the reviewer must have a paid order
@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Mail;
  */
 class ReviewService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
+    ) {}
 
     public function eligibleItem(User $user, Product $product): ?OrderItem
     {
@@ -39,11 +42,45 @@ class ReviewService
         );
         $this->audit->log($review->wasRecentlyCreated ? 'review.created' : 'review.updated', $review, ['rating' => $rating], $user);
         $seller = $product->seller;
-        if ($review->wasRecentlyCreated && $seller !== null && $seller->notify_reviews) {
-            Mail::to($seller)->queue((new ReviewReceivedMail($review))->afterCommit());
+        if ($review->wasRecentlyCreated && $seller !== null) {
+            $this->notifier->send($seller, (new ReviewReceivedMail($review))->afterCommit(), email: $seller->notify_reviews);
         }
 
         return $review;
+    }
+
+    /**
+     * The seller's public answer to a review (empty text removes it). Only the
+     * first answer notifies the reviewer, so editing a reply sends nothing.
+     */
+    public function reply(ProductReview $review, User $seller, string $text): void
+    {
+        if ($review->product->seller_id !== $seller->id) {
+            throw new UserFacingException(__('You can only reply to reviews of your own products.'));
+        }
+        if ($review->status !== 'visible') {
+            throw new UserFacingException(__('This review was hidden by our team and cannot be answered.'));
+        }
+        $text = trim($text);
+        $first = $review->seller_replied_at === null;
+        if ($text === '') {
+            $review->forceFill(['seller_reply' => null, 'seller_replied_at' => null])->save();
+            $this->audit->log('review.reply_removed', $review, [], $seller);
+
+            return;
+        }
+        $review->forceFill(['seller_reply' => mb_substr($text, 0, 2000), 'seller_replied_at' => now()])->save();
+        $this->audit->log($first ? 'review.replied' : 'review.reply_edited', $review, [], $seller);
+        if ($first) {
+            $this->notifier->send($review->user, (new ReviewReplyMail($review))->afterCommit());
+        }
+    }
+
+    /** Staff remove a seller reply that breaks the rules; the review stays. */
+    public function removeReply(ProductReview $review, User $actor): void
+    {
+        $review->forceFill(['seller_reply' => null, 'seller_replied_at' => null])->save();
+        $this->audit->log('review.reply_removed', $review, ['by' => 'staff'], $actor);
     }
 
     public function moderate(ProductReview $review, string $status, User $actor): void

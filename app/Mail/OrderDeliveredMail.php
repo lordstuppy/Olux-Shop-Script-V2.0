@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderDeliveredMail extends Mailable implements ShouldQueue
+class OrderDeliveredMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -38,5 +39,15 @@ class OrderDeliveredMail extends Mailable implements ShouldQueue
             'order_number' => $this->order->shortId(),
             'order_url' => route('orders.show', $this->order),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'order';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('orders.show', $this->order);
     }
 }

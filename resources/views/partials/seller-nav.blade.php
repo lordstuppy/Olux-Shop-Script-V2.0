@@ -3,6 +3,7 @@
         'seller.dashboard' => __('Overview'),
         'seller.products.index' => __('Products'),
         'seller.sales' => __('Sales'),
+        'seller.reviews' => __('Reviews'),
         'seller.payouts' => __('Payouts'),
         'seller.payout-settings' => __('Payout settings'),
         'disputes.index' => __('Disputes'),

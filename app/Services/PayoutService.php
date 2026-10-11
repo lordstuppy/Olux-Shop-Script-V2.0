@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Seller earnings ledger, payout requests and reconciliation.
@@ -28,6 +27,7 @@ class PayoutService
 {
     public function __construct(
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     public static function earningFor(int $netMinor, int $commissionBps): int
@@ -257,7 +257,7 @@ class PayoutService
             $payout->setRawAttributes($locked->getAttributes(), true);
             $this->audit->log('payout.'.$to->value, $locked, array_filter(['reference' => $reference, 'note' => $note]), $admin);
             if (in_array($to, [PayoutStatus::Paid, PayoutStatus::Rejected], true)) {
-                Mail::to($locked->seller)->queue((new PayoutStatusMail($locked))->afterCommit());
+                $this->notifier->send($locked->seller, (new PayoutStatusMail($locked))->afterCommit());
             }
         });
     }

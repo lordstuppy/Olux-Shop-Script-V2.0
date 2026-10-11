@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Enums\SellerProfileStatus;
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\SellerProfile;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SellerApplicationMail extends Mailable implements ShouldQueue
+class SellerApplicationMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -41,5 +42,15 @@ class SellerApplicationMail extends Mailable implements ShouldQueue
             'reason' => (string) $this->profile->review_note,
             'next_url' => $this->profile->status === SellerProfileStatus::Approved ? route('seller.products.create') : route('seller.apply'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'account';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return $this->profile->status === SellerProfileStatus::Approved ? route('seller.dashboard') : route('seller.apply');
     }
 }

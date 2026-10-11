@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\ProductReview;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /** To the seller when a buyer reviews one of their products. */
-class ReviewReceivedMail extends Mailable implements ShouldQueue
+class ReviewReceivedMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -42,5 +43,15 @@ class ReviewReceivedMail extends Mailable implements ShouldQueue
             'body' => $this->review->body,
             'product_url' => route('products.show', $this->review->product->slug),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'review';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('seller.reviews');
     }
 }

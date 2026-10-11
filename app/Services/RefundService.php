@@ -15,7 +15,6 @@ use App\Models\User;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Full and partial refunds. Each refund is its own payments row (kind
@@ -37,6 +36,7 @@ class RefundService
         private readonly PayoutService $payouts,
         private readonly AuditLogger $audit,
         private readonly StaffAlerts $alerts,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -261,6 +261,6 @@ class RefundService
     private function notifyBuyer(Order $order, Payment $payment): void
     {
         $order = $order->fresh(['buyer']);
-        Mail::to($order->buyer)->queue((new RefundIssuedMail($order, $payment))->afterCommit());
+        $this->notifier->send($order->buyer, (new RefundIssuedMail($order, $payment))->afterCommit());
     }
 }

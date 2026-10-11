@@ -11,6 +11,8 @@ use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LiveController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PasswordResetController;
@@ -100,6 +102,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:verification'])->name('verification.verify');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:verification')->name('verification.send');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('/live', LiveController::class)->middleware('throttle:live')->name('live');
+
     Route::get('/confirm-password', [ConfirmPasswordController::class, 'show'])->name('password.confirm');
     Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->middleware('throttle:password-check');
 
@@ -166,6 +173,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/', Seller\DashboardController::class)->name('dashboard');
         Route::get('/products', [Seller\ProductController::class, 'index'])->name('products.index');
         Route::get('/products/new', [Seller\ProductController::class, 'create'])->name('products.create');
+        Route::get('/reviews', [Seller\ReviewController::class, 'index'])->name('reviews');
+        Route::put('/reviews/{review}/reply', [Seller\ReviewController::class, 'reply'])->middleware('throttle:forms')->name('reviews.reply');
         Route::post('/products', [Seller\ProductController::class, 'store'])->name('products.store');
         Route::get('/products/{product:id}/edit', [Seller\ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product:id}', [Seller\ProductController::class, 'update'])->name('products.update');
@@ -257,6 +266,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/disputes/{dispute}/resolve', [Admin\DisputeController::class, 'resolve'])->can('disputes.manage')->middleware('password.recent')->name('disputes.resolve');
         Route::get('/tickets', [Admin\TicketController::class, 'index'])->can('tickets.manage')->name('tickets.index');
         Route::get('/reviews', [Admin\ReviewController::class, 'index'])->can('reviews.moderate')->name('reviews.index');
+        Route::delete('/reviews/{review}/reply', [Admin\ReviewController::class, 'removeReply'])->can('reviews.moderate')->name('reviews.reply.destroy');
         Route::post('/reviews/{review}/status', [Admin\ReviewController::class, 'status'])->can('reviews.moderate')->name('reviews.status');
         Route::get('/health', Admin\SystemHealthController::class)->can('health.view')->name('health');
         Route::post('/health/failed-jobs/retry', [Admin\SystemHealthController::class, 'retry'])->can('jobs.manage')->name('health.jobs.retry-all');

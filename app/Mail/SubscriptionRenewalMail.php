@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\OrderItem;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class SubscriptionRenewalMail extends Mailable implements ShouldQueue
+class SubscriptionRenewalMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -40,5 +41,15 @@ class SubscriptionRenewalMail extends Mailable implements ShouldQueue
             'ends_at' => (string) $this->item->access_expires_at?->format('Y-m-d H:i'),
             'renew_url' => $this->item->product ? route('products.show', $this->item->product->slug) : route('products.index'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'order';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('orders.show', $this->item->order);
     }
 }

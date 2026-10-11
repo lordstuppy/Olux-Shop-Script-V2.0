@@ -10,12 +10,12 @@ use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 
 class TicketService
 {
     public function __construct(
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     public function open(User $user, string $subject, string $body, TicketCategory $category, ?Order $order = null): Ticket
@@ -62,7 +62,7 @@ class TicketService
         });
 
         if ($staff && ! $internal) {
-            Mail::to($ticket->user)->queue((new TicketReplyMail($ticket))->afterCommit());
+            $this->notifier->send($ticket->user, (new TicketReplyMail($ticket))->afterCommit());
         }
     }
 

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Dispute;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /** $recipientRole is buyer, seller or staff; the text is written for that reader. */
-class DisputeMessageMail extends Mailable implements ShouldQueue
+class DisputeMessageMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -43,5 +44,15 @@ class DisputeMessageMail extends Mailable implements ShouldQueue
             },
             'dispute_url' => route('disputes.show', $this->dispute),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'dispute';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('disputes.show', $this->dispute);
     }
 }

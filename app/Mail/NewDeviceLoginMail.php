@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Bus\Queueable;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewDeviceLoginMail extends Mailable implements ShouldQueue
+class NewDeviceLoginMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -42,5 +43,15 @@ class NewDeviceLoginMail extends Mailable implements ShouldQueue
             'browser' => (string) $this->device->user_agent,
             'account_url' => route('account.settings'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'account';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('account.settings');
     }
 }

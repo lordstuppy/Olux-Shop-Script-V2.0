@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\PayoutAddressChangedMail;
 use App\Mail\PayoutAddressChangeMail;
 use App\Services\AuditLogger;
+use App\Services\Notifier;
 use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,7 +80,7 @@ class PayoutSettingsController extends Controller
                 'payout_change_expires_at' => null,
             ])->save();
             $audit->log('seller.payout_address_changed', $profile, ['from' => $old, 'to' => $profile->payout_address], $user);
-            Mail::to($user)->queue((new PayoutAddressChangedMail($profile))->afterCommit());
+            app(Notifier::class)->send($user, (new PayoutAddressChangedMail($profile))->afterCommit());
         });
 
         return redirect()->route('seller.payout-settings')->with('success', __('Payout address updated. Payouts resume after :hours hours.', ['hours' => config('shop.payout_address_cooldown_hours')]));

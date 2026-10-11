@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Support\Money;
@@ -13,7 +14,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderPlacedMail extends Mailable implements ShouldQueue
+class OrderPlacedMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -43,5 +44,15 @@ class OrderPlacedMail extends Mailable implements ShouldQueue
             'pay_url' => route('orders.pay', $this->order),
             'expires_at' => (string) $this->order->expires_at?->format('Y-m-d H:i'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'order';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('orders.show', $this->order);
     }
 }

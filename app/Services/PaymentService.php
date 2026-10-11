@@ -22,7 +22,6 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -39,6 +38,7 @@ class PaymentService
         private readonly OrderService $orders,
         private readonly BalanceService $balances,
         private readonly AuditLogger $audit,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -145,7 +145,7 @@ class PaymentService
             $payment->save();
 
             if ($isNew) {
-                Mail::to($locked->buyer)->queue((new OrderPlacedMail($locked, $payment))->afterCommit());
+                $this->notifier->send($locked->buyer, (new OrderPlacedMail($locked, $payment))->afterCommit());
             }
 
             Log::info('Shkeeper invoice {invoice_id} created for order {public_id} in {crypto}', [

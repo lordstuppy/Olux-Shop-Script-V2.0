@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class LoginLockedMail extends Mailable implements ShouldQueue
+class LoginLockedMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -40,5 +41,15 @@ class LoginLockedMail extends Mailable implements ShouldQueue
             'minutes' => (string) $this->minutes,
             'reset_url' => route('password.request'),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'account';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('account.settings');
     }
 }

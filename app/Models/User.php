@@ -45,6 +45,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_change_expires_at' => 'datetime',
             'notify_sales' => 'boolean',
             'notify_reviews' => 'boolean',
+            'notification_sound' => 'boolean',
         ];
     }
 

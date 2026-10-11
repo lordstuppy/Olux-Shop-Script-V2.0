@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Product;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ProductDecisionMail extends Mailable implements ShouldQueue
+class ProductDecisionMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -42,5 +43,15 @@ class ProductDecisionMail extends Mailable implements ShouldQueue
             'reason' => $this->note,
             'edit_url' => route('seller.products.edit', $this->product->id),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'product';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('seller.products.edit', $this->product->id);
     }
 }

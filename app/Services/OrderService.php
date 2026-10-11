@@ -16,7 +16,6 @@ use App\Support\Money;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class OrderService
@@ -27,6 +26,7 @@ class OrderService
         private readonly PayoutService $payouts,
         private readonly AuditLogger $audit,
         private readonly CommissionService $commission,
+        private readonly Notifier $notifier,
     ) {}
 
     /**
@@ -118,8 +118,8 @@ class OrderService
 
         foreach ($order->items->pluck('seller_id')->unique() as $sellerId) {
             $seller = User::find($sellerId);
-            if ($seller !== null && $seller->notify_sales) {
-                Mail::to($seller)->queue((new SellerSaleMail($order, $seller))->afterCommit());
+            if ($seller !== null) {
+                $this->notifier->send($seller, (new SellerSaleMail($order, $seller))->afterCommit(), email: $seller->notify_sales);
             }
         }
 

@@ -280,3 +280,21 @@ summary { cursor: pointer; color: var(--brand); }
     .check { align-items: center; min-height: 2.75rem; }
 }
 
+
+/* Notification centre */
+.notifications { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .5rem; }
+.notification { border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: .6rem .9rem; background: var(--surface); }
+.notification.is-unread { border-left-color: var(--brand); background: var(--info-bg); }
+.notification a { text-decoration: none; }
+.notification a:hover strong { text-decoration: underline; }
+.notification-body { white-space: pre-line; color: var(--text); margin: .25rem 0; overflow-wrap: anywhere; }
+.notification .meta { display: block; color: var(--text-muted); font-size: .85rem; }
+
+/* Live updates (enhance.js): small messages bottom right, never over the header */
+.live-region { position: fixed; right: 1rem; bottom: 1rem; left: auto; z-index: 20; display: grid; gap: .5rem; max-width: min(24rem, calc(100vw - 2rem)); pointer-events: none; }
+.live-message { pointer-events: auto; display: flex; gap: .75rem; align-items: center; justify-content: space-between; padding: .6rem .8rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+.live-message.is-warning { border-color: var(--warning); background: var(--warning-bg); }
+.live-message button { padding: .25rem .6rem; }
+.live-message .live-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; line-height: 1; padding: .25rem .4rem; }
+@media print { .live-region { display: none !important; } }
+.seller-reply { margin: .5rem 0 0 1rem; padding: .4rem .8rem; border-left: 3px solid var(--brand); background: var(--bg-muted); border-radius: 0 var(--radius) var(--radius) 0; }

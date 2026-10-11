@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\HasEditableTemplate;
+use App\Mail\Contracts\InAppNotice;
 use App\Models\Order;
 use App\Support\Money;
 use Illuminate\Bus\Queueable;
@@ -12,7 +13,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderPaidMail extends Mailable implements ShouldQueue
+class OrderPaidMail extends Mailable implements InAppNotice, ShouldQueue
 {
     use HasEditableTemplate, Queueable, SerializesModels;
 
@@ -41,5 +42,15 @@ class OrderPaidMail extends Mailable implements ShouldQueue
             'items' => $this->order->items->map(fn ($i) => '- '.$i->title.' x '.$i->quantity.': '.($i->isDelivered() ? __('delivered') : __('waiting for delivery')))->implode("\n"),
             'order_url' => route('orders.show', $this->order),
         ];
+    }
+
+    public function inAppKind(): string
+    {
+        return 'order';
+    }
+
+    public function inAppUrl(): ?string
+    {
+        return route('orders.show', $this->order);
     }
 }

@@ -19,7 +19,17 @@
                         <td>{{ $review->product->title }}</td>
                         <td>{{ $review->user->email }}</td>
                         <td>{{ $review->rating }} / 5</td>
-                        <td><strong>{{ $review->title }}</strong><br>{{ \Illuminate\Support\Str::limit($review->body, 200) }}</td>
+                        <td><strong>{{ $review->title }}</strong><br>{{ \Illuminate\Support\Str::limit($review->body, 200) }}
+                            @if ($review->seller_reply)
+                                <div class="seller-reply"><span class="meta">{{ __('Seller reply:') }}</span> {{ \Illuminate\Support\Str::limit($review->seller_reply, 200) }}
+                                    <form method="post" action="{{ route('admin.reviews.reply.destroy', $review) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-link">{{ __('Remove reply') }}<span class="visually-hidden"> {{ __('to review :id', ['id' => $review->id]) }}</span></button>
+                                    </form>
+                                </div>
+                            @endif
+                        </td>
                         <td><x-status :value="$review->status === 'visible' ? 'active' : 'disabled'" /></td>
                         <td>
                             <form method="post" action="{{ route('admin.reviews.status', $review) }}">

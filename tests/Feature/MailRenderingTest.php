@@ -57,6 +57,8 @@ class MailRenderingTest extends TestCase
             new Mail\EmailChangeNoticeMail($buyer, 'new@example.test'),
             new Mail\SellerApplicationMail($profile),
             new Mail\SellerSaleMail($order, $seller),
+            new Mail\ReviewReplyMail(ProductReview::create(['product_id' => $this->instantProductWithFile()->id, 'user_id' => $buyer->id, 'order_item_id' => $order->items->first()->id,
+                'rating' => 4, 'title' => 'Good', 'body' => 'Works.', 'seller_reply' => 'Thanks "a lot" & more.', 'seller_replied_at' => now()])),
             new Mail\ReviewReceivedMail(ProductReview::create(['product_id' => $product->id, 'user_id' => $buyer->id, 'order_item_id' => $order->items->first()->id,
                 'rating' => 2, 'title' => 'Not "great"', 'body' => 'Works, mostly & slowly.'])),
         ];
