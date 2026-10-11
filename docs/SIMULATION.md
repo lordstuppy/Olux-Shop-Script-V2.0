@@ -55,8 +55,8 @@ The compose overlay is `docker-compose.test.yml`. It sets:
 ### Test data (`SimulationSeeder`)
 
 - **Staff:** 5 accounts (`superadmin@`, `manager@`, `finance@`, `moderator@`, `support@sim.test`), each with 2FA. The fixed TOTP secrets are in the seeder.
-- **Sellers:** 10, `seller01`–`seller10@sim.test`. seller03 has a seller-level commission.
-- **Buyers:** 50, `buyer01`–`buyer50@sim.test`, with varied USD and EUR balances. Every fifth buyer has a balance of 0.
+- **Sellers:** 10, `seller01`-`seller10@sim.test`. seller03 has a seller-level commission.
+- **Buyers:** 50, `buyer01`-`buyer50@sim.test`, with varied USD and EUR balances. Every fifth buyer has a balance of 0.
 - **Categories:** 8. Licences and courses carry category commissions.
 - **Products:** 200.
   - Status: 185 active, 10 pending review, 5 disabled.
@@ -162,7 +162,7 @@ PostgreSQL's log holds every data change.
 
 ### Phase 5: admin
 
-1. Role matrix: 25 admin pages × 5 roles, plus navigation links.
+1. Role matrix: 25 admin pages x 5 roles, plus navigation links.
 2. Manager (and moderator) denied destructive actions.
 3. Seller applications approved and rejected, with a reason.
 4. Products approved and rejected, with a reason. Admin product editing is *not applicable by decision*.
@@ -267,14 +267,14 @@ This round covers features the first round touched only lightly. Time-based rule
 | 15 | major | P4 deactivate | Sellers could not take a product off sale | Pause and resume (status `paused`) | `SellerPauseTest` |
 | 16 | major | P5 reject product | Rejection without a reason; seller not told | Required reason, shown and emailed (editable template) | `ProductModerationNoteTest` |
 | 17 | major | P6 SQL injection | A non-UUID order id in the URL reached PostgreSQL and gave 500 | 404; same for `/tickets/new?order=` | `SecurityTest::test_ids_that_are_not_uuids_give_404_not_500` |
-| 18 | major | P6 long input | Redirect after a long query string exceeded nginx's 4–8 KB header buffer: 502 | 32 KB fastcgi and proxy header buffers | phase 6 scenario (nginx configuration) |
+| 18 | major | P6 long input | Redirect after a long query string exceeded nginx's 4-8 KB header buffer: 502 | 32 KB fastcgi and proxy header buffers | phase 6 scenario (nginx configuration) |
 | 19 | minor | P6 oversized | Upload over the PHP limit said only "failed to upload" | Message names the size limit | phase 6 scenario |
 | 20 | critical | P8 mail down / worker kill | Mails had 1 try: an SMTP hiccup or a worker restart lost them | Mails and notifications: 5 tries with backoff | `AccountSecurityTest::test_password_reset_mail_is_queued_with_retries`, phase 8 |
 | 21 | major | P8 mail down | "Forgot password" sent mail inside the request: 500 when SMTP was down | Queued reset notification | same |
 | 22 | major | P8 database killed | Generic 500 page during a database outage; `/health` answered 500 (session middleware) | 503 "Temporarily unavailable" with Retry-After; health and metrics without a session | `OutageTest` |
 | 23 | critical | P8 disk full | Upload on a full disk gave 500 and could leave a partial file | Partial file removed, nothing recorded, clear message, critical log, checksum verified | `StorageFailureTest` |
 | 24 | major | P7 load | Gateway returning an invoice id already used by another order gave 500 | Logged error, normal "try again" message | `WebhookTest::test_a_gateway_invoice_id_already_used_by_another_order_is_refused_cleanly` |
-| 25 | major (perf) | P7 load | Checkout `SELECT … FOR UPDATE` waited up to 350 ms under 20 concurrent checkouts | Exclusive lock only for limited-stock products, shared lock otherwise | phase 7 slow-query check |
+| 25 | major (perf) | P7 load | Checkout `SELECT ... FOR UPDATE` waited up to 350 ms under 20 concurrent checkouts | Exclusive lock only for limited-stock products, shared lock otherwise | phase 7 slow-query check |
 | 26 | test env | P7 load | Shkeeper mock handed out duplicate invoice ids under concurrency | State updates serialised with a lock file | phase 7 |
 | 27 | test env | setup | Simulation seed used Faker, which is not in production images | Seeder creates accounts directly | `run.sh up` |
 | 28 | major | independent review | Paused product could receive new files or images and be resumed without review | Uploads to a paused product send it to review; resume refuses unscanned files; conditional status updates | `ReviewFindingsTest` |

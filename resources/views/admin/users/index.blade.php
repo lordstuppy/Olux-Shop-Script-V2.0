@@ -26,7 +26,7 @@
         <table>
             <thead><tr>@can('users.manage')<th scope="col"><span class="visually-hidden">{{ __('Select') }}</span></th>@endcan<th scope="col">{{ __('Email') }}</th><th scope="col">{{ __('Name') }}</th><th scope="col">{{ __('Role') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col" class="num">{{ __('Balance') }}</th><th scope="col">{{ __('Registered') }}</th></tr></thead>
             <tbody>
-                @foreach ($users as $user)
+                @forelse ($users as $user)
                     <tr>
                         @can('users.manage')<td><input type="checkbox" name="ids[]" value="{{ $user->id }}" form="bulk-users" aria-label="{{ __('Select :email', ['email' => $user->email]) }}"></td>@endcan
                         <td><a href="{{ route('admin.users.show', $user) }}">{{ $user->email }}</a></td>
@@ -36,7 +36,9 @@
                         <td class="num">{{ money($user->balance_minor, $user->currency) }}</td>
                         <td>{{ $user->created_at->format('Y-m-d') }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="7">{{ __('No users match these filters.') }} <a href="{{ route('admin.users.index') }}">{{ __('Clear filters') }}</a></td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>

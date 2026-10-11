@@ -547,7 +547,7 @@ if ($path === '/__mock/config') {
             $rules[] = $clean;
         }
         $stateLock = lockState($stateFile);
-    $state = load($stateFile);
+        $state = load($stateFile);
         $state[CONFIG_KEY] = ['delay_ms' => max(0, (int) ($req['delay_ms'] ?? 0)), 'fail_next' => $rules];
         save($stateFile, $state);
         unlockState($stateLock);

@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\PayoutStatus;
+use App\Enums\ProductStatus;
+use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
 use App\Enums\WebhookEventStatus;
 use App\Jobs\DeliverOrder;
@@ -7,7 +10,13 @@ use App\Jobs\GenerateInvoicePdf;
 use App\Jobs\ProcessWebhookEvent;
 use App\Jobs\QueueHeartbeat;
 use App\Mail\SubscriptionRenewalMail;
+use App\Models\AuditLog;
 use App\Models\OrderItem;
+use App\Models\Payout;
+use App\Models\Product;
+use App\Models\SellerProfile;
+use App\Models\Ticket;
+use App\Models\TicketMessage;
 use App\Models\User;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
@@ -16,8 +25,10 @@ use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\PayoutService;
 use App\Services\ShkeeperPayoutService;
+use App\Services\StaffAlerts;
 use App\Services\SystemHealthService;
 use App\Support\TranslationCatalog;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +66,10 @@ Artisan::command('shop:reconcile-payouts', function (PayoutService $payouts) {
         return 0;
     }
     $this->table(['seller_id', 'currency', 'check', 'expected', 'actual'], $mismatches);
+    app(StaffAlerts::class)->send(__('Seller ledger does not match orders and payouts'), [
+        __(':count mismatches found by the nightly reconciliation.', ['count' => count($mismatches)]),
+        __('Payouts may be wrong until this is explained. Details are on the reconciliation page and in the log.'),
+    ], route('admin.reconciliation'), 'payout-reconciliation', 60 * 20);
 
     return 1;
 })->purpose('Reconcile the seller payout ledger against completed orders');
@@ -127,6 +142,51 @@ Artisan::command('shop:recover-stuck-orders {--minutes=3}', function () {
     $this->info("Re-queued {$queued} jobs.");
 })->purpose('Re-queue delivery and invoice jobs of paid orders whose jobs were lost (crash between commit and queueing)');
 
+Artisan::command('shop:staff-digest', function (StaffAlerts $alerts) {
+    $until = now();
+    $since = Carbon::createFromTimestamp((int) Cache::get('staff-digest:since', $until->copy()->subMinutes(15)->timestamp));
+    $window = fn ($query, string $column = 'created_at') => $query->where($column, '>', $since)->where($column, '<=', $until);
+    $counts = [
+        __('seller applications') => $window(SellerProfile::query()->where('status', SellerProfileStatus::Pending->value), 'updated_at')->count(),
+        __('products submitted for review') => $window(Product::query()->where('status', ProductStatus::PendingReview->value), 'updated_at')->count(),
+        __('payout requests') => $window(Payout::query()->where('status', PayoutStatus::Requested->value))->count(),
+        __('new support tickets') => $window(Ticket::query())->count(),
+        __('customer replies on tickets') => $window(TicketMessage::query()->whereHas('ticket', fn ($q) => $q->whereColumn('tickets.user_id', 'ticket_messages.author_id')
+            ->where('tickets.created_at', '<=', $since)), 'ticket_messages.created_at')->count(),
+        __('accounts locked after failed sign-ins') => $window(AuditLog::query()->where('action', 'user.login_locked'))->count(),
+    ];
+    Cache::forever('staff-digest:since', $until->timestamp);
+
+    $lines = [];
+    foreach (array_filter($counts) as $what => $count) {
+        $lines[] = '- '.$count.' '.$what;
+    }
+    if ($lines === []) {
+        return 0;
+    }
+    $alerts->send(__('Needs attention since :time UTC', ['time' => $since->format('Y-m-d H:i')]), $lines, route('admin.dashboard'));
+    $this->info(implode("\n", $lines));
+
+    return 0;
+})->purpose('Email staff a summary of work that arrived since the last run');
+
+Artisan::command('shop:health-alerts', function (SystemHealthService $health, StaffAlerts $alerts) {
+    foreach ($health->checks() as $section => $rows) {
+        foreach ($rows as $check) {
+            if ($check['level'] !== 'critical') {
+                continue;
+            }
+            // Sent directly, not queued: the problem may be the queue itself.
+            $alerts->send(__('Health problem: :check', ['check' => $check['label']]), [
+                __(':section / :check: :value', ['section' => $section, 'check' => $check['label'], 'value' => $check['value']]),
+                $check['hint'],
+            ], route('admin.health'), 'health:'.$check['label'], 60, direct: true);
+        }
+    }
+
+    return 0;
+})->purpose('Email staff about critical system health checks (at most hourly per check)');
+
 Artisan::command('shop:prune-saved-carts', function () {
     $count = DB::table('saved_carts')->where('updated_at', '<', now()->subDays((int) config('shop.saved_cart_days')))->delete();
     $this->info("Deleted {$count} saved carts.");
@@ -186,6 +246,8 @@ Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverl
 Schedule::command('auth:clear-resets')->hourly();
 Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');
 Schedule::command('shop:prune-saved-carts')->dailyAt('04:20');
+Schedule::command('shop:staff-digest')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('shop:health-alerts')->everyFiveMinutes()->withoutOverlapping();
 // Heartbeats for the system health page.
 Schedule::call(fn () => Cache::put(SystemHealthService::SCHEDULER_HEARTBEAT, now()->timestamp, 86400))->everyMinute()->name('health:scheduler-heartbeat');
 Schedule::job(new QueueHeartbeat)->everyFiveMinutes()->name('health:queue-heartbeat');

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @if (($theme ?? 'system') !== 'system') data-theme="{{ $theme }}" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,13 +9,13 @@
     @hasSection('noindex')
         <meta name="robots" content="noindex">
     @endif
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ static_asset('css/app.css') }}">
     <link rel="icon" href="{{ asset('favicon.ico') }}">
     @stack('head')
     {{-- Optional enhancement only; the site works with scripts blocked. --}}
-    <script src="{{ asset('js/enhance.js') }}" defer></script>
+    <script src="{{ static_asset('js/enhance.js') }}" defer></script>
 </head>
-<body>
+<body data-label-show-password="{{ __('Show password') }}" data-label-hide-password="{{ __('Hide password') }}">
 <a class="skip-link" href="#main">{{ __('Skip to main content') }}</a>
 
 <header class="site-header">
@@ -95,6 +95,16 @@
                 @endforeach
             </select>
             <button type="submit" class="btn-secondary">{{ __('Change currency') }}</button>
+        </form>
+        <form method="post" action="{{ route('theme') }}" class="actions">
+            @csrf
+            <label for="footer-theme">{{ __('Colour scheme') }}</label>
+            <select id="footer-theme" name="theme">
+                <option value="system" @selected($theme === 'system')>{{ __('Same as device') }}</option>
+                <option value="light" @selected($theme === 'light')>{{ __('Light') }}</option>
+                <option value="dark" @selected($theme === 'dark')>{{ __('Dark') }}</option>
+            </select>
+            <button type="submit" class="btn-secondary">{{ __('Apply') }}</button>
         </form>
     </div>
 </footer>

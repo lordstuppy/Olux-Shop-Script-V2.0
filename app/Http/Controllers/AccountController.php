@@ -37,6 +37,16 @@ class AccountController extends Controller
         return back()->with('success', __('Display name updated.'));
     }
 
+    public function updateNotifications(Request $request): RedirectResponse
+    {
+        $request->user()->forceFill([
+            'notify_sales' => $request->boolean('notify_sales'),
+            'notify_reviews' => $request->boolean('notify_reviews'),
+        ])->save();
+
+        return back()->with('success', __('Email preferences saved.'));
+    }
+
     public function requestEmailChange(Request $request, UserService $users): RedirectResponse
     {
         $data = $request->validate([

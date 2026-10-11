@@ -21,6 +21,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Seller;
 use App\Http\Controllers\SellerApplicationController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\WalletController;
@@ -65,6 +66,7 @@ Route::middleware('throttle:forms')->group(function () {
     Route::put('/cart/items/{product:id}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/items/{product:id}', [CartController::class, 'remove'])->name('cart.remove');
     Route::post('/cart/currency', [CartController::class, 'currency'])->name('cart.currency');
+    Route::post('/theme', ThemeController::class)->name('theme');
 });
 
 // Payment provider callback
@@ -138,6 +140,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/account', [AccountController::class, 'show'])->name('account.settings');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::put('/account/notifications', [AccountController::class, 'updateNotifications'])->name('account.notifications');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:password-check')->name('account.password');
 
     Route::get('/orders/{order}/items/{item}/dispute', [DisputeController::class, 'create'])->name('disputes.create');
@@ -255,6 +258,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/reviews', [Admin\ReviewController::class, 'index'])->can('reviews.moderate')->name('reviews.index');
         Route::post('/reviews/{review}/status', [Admin\ReviewController::class, 'status'])->can('reviews.moderate')->name('reviews.status');
         Route::get('/health', Admin\SystemHealthController::class)->can('health.view')->name('health');
+        Route::post('/health/failed-jobs/retry', [Admin\SystemHealthController::class, 'retry'])->can('jobs.manage')->name('health.jobs.retry-all');
+        Route::post('/health/failed-jobs/{uuid}/retry', [Admin\SystemHealthController::class, 'retry'])->can('jobs.manage')->name('health.jobs.retry');
+        Route::delete('/health/failed-jobs/{uuid}', [Admin\SystemHealthController::class, 'forget'])->can('jobs.manage')->name('health.jobs.forget');
         Route::get('/audit', [Admin\AuditLogController::class, 'index'])->can('audit.view')->name('audit.index');
 
         Route::get('/reports', Admin\ReportController::class)->can('reports.view')->name('reports');

@@ -41,7 +41,7 @@ class DisputeTest extends TestCase
     {
         parent::setUp();
         Mail::fake();
-        config(['shop.payout_hold_days' => 0, 'shop.support_email' => 'support@shop.test']);
+        config(['shop.payout_hold_days' => 0, 'shop.staff_alert_email' => 'support@shop.test']);
 
         // One order with lines from two different sellers.
         $this->keyProduct = $this->productFromNewSeller(['price_minor' => 4000]);
@@ -103,6 +103,7 @@ class DisputeTest extends TestCase
         $this->assertTrue($dispute->seller_respond_by->between(now()->addDays(3)->subMinute(), now()->addDays(3)->addMinute()));
         Mail::assertQueued(DisputeOpenedMail::class, fn ($m) => $m->hasTo($seller->email) && $m->recipientRole === 'seller');
         Mail::assertQueued(DisputeOpenedMail::class, fn ($m) => $m->hasTo('support@shop.test'));
+        Mail::assertQueued(DisputeOpenedMail::class, fn ($m) => $m->hasTo($this->buyer->email) && $m->recipientRole === 'buyer');
         $this->assertDatabaseHas('audit_log', ['action' => 'dispute.opened']);
 
         $balance = app(PayoutService::class)->balances($seller)['USD'];

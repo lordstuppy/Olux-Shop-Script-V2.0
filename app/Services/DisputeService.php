@@ -107,6 +107,7 @@ class DisputeService
         }
 
         Log::info('Dispute {dispute_id} opened for order {public_id}', ['dispute_id' => $dispute->id, 'public_id' => $order->public_id]);
+        Mail::to($dispute->buyer)->queue(new DisputeOpenedMail($dispute, 'buyer'));
         Mail::to($dispute->seller)->queue(new DisputeOpenedMail($dispute, 'seller'));
         $this->alertStaff(new DisputeOpenedMail($dispute, 'staff'));
 
@@ -313,7 +314,7 @@ class DisputeService
 
     private function alertStaff(object $mail): void
     {
-        $address = (string) config('shop.support_email');
+        $address = (string) config('shop.staff_alert_email');
         if ($address !== '') {
             Mail::to($address)->queue($mail);
         }

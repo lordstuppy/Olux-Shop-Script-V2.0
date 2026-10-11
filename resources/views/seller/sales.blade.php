@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Sales') }}</h1>
     @if ($items->isEmpty())
-        <p>{{ __('No sales yet.') }}</p>
+        <p>{{ __('No sales yet. Sales appear here once a buyer has paid for one of your products.') }} <a href="{{ route('seller.products.index') }}">{{ __('Check your products') }}</a>.</p>
     @else
         <div class="table-wrap">
             <table>

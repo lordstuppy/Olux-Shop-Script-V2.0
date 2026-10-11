@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Exceptions\UserFacingException;
+use App\Mail\ReviewReceivedMail;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Reviews from verified buyers only: the reviewer must have a paid order
@@ -36,6 +38,10 @@ class ReviewService
             ['order_item_id' => $item->id, 'rating' => $rating, 'title' => $title, 'body' => $body],
         );
         $this->audit->log($review->wasRecentlyCreated ? 'review.created' : 'review.updated', $review, ['rating' => $rating], $user);
+        $seller = $product->seller;
+        if ($review->wasRecentlyCreated && $seller !== null && $seller->notify_reviews) {
+            Mail::to($seller)->queue((new ReviewReceivedMail($review))->afterCommit());
+        }
 
         return $review;
     }

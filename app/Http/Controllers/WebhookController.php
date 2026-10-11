@@ -6,6 +6,7 @@ use App\Enums\WebhookEventStatus;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
 use App\Services\Shkeeper\ShkeeperClient;
+use App\Services\StaffAlerts;
 use App\Services\WebhookProcessor;
 use App\Support\GatewayLog;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -126,6 +127,12 @@ class WebhookController extends Controller
     {
         if (Cache::add('audit-webhook:'.$reason.':'.$ip, true, 60)) {
             $audit->log('webhook.'.$reason, null, $metadata);
+            // Staff hear about it at most once an hour, however many arrive.
+            app(StaffAlerts::class)->send(__('Shkeeper callbacks are being rejected'), [
+                __('Reason: :reason', ['reason' => $reason === 'rejected_signature' ? __('wrong signature') : __('sender address not allowed')]),
+                __('Last sender: :ip', ['ip' => (string) $ip]),
+                __('Either the API key or allowed addresses do not match Shkeeper, or someone is sending forged payment callbacks. Paid orders stay unpaid until this is fixed.'),
+            ], route('admin.gateway.index'), 'webhook-rejected', 60);
         }
     }
 }

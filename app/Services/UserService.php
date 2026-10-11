@@ -35,6 +35,7 @@ class UserService
 
     public function __construct(
         private readonly AuditLogger $audit,
+        private readonly StaffAlerts $alerts,
     ) {}
 
     public function register(string $name, string $email, string $password): User
@@ -133,6 +134,13 @@ class UserService
             // At most one mail a day, so repeated locks cannot be used to flood the owner.
             if (Cache::add('login-lock-mail:'.$user->id, true, now()->addDay())) {
                 Mail::to($user)->queue(new LoginLockedMail($user, $failures, (int) $lock['lock_minutes']));
+            }
+            if ($user->isStaff()) {
+                $this->alerts->send(__('Sign-in to a staff account was locked'), [
+                    __('Account: :email (:role)', ['email' => $user->email, 'role' => $user->role->label()]),
+                    __(':count failed attempts within :minutes minutes.', ['count' => $failures, 'minutes' => (int) $lock['window_minutes']]),
+                    __('If nobody on the team did this, someone is guessing the password of a staff account.'),
+                ], route('admin.audit.index', ['action' => 'user.login']), 'login-lock:'.$user->id);
             }
         }
     }

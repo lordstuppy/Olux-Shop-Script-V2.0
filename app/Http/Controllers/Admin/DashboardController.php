@@ -21,6 +21,7 @@ use App\Models\WebhookEvent;
 use App\Services\AnalyticsService;
 use App\Support\Money;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -79,6 +80,7 @@ class DashboardController extends Controller
             ['label' => __('Seller applications'), 'value' => SellerProfile::where('status', SellerProfileStatus::Pending->value)->count(), 'route' => $link('sellers.manage', 'admin.sellers.index')],
             ['label' => __('Open tickets'), 'value' => Ticket::where('status', TicketStatus::Open->value)->count(), 'route' => $link('tickets.manage', 'admin.tickets.index')],
             ['label' => __('Payout requests'), 'value' => Payout::where('status', PayoutStatus::Requested->value)->count(), 'route' => $link('payouts.manage', 'admin.payouts.index')],
+            ['label' => __('Failed background jobs (emails, deliveries, invoices)'), 'value' => DB::table('failed_jobs')->count(), 'route' => $link('health.view', 'admin.health')],
             ['label' => __('Failed webhook events'), 'value' => WebhookEvent::whereIn('status', [WebhookEventStatus::Failed->value, WebhookEventStatus::Dead->value])->count(), 'route' => $link('webhooks.manage', 'admin.webhooks.index')],
             ['label' => __('Orders awaiting payment'), 'value' => Order::where('status', OrderStatus::Pending->value)->count(), 'route' => $link('orders.view', 'admin.orders.index', ['status' => 'pending'])],
             ['label' => __('Users'), 'value' => User::count(), 'route' => $link('users.view', 'admin.users.index')],

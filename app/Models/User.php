@@ -43,6 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_step' => 'integer',
             'email_change_expires_at' => 'datetime',
+            'notify_sales' => 'boolean',
+            'notify_reviews' => 'boolean',
         ];
     }
 

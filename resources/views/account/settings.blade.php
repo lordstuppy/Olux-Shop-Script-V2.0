@@ -26,6 +26,22 @@
         <button type="submit">{{ __('Send confirmation link') }}</button>
     </form>
 
+    <h2 id="notifications">{{ __('Email notifications') }}</h2>
+    <p class="hint">{{ __('Emails about your orders, payments, refunds, disputes, support tickets and account security are always sent.') }}</p>
+    @if ($user->isSeller())
+        <form method="post" action="{{ route('account.notifications') }}" class="stack">
+            @csrf
+            @method('PUT')
+            <fieldset>
+                <legend>{{ __('As a seller, email me about') }}</legend>
+                <label class="check"><input type="checkbox" name="notify_sales" value="1" @checked($user->notify_sales)> {{ __('Every new sale') }}</label>
+                <label class="check"><input type="checkbox" name="notify_reviews" value="1" @checked($user->notify_reviews)> {{ __('Every new review of my products') }}</label>
+            </fieldset>
+            <p class="hint">{{ __('Sales and reviews stay visible in your seller dashboard either way.') }}</p>
+            <button type="submit">{{ __('Save email preferences') }}</button>
+        </form>
+    @endif
+
     <h2>{{ __('Change password') }}</h2>
     <form method="post" action="{{ route('account.password') }}" class="stack">
         @csrf

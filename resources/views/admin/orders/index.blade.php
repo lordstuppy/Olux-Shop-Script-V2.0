@@ -16,7 +16,7 @@
         <button type="submit">{{ __('Filter') }}</button>
     </form>
     @can('orders.export')
-        <form id="bulk-orders" method="post" action="{{ route('admin.bulk.orders.export') }}" class="filters" aria-label="{{ __('Export orders') }}">
+        <form id="bulk-orders" method="post" action="{{ route('admin.bulk.orders.export') }}" data-download class="filters" aria-label="{{ __('Export orders') }}">
             @csrf
             <input type="hidden" name="filter_status" value="{{ $filters['status'] ?? '' }}">
             @foreach (['q', 'buyer', 'seller', 'from', 'to'] as $key)

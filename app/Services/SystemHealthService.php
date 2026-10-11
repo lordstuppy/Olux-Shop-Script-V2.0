@@ -107,6 +107,23 @@ class SystemHealthService
         return $checks;
     }
 
+    /**
+     * Shkeeper counts as down when its last three or more API calls in the past
+     * 15 minutes all failed: new crypto checkouts, refunds and payouts fail then.
+     */
+    private function gatewayErrors(): array
+    {
+        $recent = DB::table('gateway_logs')->where('channel', 'api')->where('created_at', '>=', now()->subMinutes(15))
+            ->orderByDesc('id')->limit(20)->pluck('outcome');
+        $failures = $recent->filter(fn ($o) => $o !== 'ok')->count();
+        $consecutive = $recent->takeWhile(fn ($o) => $o !== 'ok')->count();
+        $label = __('Shkeeper API errors (last 15 minutes)');
+
+        return $consecutive >= 3
+            ? $this->check($label, (string) $failures, 'critical', __('Shkeeper is not answering. Crypto checkout, refunds and payouts fail until it is back.'))
+            : $this->check($label, (string) $failures, $failures > 0 ? 'warning' : 'good', '');
+    }
+
     private function integrations(): array
     {
         $lastWebhook = DB::table('gateway_logs')->where('channel', 'webhook')->where('outcome', 'ok')->max('created_at')
@@ -116,6 +133,7 @@ class SystemHealthService
             $this->check(__('Last successful Shkeeper webhook'), $lastWebhook ? Carbon::parse($lastWebhook)->format('Y-m-d H:i:s').' UTC ('.Carbon::parse($lastWebhook)->diffForHumans().')' : __('never'),
                 $lastWebhook ? 'good' : 'warning', $lastWebhook ? '' : __('No payment callback was accepted yet. Fine for a new shop; otherwise check the callback URL.')),
             $this->check(__('Last successful Shkeeper API call'), $lastApi ? Carbon::parse($lastApi)->diffForHumans() : __('never'), $lastApi ? 'good' : 'warning', ''),
+            $this->gatewayErrors(),
         ];
         $mode = (string) config('shop.virus_scan');
         if ($mode === 'disabled') {

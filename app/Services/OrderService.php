@@ -118,7 +118,7 @@ class OrderService
 
         foreach ($order->items->pluck('seller_id')->unique() as $sellerId) {
             $seller = User::find($sellerId);
-            if ($seller !== null) {
+            if ($seller !== null && $seller->notify_sales) {
                 Mail::to($seller)->queue((new SellerSaleMail($order, $seller))->afterCommit());
             }
         }

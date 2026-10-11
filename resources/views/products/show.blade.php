@@ -46,11 +46,11 @@
             @if ($product->images->isNotEmpty())
                 @php $main = $product->images->first(); @endphp
                 <figure class="gallery">
-                    <a href="{{ $main->url() }}"><img src="{{ $main->url() }}" alt="{{ $main->alt_text ?? $product->title }}" width="{{ $main->width }}" height="{{ $main->height }}"></a>
+                    <a href="{{ $main->url() }}"><img src="{{ $main->url() }}" srcset="{{ $main->url('thumb') }} {{ min(480, $main->width) }}w, {{ $main->url() }} {{ $main->width }}w" sizes="(max-width: 48rem) calc(100vw - 2rem), 44rem" alt="{{ $main->alt_text ?? $product->title }}" width="{{ $main->width }}" height="{{ $main->height }}"></a>
                     @if ($product->images->count() > 1)
                         <ul class="thumbs">
                             @foreach ($product->images->skip(1) as $image)
-                                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" alt="{{ $image->alt_text ?? __('Additional image of :title', ['title' => $product->title]) }}" loading="lazy"></a></li>
+                                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" alt="{{ $image->alt_text ?? __('Additional image of :title', ['title' => $product->title]) }}" width="{{ $image->width }}" height="{{ $image->height }}" loading="lazy"></a></li>
                             @endforeach
                         </ul>
                     @endif

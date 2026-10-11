@@ -20,7 +20,7 @@ XSS = [
     '{{ 7*7 }}{!! "x" !!}@php echo 1; @endphp',
 ]
 SQLI = ["' OR '1'='1", "1; DROP TABLE users;--", "' UNION SELECT password_hash FROM users--", "1' AND pg_sleep(5)--", '\\', "%' OR 1=1 --"]
-UNICODE = 'Prüfung مرحبا 中文 \U0001F680\U0001F525 é ​‍Z̵̡a̶lgo \U0001F468‍\U0001F469‍\U0001F467'
+UNICODE = 'Pr\u00fcfung \u0645\u0631\u062d\u0628\u0627 \u4e2d\u6587 \U0001F680\U0001F525 e\u0301 \u200b\u200dZ\u0335\u0321a\u0336lgo \U0001F468\u200d\U0001F469\u200d\U0001F467'
 
 
 DANGEROUS = ['<script>alert(1)</script>', '<img src=x onerror=alert(2)>', '<svg/onload=alert(4)>', 'href="javascript:', "src=\"javascript:"]
@@ -159,8 +159,8 @@ def unicode(rec, ctx):
     staff_form(admin(), f'/admin/products/{pid}', f'/admin/products/{pid}/status', {'status': 'active'})
     rec.check(env.scalar(f'select title from products where id={pid}') == title, 'title changed in storage')
     email, b = buyer(9)
-    b.form('/account', '/account/profile', {'name': 'Zoë \U0001F600 مريم'})
-    rec.check(env.scalar(f"select name from users where email='{email}'") == 'Zoë \U0001F600 مريم', 'name mangled')
+    b.form('/account', '/account/profile', {'name': 'Zo\u00eb \U0001F600 \u0645\u0631\u064a\u0645'})
+    rec.check(env.scalar(f"select name from users where email='{email}'") == 'Zo\u00eb \U0001F600 \u0645\u0631\u064a\u0645', 'name mangled')
     slug = env.scalar(f'select slug from products where id={pid}')
     page = b.get(f'/products/{slug}')
     rec.check('\U0001F680' in page.text, 'emoji not shown on the product page')

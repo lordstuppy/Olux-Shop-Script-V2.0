@@ -33,6 +33,7 @@ class ShkeeperPayoutService
         private readonly PayoutService $payouts,
         private readonly RefundService $refunds,
         private readonly AuditLogger $audit,
+        private readonly StaffAlerts $alerts,
     ) {}
 
     public static function enabled(): bool
@@ -195,6 +196,11 @@ class ShkeeperPayoutService
         $changed = $this->payouts->transitionAutomated($payout, PayoutStatus::Failed, [PayoutStatus::Processing], null, ['failure_reason' => $reason]);
         if ($changed) {
             Log::error('Payout {payout_id} failed in Shkeeper', ['payout_id' => $payout->id]);
+            $this->alerts->send(__('Payout #:id failed in Shkeeper', ['id' => $payout->id]), [
+                __('Amount: :amount', ['amount' => Money::format($payout->amount_minor, $payout->currency)]),
+                __('Reason: :reason', ['reason' => mb_substr($reason, 0, 300)]),
+                __('The seller has not been paid. Retry it or pay it manually.'),
+            ], route('admin.payouts.index'));
         }
 
         return $changed ? 'processed' : 'ignored';

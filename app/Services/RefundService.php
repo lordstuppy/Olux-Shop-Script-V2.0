@@ -36,6 +36,7 @@ class RefundService
         private readonly BalanceService $balances,
         private readonly PayoutService $payouts,
         private readonly AuditLogger $audit,
+        private readonly StaffAlerts $alerts,
     ) {}
 
     /**
@@ -154,6 +155,11 @@ class RefundService
             $locked->save();
             $this->audit->log('refund.failed', $locked, ['reason' => $reason]);
             Log::error('Refund {payment_id} via Shkeeper failed: {reason}', ['payment_id' => $locked->id, 'reason' => $reason]);
+            $this->alerts->send(__('A crypto refund failed (payment #:id)', ['id' => $locked->id]), [
+                __('Amount: :amount', ['amount' => Money::format($locked->amount_minor, $locked->currency)]),
+                __('Reason: :reason', ['reason' => mb_substr($reason, 0, 300)]),
+                __('The buyer has not been refunded. Retry the refund from the order page.'),
+            ], $locked->order ? route('admin.orders.show', $locked->order) : null);
         });
     }
 

@@ -9,6 +9,7 @@ use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Payout;
+use App\Models\ProductReview;
 use App\Models\SellerProfile;
 use App\Models\Ticket;
 use App\Models\User;
@@ -56,6 +57,8 @@ class MailRenderingTest extends TestCase
             new Mail\EmailChangeNoticeMail($buyer, 'new@example.test'),
             new Mail\SellerApplicationMail($profile),
             new Mail\SellerSaleMail($order, $seller),
+            new Mail\ReviewReceivedMail(ProductReview::create(['product_id' => $product->id, 'user_id' => $buyer->id, 'order_item_id' => $order->items->first()->id,
+                'rating' => 2, 'title' => 'Not "great"', 'body' => 'Works, mostly & slowly.'])),
         ];
         $dispute = Dispute::create(['order_id' => $order->id, 'order_item_id' => $order->items->first()->id, 'buyer_id' => $buyer->id, 'seller_id' => $seller->id,
             'reason' => 'not_working', 'requested_outcome' => 'refund', 'status' => 'resolved', 'resolution' => 'refund', 'refund_minor' => 500,
@@ -82,6 +85,15 @@ class MailRenderingTest extends TestCase
             }
             $this->renderAll($mailables, $customised);
         }
+    }
+
+    public function test_staff_alert_mail_renders_as_plain_text(): void
+    {
+        $text = (new Mail\StaffAlertMail('Payout #4 failed in Shkeeper', ['Amount: 12.00 USD', 'Reason: "insufficient" funds & fees'], 'https://shop.test/admin/payouts'))->render();
+
+        $this->assertStringContainsString('Reason: "insufficient" funds & fees', $text);
+        $this->assertStringContainsString('Open: https://shop.test/admin/payouts', $text);
+        $this->assertStringNotContainsString('&quot;', $text);
     }
 
     private function renderAll(array $mailables, bool $customised): void

@@ -6,7 +6,7 @@
 @section('content')
     <h1>{{ __('Wishlist') }}</h1>
     @if ($items->isEmpty())
-        <p>{{ __('Your wishlist is empty. Use "Save to wishlist" on a product page to keep it for later.') }}</p>
+        <p>{{ __('Your wishlist is empty. Use "Save to wishlist" on a product page to keep it for later.') }} <a href="{{ route('products.index') }}">{{ __('Browse products') }}</a>.</p>
     @else
         <div class="grid">
             @foreach ($items as $item)

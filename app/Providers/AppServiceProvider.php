@@ -3,21 +3,26 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Mail\StaffAlertMail;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Services\CartService;
 use App\Services\Security\ClamAvScanner;
 use App\Services\Security\VirusScanner;
 use App\Services\Shkeeper\ShkeeperClient;
+use App\Services\StaffAlerts;
 use App\Services\SystemHealthService;
 use App\Support\Permissions;
 use App\Support\RequestId;
 use App\Support\Settings;
+use App\Support\Theme;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -54,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // N+1 guard: outside production, touching an unloaded relation on a model
+        // that came from a multi-row query throws, so tests catch missing eager loads.
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         // Stored settings must never be baked into bootstrap/cache/config.php,
         // and long-running queue workers pick up changes before every job.
         if (! $this->app->runningConsoleCommand('config:cache', 'optimize')) {
@@ -62,6 +71,18 @@ class AppServiceProvider extends ServiceProvider
         Queue::before(fn () => Settings::apply());
         // Heartbeat for the system health page (see App\Jobs\QueueHeartbeat).
         Queue::after(fn () => rescue(fn () => Cache::put(SystemHealthService::QUEUE_HEARTBEAT, now()->timestamp, 86400), report: false));
+        // A job that used up its retries (a mail, a delivery, an invoice) lands in
+        // failed_jobs; staff are told once per job type and half hour.
+        Queue::failing(function (JobFailed $event) {
+            $name = $event->job->resolveName();
+            if ($name === StaffAlertMail::class) {
+                return;
+            }
+            rescue(fn () => app(StaffAlerts::class)->send(__('A background job failed: :job', ['job' => class_basename($name)]), [
+                __('Error: :message', ['message' => Str::limit($event->exception->getMessage(), 300)]),
+                __('It was retried and is now kept in the failed jobs list. Retry or delete it on the system health page once the cause is fixed.'),
+            ], route('admin.health'), 'job-failed:'.$name, 30), report: false);
+        });
         $this->configureRateLimits();
 
         foreach (Permissions::MAP as $ability => $roles) {
@@ -85,6 +106,8 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::defaultView('pagination');
         Paginator::defaultSimpleView('pagination');
+
+        View::composer(['layouts.app', 'layouts.minimal'], fn ($view) => $view->with('theme', Theme::current(request())));
 
         // Cart badge and currency for the layout. Error pages may render
         // without a session, so fall back to empty values.

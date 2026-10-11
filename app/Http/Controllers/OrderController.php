@@ -40,6 +40,7 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
         $order->load(['items.product.files', 'payments', 'invoice']);
+        $order->items->each->setRelation('order', $order);
         $disputes = Dispute::query()->where('order_id', $order->id)->get()->keyBy('order_item_id');
         $disputable = auth()->id() === $order->buyer_id
             ? $order->items->filter(fn ($item) => ! $disputes->has($item->id) && $disputeService->canOpen($item))->pluck('id')->all()

@@ -53,6 +53,7 @@ final class Permissions
         'templates.manage' => ['admin', 'manager'],
         'audit.view' => ['admin', 'manager'],
         'health.view' => ['admin', 'manager', 'finance'],
+        'jobs.manage' => ['admin', 'manager'],
         'settings.manage' => ['admin'],
     ];
 

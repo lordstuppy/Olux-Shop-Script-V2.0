@@ -142,6 +142,10 @@ return [
 
     'support_email' => env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
 
+    // Staff alerts (disputes, failed jobs, rejected callbacks, outages) and the
+    // 15-minute "needs attention" digest. Defaults to the support address.
+    'staff_alert_email' => env('SHOP_STAFF_ALERT_EMAIL') ?: env('SHOP_SUPPORT_EMAIL', 'support@example.com'),
+
     'security_email' => env('SHOP_SECURITY_EMAIL', 'security@example.com'),
 
     // Sent as Strict-Transport-Security when the request is HTTPS.

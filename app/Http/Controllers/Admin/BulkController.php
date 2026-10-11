@@ -39,7 +39,7 @@ class BulkController extends Controller
             'ids.*' => ['integer'],
             'filter_status' => ['nullable', Rule::enum(ProductStatus::class)],
         ]);
-        $query = Product::query()->orderBy('id');
+        $query = Product::query()->with('seller')->orderBy('id');
         $data['scope'] === 'selected'
             ? $query->whereIn('id', $data['ids'] ?? [])
             : $query->when($data['filter_status'] ?? null, fn (Builder $q, $s) => $q->where('status', $s));
