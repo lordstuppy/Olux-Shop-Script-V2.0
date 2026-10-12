@@ -233,6 +233,9 @@ run the same automated checks locally with `scripts/security-gate.sh`.
 The performance and code quality audit (benchmarks, query plans, budgets and
 gates) is in [docs/performance/](docs/performance/performance-audit-summary.md);
 its CI gate is `scripts/performance-gate.sh`.
+The UX, UI and usability audit (workflows, responsive layouts, accessibility,
+live updates, gates) is in [docs/ux/](docs/ux/ux-audit-summary.md); its checks
+run in the CI job `browser` (`tests/browser/ux.spec.js` and `a11y.spec.js`).
 
 ## Legal pages
 

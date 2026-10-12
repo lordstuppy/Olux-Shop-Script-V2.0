@@ -32,7 +32,7 @@
         @csrf
         @method('PUT')
         <fieldset>
-            <legend>{{ __('In this browser') }}</legend>
+            <legend>{{ __('While a shop page is open (on all your devices)') }}</legend>
             <label class="check"><input type="checkbox" name="notification_sound" value="1" @checked($user->notification_sound)> {{ __('Play a short sound when a new notification arrives') }}</label>
         </fieldset>
         @if ($user->isSeller())

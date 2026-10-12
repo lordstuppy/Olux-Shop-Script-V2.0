@@ -35,6 +35,7 @@
 | UX-12 | Leaving a page with half-written text loses it without a warning | Low | U3 | Fixed |
 | UX-13 | Stray space in the order status line ("Paid .") | Low | U7 | Fixed |
 | UX-23 | Many open windows: the rate-limited live poll claimed "Connection lost" | Low | U4, U5 | Fixed |
+| UX-24 | The sound setting says "In this browser" but applies to the account | Low | U5 | Fixed |
 | UX-14 | Regression found during the audit: catalogue grid squeezed staff date filters at 320 px | Low | U15 | Fixed before release |
 | UX-15 | Header navigation follows a role change only on the next page load | Low | U12 | Open |
 | UX-16 | All times are shown in UTC, not in the visitor's time zone | Low | U13 | Open (product decision) |
@@ -48,7 +49,7 @@
 
 - High 3 (all fixed);
 - Medium 4 (all fixed; UX-06's server side continues as UX-18; UX-22 only with JavaScript);
-- Low 13 (8 fixed, 1 in part, 4 open);
+- Low 14 (9 fixed, 1 in part, 4 open);
 - Info 3.
 
 **Open:**
@@ -57,7 +58,7 @@
 - the remaining part of UX-09 (Low);
 - none High or Medium.
 
-**Total:** 23 findings.
+**Total:** 24 findings.
 
 ## Details
 
@@ -226,7 +227,7 @@ After an approval the seller got a notification toast, while the list on screen 
 - Filters in two columns on narrow screens, with the search field across.
 - A "Clear filters" link next to the result count whenever a filter is active.
 
-**After:** the first product starts at 651 px (−186 px; same measurement method on both full-page screenshots).
+**After:** the first product starts at 651 px (-186 px; same measurement method on both full-page screenshots).
 
 **Test:** `UxAuditTest::test_ux07_catalogue_offers_clear_filters_when_filtered`; crawl (no overflow at 320 px).
 
@@ -247,7 +248,7 @@ After an approval the seller got a notification toast, while the list on screen 
 
 **Counted on touch viewports (320, 375 and 768 px):**
 
-- below 44 px: 438 → 211 instances;
+- below 44 px: 438 -> 211 instances;
 - the site name is gone from the list.
 
 The crawl measures the link element itself, so the card overlay is not counted (`ux.spec.js` taps the card body).
@@ -304,6 +305,14 @@ The crawl measures the link element itself, so the card overlay is not counted (
 **Fix:** a 429 makes the tab wait 60 s before the next poll, without any message.
 
 **Test:** `ux.spec.js` "a rate-limited poll slows down without claiming the connection is lost". Before: 2 polls in 40 s, on the way to the message; after: 1.
+
+### UX-24: Wrong scope in the sound setting's label (Low)
+
+**Root cause:** the notification sound setting sat under the heading "In this browser", but it is stored on the account (`users.notification_sound`). It therefore applies on every device.
+
+**Fix:** the heading reads "While a shop page is open (on all your devices)".
+
+**Test:** wording only; the setting itself is covered by `live.spec.js` (switching the sound off).
 
 ### UX-15: Header navigation after a role change (Low, open)
 

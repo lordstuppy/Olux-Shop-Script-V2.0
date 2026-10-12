@@ -53,6 +53,24 @@ class UxAuditTest extends TestCase
         $this->assertNotSame($before, LivePages::version($user->fresh(), '/sell'));
     }
 
+    public function test_u12_a_second_staff_decision_from_a_stale_page_is_refused_with_a_message(): void
+    {
+        $applicant = User::factory()->create();
+        $profile = SellerProfile::create(['user_id' => $applicant->id, 'display_name' => 'Applicant', 'payout_currency' => 'BTC',
+            'payout_address' => 'bc1qexampleaddress000000000000000000000', 'status' => SellerProfileStatus::Pending]);
+        $first = User::factory()->admin()->create();
+        $second = User::factory()->staff(UserRole::Manager)->create();
+
+        // Both opened the list while the application was pending; the first approves.
+        $this->actingAs($first)->postForm(route('admin.sellers.approve', $profile))->assertRedirect()->assertSessionHas('success');
+
+        // The second, on the stale page, rejects: refused with an explanation, nothing changes.
+        $response = $this->actingAs($second)->from('/admin/sellers')->postForm(route('admin.sellers.reject', $profile), ['note' => 'Incomplete']);
+        $response->assertRedirect('/admin/sellers')->assertSessionHas('error');
+        $this->assertSame(SellerProfileStatus::Approved, $profile->fresh()->status);
+        $this->assertSame(UserRole::Seller, $applicant->fresh()->role);
+    }
+
     public function test_ux02_irreversible_actions_have_a_confirmation_step(): void
     {
         $admin = User::factory()->admin()->create();
