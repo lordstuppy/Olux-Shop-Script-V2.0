@@ -37,44 +37,61 @@ class Product extends Model
         return 'slug';
     }
 
+    /** @return BelongsTo<User, $this> */
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
     }
 
+    /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    /** All files, including retired ones that past buyers can still download. */
+    /**
+     * All files, including retired ones that past buyers can still download.
+     *
+     * @return HasMany<ProductFile, $this>
+     */
     public function files(): HasMany
     {
         return $this->hasMany(ProductFile::class);
     }
 
-    /** Files that can be delivered to new orders: not retired and scanned clean (or scanning disabled). */
+    /**
+     * Files that can be delivered to new orders: not retired and scanned clean (or scanning disabled).
+     *
+     * @return HasMany<ProductFile, $this>
+     */
     public function activeFiles(): HasMany
     {
         return $this->files()->whereNull('retired_at')->whereIn('scan_status', ['clean', 'skipped']);
     }
 
-    /** Files still attached to the product, whatever their scan state. */
+    /**
+     * Files still attached to the product, whatever their scan state.
+     *
+     * @return HasMany<ProductFile, $this>
+     */
     public function currentFiles(): HasMany
     {
         return $this->files()->whereNull('retired_at');
     }
 
+    /** @return HasMany<ProductImage, $this> */
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('position');
     }
 
+    /** @return HasMany<ProductReview, $this> */
     public function reviews(): HasMany
     {
         return $this->hasMany(ProductReview::class);
     }
 
+    /** @return HasMany<ProductReview, $this> */
     public function visibleReviews(): HasMany
     {
         return $this->reviews()->where('status', 'visible')->latest('id');
@@ -85,6 +102,7 @@ class Product extends Model
         return $this->download_limit ?? (int) config('shop.max_downloads_per_item');
     }
 
+    /** @return HasMany<ProductLicenseKey, $this> */
     public function licenseKeys(): HasMany
     {
         return $this->hasMany(ProductLicenseKey::class);

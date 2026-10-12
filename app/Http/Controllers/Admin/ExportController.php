@@ -115,6 +115,7 @@ class ExportController extends Controller
                 fn ($r) => [$r->id, $r->email, $r->name, $r->role, $r->status, $r->email_verified_at ? 'yes' : 'no', $r->two_factor_confirmed_at ? 'yes' : 'no', $r->currency,
                     $amount((int) $r->balance_minor, $r->currency), $r->paid_orders, $r->created_at],
             ],
+            default => throw new \UnexpectedValueException("Unknown export type {$type}."),
         };
     }
 }

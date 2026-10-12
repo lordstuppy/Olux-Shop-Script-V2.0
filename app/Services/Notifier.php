@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Mail\Contracts\InAppNotice;
 use App\Models\User;
 use App\Models\UserNotification;
-use Illuminate\Contracts\Mail\Mailable;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 
 /**

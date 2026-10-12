@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use App\Enums\SellerProfileStatus;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 class SellerProfile extends Model
 {
@@ -24,13 +24,14 @@ class SellerProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /** Payouts wait for the cool-down after an address change (protects against account takeover). */
-    public function payoutsBlockedUntil(): ?Carbon
+    public function payoutsBlockedUntil(): ?CarbonInterface
     {
         if ($this->payout_address_changed_at === null) {
             return null;

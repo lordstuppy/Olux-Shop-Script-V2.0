@@ -116,6 +116,7 @@ final class EmailTemplates
             'dispute_message' => ['New message on dispute #{dispute_number}', "There is a new message from the {from} on dispute #{dispute_number} about \"{product}\".\n\nRead and reply: {dispute_url}"],
             'dispute_escalated' => ['Dispute #{dispute_number} is now with our team', "The seller did not respond to dispute #{dispute_number} about \"{product}\" in time, so our team will now review it.\n\nOpen the dispute: {dispute_url}"],
             'dispute_resolved' => ['Dispute #{dispute_number} closed: {outcome}', "Dispute #{dispute_number} about \"{product}\" is closed.\n\nOutcome: {outcome}\nRefund: {refund}\n\n{note}\n\nDetails: {dispute_url}"],
+            default => throw new \InvalidArgumentException("Unknown email template {$key}."),
         };
 
         return ['subject' => $pair[0], 'body' => $pair[1]];

@@ -92,31 +92,37 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->status === UserStatus::Active;
     }
 
+    /** @return HasMany<Order, $this> */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'buyer_id');
     }
 
+    /** @return HasMany<Product, $this> */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'seller_id');
     }
 
+    /** @return HasOne<SellerProfile, $this> */
     public function sellerProfile(): HasOne
     {
         return $this->hasOne(SellerProfile::class);
     }
 
+    /** @return HasMany<Ticket, $this> */
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
 
+    /** @return HasMany<WishlistItem, $this> */
     public function wishlistItems(): HasMany
     {
         return $this->hasMany(WishlistItem::class);
     }
 
+    /** @return HasMany<BalanceTransaction, $this> */
     public function balanceTransactions(): HasMany
     {
         return $this->hasMany(BalanceTransaction::class);

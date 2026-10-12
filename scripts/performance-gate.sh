@@ -11,7 +11,9 @@
 #
 # The measurement inputs come from the simulation stack with the performance
 # dataset (tests/performance/README.md); CI has no such stack, so there those
-# checks are reported as not run, never as passed.
+# checks are NOT VERIFIED (never passed) and the overall status is INCOMPLETE.
+# For a release decision run with GATE_STRICT=1: then anything not verified
+# fails the gate.
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -22,6 +24,7 @@ REVISION=$(git rev-parse HEAD 2>/dev/null || echo unknown)
 DIRTY=$(git status --porcelain 2>/dev/null | grep -q . && echo true || echo false)
 RESULTS=()
 FAILED=0
+UNVERIFIED=0
 
 # run_check <id> <title> <command...>: PASS on exit 0, FAIL otherwise; output in $OUT/<id>.log.
 run_check() {
@@ -39,6 +42,8 @@ run_check() {
 }
 
 not_run() {
+    UNVERIFIED=1
+    [ "${GATE_STRICT:-0}" = "1" ] && FAILED=1
     echo "==> [$1] $2: NOT VERIFIED ($3)"
     RESULTS+=("{\"id\":\"$1\",\"title\":\"$2\",\"status\":\"NOT VERIFIED\",\"reason\":\"$3\"}")
 }
@@ -75,12 +80,15 @@ else
     not_run image "Runtime image size budgets" "GATE_IMAGE not given"
 fi
 
+if [ $FAILED -ne 0 ]; then STATUS=FAIL; elif [ $UNVERIFIED -ne 0 ]; then STATUS=INCOMPLETE; else STATUS=PASS; fi
+
 {
     echo "{"
     echo "  \"revision\": \"$REVISION\","
     echo "  \"working_tree_dirty\": $DIRTY,"
     echo "  \"generated\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-    echo "  \"status\": \"$([ $FAILED -eq 0 ] && echo PASS || echo FAIL)\","
+    echo "  \"strict\": $([ "${GATE_STRICT:-0}" = "1" ] && echo true || echo false),"
+    echo "  \"status\": \"$STATUS\","
     echo "  \"checks\": ["
     for i in "${!RESULTS[@]}"; do
         sep=","; [ "$i" -eq $((${#RESULTS[@]} - 1)) ] && sep=""
@@ -91,5 +99,5 @@ fi
 } > "$OUT/performance-gate-results.json"
 
 echo
-echo "Performance gate: $([ $FAILED -eq 0 ] && echo PASS || echo FAIL) (revision $REVISION, results: $OUT/performance-gate-results.json)"
+echo "Performance gate: $STATUS (revision $REVISION, results: $OUT/performance-gate-results.json)"
 exit $FAILED

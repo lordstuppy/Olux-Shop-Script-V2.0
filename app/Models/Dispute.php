@@ -27,36 +27,43 @@ class Dispute extends Model
         ];
     }
 
+    /** @return BelongsTo<Order, $this> */
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }
 
+    /** @return BelongsTo<OrderItem, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(OrderItem::class, 'order_item_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function resolver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');
     }
 
+    /** @return HasMany<DisputeMessage, $this> */
     public function messages(): HasMany
     {
         return $this->hasMany(DisputeMessage::class)->orderBy('id');
     }
 
+    /** @return HasMany<DisputeMessage, $this> */
     public function publicMessages(): HasMany
     {
         return $this->messages()->where('internal', false);

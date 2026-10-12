@@ -51,6 +51,7 @@ class DisputeController extends Controller
             ], $note),
             'replacement' => $disputes->resolveWithReplacement($dispute, $request->user(), $data['replacement_text'] ?? null, $note),
             'reject' => $disputes->reject($dispute, $request->user(), $note),
+            default => throw new \UnexpectedValueException('Unknown dispute action.'),
         };
 
         return redirect()->route('disputes.show', $dispute)->with('success', __('Dispute #:id resolved: :resolution.', ['id' => $dispute->id, 'resolution' => mb_strtolower($dispute->fresh()->resolution->label())]));

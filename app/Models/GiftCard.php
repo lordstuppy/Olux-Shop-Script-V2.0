@@ -20,6 +20,7 @@ class GiftCard extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function redeemer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'redeemed_by');

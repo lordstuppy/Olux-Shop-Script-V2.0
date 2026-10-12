@@ -18,6 +18,7 @@ class AuditLog extends Model
         return ['metadata_json' => 'array'];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');

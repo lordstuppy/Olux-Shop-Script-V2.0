@@ -4,6 +4,7 @@ namespace App\Logging;
 
 use Illuminate\Log\Logger;
 use Monolog\Formatter\JsonFormatter;
+use Monolog\Handler\FormattableHandlerInterface;
 
 /**
  * Turns a channel into JSON lines: one object per line with message,
@@ -15,6 +16,9 @@ class JsonFormatterTap
     public function __invoke(Logger $logger): void
     {
         foreach ($logger->getHandlers() as $handler) {
+            if (! $handler instanceof FormattableHandlerInterface) {
+                continue;
+            }
             $formatter = new JsonFormatter(JsonFormatter::BATCH_MODE_NEWLINES, true, false, true);
             $formatter->includeStacktraces(true);
             $handler->setFormatter($formatter);

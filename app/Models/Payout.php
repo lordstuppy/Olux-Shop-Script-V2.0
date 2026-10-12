@@ -26,6 +26,7 @@ class Payout extends Model
         return 'payout-'.$this->id.((int) $this->attempt > 1 ? '-a'.$this->attempt : '');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');

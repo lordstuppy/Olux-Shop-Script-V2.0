@@ -14,6 +14,7 @@ class ProductFile extends Model
         return ['size' => 'integer', 'retired_at' => 'datetime', 'scanned_at' => 'datetime'];
     }
 
+    /** @return BelongsTo<Product, $this> */
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

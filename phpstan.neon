@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - routes
+        - database
+        - config
+    level: 5
+    # Models declare casts in a casts() method; read it so enum and date
+    # attributes have their real types.
+    parseModelCastsMethod: true
+    ignoreErrors:
+        # Seeders also run outside Artisan (new XSeeder)->run(), where Laravel
+        # leaves $command unset although its PHPDoc says otherwise.
+        -
+            identifier: nullsafe.neverNull
+            path: database/seeders/*

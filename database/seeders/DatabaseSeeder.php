@@ -62,6 +62,7 @@ class DatabaseSeeder extends Seeder
         ExchangeRate::create(['base' => 'USD', 'quote' => 'EUR', 'rate' => '0.9200000000', 'updated_by' => $admin->id]);
         ExchangeRate::create(['base' => 'EUR', 'quote' => 'USD', 'rate' => '1.0870000000', 'updated_by' => $admin->id]);
 
+        /** @var list<array{string, string, string, int, string, ?int, DeliveryType}> $products */
         $products = [
             ['tools', 'Markdown to PDF converter', 'A command-line tool that converts Markdown documents to print-ready PDF files.', 1900, 'USD', null, DeliveryType::Instant],
             ['tutorials', 'PostgreSQL performance tuning guide', 'A 120-page guide to indexes, query plans and connection pooling.', 2500, 'EUR', null, DeliveryType::Instant],

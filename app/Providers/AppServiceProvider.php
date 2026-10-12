@@ -183,32 +183,32 @@ class AppServiceProvider extends ServiceProvider
             ->response($throttled(__('Too many password reset requests. Wait one minute and try again.'))));
 
         // Email change checks the password, so it is limited per account (not shared with password resets).
-        RateLimiter::for('email-change', fn (Request $request) => Limit::perMinute($limits['email_change'])->by('email-change:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('email-change', fn (Request $request) => Limit::perMinute($limits['email_change'])->by('email-change:'.($request->user()->id ?? $request->ip()))
             ->response($throttled(__('Too many email change attempts. Wait one minute and try again.'))));
 
-        RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute($limits['checkout'])->by('checkout:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('checkout', fn (Request $request) => Limit::perMinute($limits['checkout'])->by('checkout:'.($request->user()->id ?? $request->ip()))
             ->response($throttled(__('Too many checkout attempts. Wait one minute before trying again.'))));
 
-        RateLimiter::for('redeem', fn (Request $request) => Limit::perMinute($limits['redeem'])->by('redeem:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('redeem', fn (Request $request) => Limit::perMinute($limits['redeem'])->by('redeem:'.($request->user()->id ?? $request->ip()))
             ->response($throttled(__('Too many gift card attempts. Wait one minute and try again.'))));
 
-        RateLimiter::for('forms', fn (Request $request) => Limit::perMinute($limits['forms'])->by('forms:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('forms', fn (Request $request) => Limit::perMinute($limits['forms'])->by('forms:'.($request->user()->id ?? $request->ip()))
             ->response($throttled(__('You are submitting forms too quickly. Wait a moment and try again.'))));
 
         // Live updates poll every 10 s from the visible tab; room for a few windows.
         // Seller file, image and key uploads: each can be 50 MB, a virus scan and an image decode.
         RateLimiter::for('uploads', fn (Request $request) => [
-            Limit::perMinute(10)->by('uploads-m:'.($request->user()?->id ?? $request->ip())),
-            Limit::perHour($limits['uploads_per_hour'])->by('uploads-h:'.($request->user()?->id ?? $request->ip())),
+            Limit::perMinute(10)->by('uploads-m:'.($request->user()->id ?? $request->ip())),
+            Limit::perHour($limits['uploads_per_hour'])->by('uploads-h:'.($request->user()->id ?? $request->ip())),
         ]);
-        RateLimiter::for('live', fn (Request $request) => Limit::perMinute(30)->by('live:'.($request->user()?->id ?? $request->ip())));
+        RateLimiter::for('live', fn (Request $request) => Limit::perMinute(30)->by('live:'.($request->user()->id ?? $request->ip())));
 
         RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute($limits['webhook'])->by('webhook:'.$request->ip()));
 
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute($limits['login_per_ip'])->by('2fa-ip:'.$request->ip())
             ->response($throttled(__('Too many verification attempts from your network. Wait one minute and try again.'))));
 
-        RateLimiter::for('verification', fn (Request $request) => Limit::perMinute(6)->by('verify:'.($request->user()?->id ?? $request->ip()))
+        RateLimiter::for('verification', fn (Request $request) => Limit::perMinute(6)->by('verify:'.($request->user()->id ?? $request->ip()))
             ->response($throttled(__('Too many confirmation emails requested. Wait one minute and try again.'))));
 
         RateLimiter::for('search', fn (Request $request) => Limit::perMinute($limits['search'])->by('search:'.$request->ip()));

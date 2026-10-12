@@ -93,7 +93,7 @@ class ReviewService
     public function summary(Product $product): array
     {
         $row = ProductReview::query()->where('product_id', $product->id)->where('status', 'visible')
-            ->selectRaw('AVG(rating) AS average, COUNT(*) AS count')->first();
+            ->toBase()->selectRaw('AVG(rating) AS average, COUNT(*) AS count')->first();
 
         return ['average' => $row->count > 0 ? round((float) $row->average, 1) : null, 'count' => (int) $row->count];
     }

@@ -236,7 +236,7 @@ class OrderService
                 throw new UserFacingException(__('Sorry, ":title" just sold out. Remove it from your cart to continue.', ['title' => $product->title]));
             }
             if ($product === null || ! $product->isPurchasable()) {
-                $title = $product?->title ?? "Product #{$productId}";
+                $title = $product->title ?? "Product #{$productId}";
                 throw new UserFacingException(__('":title" is no longer available. Remove it from your cart to continue.', ['title' => $title]));
             }
             if ($product->seller_id === $buyer->id) {

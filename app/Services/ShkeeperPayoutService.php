@@ -61,7 +61,7 @@ class ShkeeperPayoutService
         if ($until = $profile?->payoutsBlockedUntil()) {
             throw new UserFacingException(__('The seller changed the payout address recently; sending is possible after :time UTC.', ['time' => $until->format('Y-m-d H:i')]));
         }
-        $crypto = (string) ($profile?->payout_crypto ?? '');
+        $crypto = (string) ($profile->payout_crypto ?? '');
         if ($crypto === '') {
             throw new UserFacingException(__('The seller has not chosen a payout cryptocurrency. Pay this one manually or ask the seller to update the payout settings.'));
         }

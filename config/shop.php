@@ -14,6 +14,10 @@ return [
 
     'default_currency' => env('SHOP_DEFAULT_CURRENCY', 'USD'),
 
+    // Only on a disposable simulation stack: lets the simulation seeder create
+    // accounts with its known password in an environment named production.
+    'simulation' => env('SHOP_SIMULATION'),
+
     /*
     | Platform commission in basis points (1000 = 10.00%). A seller profile can
     | override this value.

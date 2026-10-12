@@ -37,7 +37,7 @@ class ReportService
         return $out;
     }
 
-    /** @return Collection<int, object> gross, refunded, orders per currency */
+    /** @return Collection<int, \stdClass> gross, refunded, orders per currency */
     public function totals(Carbon $from, Carbon $to): Collection
     {
         return DB::table('orders')->whereIn('status', self::PAID)->whereBetween('paid_at', [$from, $to])
@@ -55,7 +55,7 @@ class ReportService
         return ['created' => $created, 'paid' => $paid, 'rate' => $created > 0 ? $paid / $created : null];
     }
 
-    /** @return Collection<int, object> */
+    /** @return Collection<int, \stdClass> */
     public function topProducts(Carbon $from, Carbon $to, int $limit = 15, ?string $currency = null): Collection
     {
         return DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -66,7 +66,7 @@ class ReportService
             ->orderByDesc('net')->limit($limit)->get();
     }
 
-    /** @return Collection<int, object> */
+    /** @return Collection<int, \stdClass> */
     public function topSellers(Carbon $from, Carbon $to, int $limit = 15, ?string $currency = null): Collection
     {
         return DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')

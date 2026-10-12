@@ -16,11 +16,13 @@ class DisputeMessage extends Model
         return ['internal' => 'boolean', 'created_at' => 'datetime'];
     }
 
+    /** @return BelongsTo<Dispute, $this> */
     public function dispute(): BelongsTo
     {
         return $this->belongsTo(Dispute::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

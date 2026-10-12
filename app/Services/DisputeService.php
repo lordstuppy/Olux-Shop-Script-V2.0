@@ -16,8 +16,8 @@ use App\Models\DisputeMessage;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Support\Money;
+use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,7 +47,7 @@ class DisputeService
     ) {}
 
     /** The date until which the buyer can open a dispute for this line, or null when it is not disputable. */
-    public function windowEndsAt(OrderItem $item): ?Carbon
+    public function windowEndsAt(OrderItem $item): ?CarbonInterface
     {
         $order = $item->order;
         if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true)) {

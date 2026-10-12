@@ -49,36 +49,43 @@ class Order extends Model
         return substr((string) $this->public_id, 0, 8);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
+    /** @return BelongsTo<Coupon, $this> */
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
     }
 
+    /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function charges(): HasMany
     {
         return $this->payments()->where('kind', PaymentKind::Charge->value);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function refunds(): HasMany
     {
         return $this->payments()->where('kind', PaymentKind::Refund->value);
     }
 
+    /** @return HasOne<Invoice, $this> */
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class);

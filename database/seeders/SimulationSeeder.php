@@ -147,7 +147,7 @@ class SimulationSeeder extends Seeder
     {
         // The simulation stack runs with APP_ENV=production on purpose, so it
         // opts in explicitly; a real production deployment never sets this.
-        if (app()->isProduction() && env('SHOP_SIMULATION') !== 'allow-known-passwords') {
+        if (app()->isProduction() && config('shop.simulation') !== 'allow-known-passwords') {
             $this->command?->error('Refusing to seed simulation data in production (set SHOP_SIMULATION=allow-known-passwords only on a disposable test stack).');
 
             return;
