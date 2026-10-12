@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\DisputeStatus;
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
 use App\Enums\WebhookEventStatus;
@@ -157,14 +156,6 @@ class AnalyticsService
                 'level' => $failedEvents === 0 ? 'good' : 'critical',
                 'hint' => $failedEvents > 0 ? __('Retry them on the Webhooks page after fixing the cause.') : '',
             ],
-        ];
-    }
-
-    /** @return array<string, int> */
-    public function attention(): array
-    {
-        return [
-            'disputes' => DB::table('disputes')->whereIn('status', DisputeStatus::openValues())->count(),
         ];
     }
 

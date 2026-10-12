@@ -9,6 +9,8 @@
 -- products, 200,000 orders with ~260,000 items and one charge each, ~460,000
 -- ledger entries, 40,000 reviews, 500,000 notifications, 1,000,000 audit
 -- entries, 200,000 webhook events.
+-- Random timestamps: each LATERAL refers to g ("+ 0 * g"), or PostgreSQL would
+-- evaluate it once and give every row the same time.
 \timing on
 SELECT setseed(0.42);
 
@@ -64,7 +66,7 @@ SELECT gen_random_uuid(), b.id, st.status, 0, 0, 0, 0, 'USD', 'perf-'||g,
        CASE WHEN st.status IN ('delivered','refunded','partially_refunded') THEN ts + interval '6 minutes' END
 FROM generate_series(1, 200000) g
 JOIN perf_buyers b ON b.n = 1 + (g * 7919) % 50000
-CROSS JOIN LATERAL (SELECT now() - ((random() * 365 * 86400)::int || ' seconds')::interval AS ts) t
+CROSS JOIN LATERAL (SELECT now() - make_interval(secs => (random() * 365 * 86400)::int + 0 * g) AS ts) t
 CROSS JOIN LATERAL (SELECT CASE WHEN g % 100 < 75 THEN 'delivered' WHEN g % 100 < 87 THEN 'expired' WHEN g % 100 < 92 THEN 'cancelled'
                                 WHEN g % 100 < 98 THEN 'refunded' ELSE 'pending' END AS status) st;
 
@@ -118,7 +120,7 @@ SELECT b.id, (ARRAY['order','sale','account','review','ticket'])[1 + g % 5], 'No
        CASE WHEN g % 5 = 0 THEN NULL ELSE ts + interval '1 hour' END, ts
 FROM generate_series(1, 500000) g
 JOIN perf_buyers b ON b.n = 1 + (g % 50000)
-CROSS JOIN LATERAL (SELECT now() - ((random() * 365 * 86400)::int || ' seconds')::interval AS ts) t;
+CROSS JOIN LATERAL (SELECT now() - make_interval(secs => (random() * 365 * 86400)::int + 0 * g) AS ts) t;
 
 INSERT INTO audit_log (actor_id, action, target_type, target_id, metadata_json, ip, request_id, created_at)
 SELECT b.id, (ARRAY['user.login','order.created','order.paid','product.updated','review.created','cart.updated','user.logout','webhook.received'])[1 + g % 8],
@@ -131,7 +133,7 @@ INSERT INTO webhook_events (provider, event_key, external_id, payload, status, a
 SELECT 'shkeeper', encode(sha256(('perf-'||g)::bytea), 'hex'), gen_random_uuid()::text, '{"status":"PAID","paid":true}', 'processed', 1,
        ts, '172.18.0.5', ts, ts
 FROM generate_series(1, 200000) g
-CROSS JOIN LATERAL (SELECT now() - ((random() * 365 * 86400)::int || ' seconds')::interval AS ts) t;
+CROSS JOIN LATERAL (SELECT now() - make_interval(secs => (random() * 365 * 86400)::int + 0 * g) AS ts) t;
 
 COMMIT;
 

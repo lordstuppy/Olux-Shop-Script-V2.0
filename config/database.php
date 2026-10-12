@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Str;
 use Pdo\Mysql;
+use Pdo\Pgsql;
 
 return [
 
@@ -105,7 +106,7 @@ return [
                 // statements PDO sends PREPARE, EXECUTE and DEALLOCATE separately for
                 // every query (statements are not reused across requests). Values
                 // are still sent apart from the SQL (PQexecParams), never inlined.
-                (defined('Pdo\Pgsql::ATTR_DISABLE_PREPARES') ? \Pdo\Pgsql::ATTR_DISABLE_PREPARES : PDO::PGSQL_ATTR_DISABLE_PREPARES) => true,
+                (defined('Pdo\Pgsql::ATTR_DISABLE_PREPARES') ? Pgsql::ATTR_DISABLE_PREPARES : PDO::PGSQL_ATTR_DISABLE_PREPARES) => true,
             ] : [],
         ],
 

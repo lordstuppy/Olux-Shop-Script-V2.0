@@ -20,7 +20,7 @@
     @else
         <div class="grid">
             @foreach ($latest as $product)
-                @include('partials.product-card', ['product' => $product])
+                @include('partials.product-card', ['product' => $product, 'eager' => $loop->index < 2])
             @endforeach
         </div>
     @endif

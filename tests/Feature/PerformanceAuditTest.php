@@ -350,4 +350,28 @@ class PerformanceAuditTest extends TestCase
         $this->assertContains('laravel-cache-current', DB::table('cache')->pluck('key')->all());
         $this->assertSame(0, DB::table('cache')->where('expiration', '<=', $now)->count());
     }
+
+    // PERF-16: importing licence keys ran two queries per key while the product row was locked.
+    public function test_perf16_licence_key_import_uses_a_fixed_number_of_queries(): void
+    {
+        $seller = $this->seller();
+        $product = Product::factory()->create(['seller_id' => $seller->id, 'stock' => null]);
+        $this->actingAs($seller);
+        $this->postForm(route('seller.products.keys.store', $product->id), ['keys' => implode("\n", array_map(fn ($i) => 'OLD-'.$i, range(1, 50)))])
+            ->assertSessionHas('success');
+
+        $keys = array_merge(array_map(fn ($i) => 'OLD-'.$i, range(1, 50)), array_map(fn ($i) => 'NEW-'.$i, range(1, 400)));
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->postForm(route('seller.products.keys.store', $product->id), ['keys' => implode("\n", $keys)])
+            ->assertSessionHas('success', 'Added 400 licence keys; stock increased by 400. Skipped 50 duplicates.');
+        $this->assertLessThan(25, count(DB::getQueryLog()));
+        DB::disableQueryLog();
+
+        $this->assertSame(450, $product->fresh()->stock);
+        $this->assertSame(450, $product->licenseKeys()->count());
+        $stored = $product->licenseKeys()->where('key_fingerprint', hash_hmac('sha256', 'NEW-7', (string) config('app.key')))->firstOrFail();
+        $this->assertSame('NEW-7', $stored->key_encrypted);
+        $this->assertNotSame('NEW-7', DB::table('product_license_keys')->where('id', $stored->id)->value('key_encrypted'));
+    }
 }

@@ -7,8 +7,6 @@ use Illuminate\Support\Facades\DB;
  * Indexes for queries whose plans scanned large parts of a table at 200,000
  * orders and 250,000 order lines (docs/performance/database-performance-audit.md):
  *
- * - orders (buyer_id, updated_at): the buyer's order list version, read on the
- *   page and by every live-update poll (was a backward scan of all orders).
  * - orders (paid_at), orders (created_at): dashboard and report periods, and
  *   shop:recover-stuck-orders every minute (were sequential scans).
  * - order_items (seller_id, id): the seller's latest sales and their live
@@ -23,7 +21,6 @@ return new class extends Migration
     public $withinTransaction = false;
 
     private const INDEXES = [
-        'orders_buyer_id_updated_at_index' => 'orders (buyer_id, updated_at)',
         'orders_paid_at_index' => 'orders (paid_at)',
         'orders_created_at_index' => 'orders (created_at)',
         'order_items_seller_id_id_index' => 'order_items (seller_id, id)',

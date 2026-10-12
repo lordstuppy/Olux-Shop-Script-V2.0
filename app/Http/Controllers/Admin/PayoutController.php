@@ -40,7 +40,9 @@ class PayoutController extends Controller
     {
         $shkeeper->sendPayout($payout->load('seller.sellerProfile'), $request->user());
 
-        return back()->with('success', __('Payout #:id sent to Shkeeper as :crypto_amount :crypto. It is marked paid when Shkeeper confirms the transfer.', ['id' => $payout->id, 'crypto_amount' => $payout->fresh()->crypto_amount, 'crypto' => $payout->fresh()->crypto]));
+        $payout->refresh();
+
+        return back()->with('success', __('Payout #:id sent to Shkeeper as :crypto_amount :crypto. It is marked paid when Shkeeper confirms the transfer.', ['id' => $payout->id, 'crypto_amount' => $payout->crypto_amount, 'crypto' => $payout->crypto]));
     }
 
     public function reject(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse

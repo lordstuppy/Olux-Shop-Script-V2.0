@@ -1,8 +1,9 @@
+{{-- $eager: the first cards of a grid are likely above the fold (and the LCP image), so they load at once. --}}
 @php $level = $headingLevel ?? 3; @endphp
 <article class="card">
     @php $cover = $product->images->first(); @endphp
     @if ($cover)
-        <img class="card-image" src="{{ $cover->url('thumb') }}" alt="{{ $cover->alt_text ?? '' }}" width="480" height="{{ (int) round(480 * $cover->height / max(1, $cover->width)) }}" loading="lazy">
+        <img class="card-image" src="{{ $cover->url('thumb') }}" alt="{{ $cover->alt_text ?? '' }}" width="480" height="{{ (int) round(480 * $cover->height / max(1, $cover->width)) }}" @if ($eager ?? false) fetchpriority="high" @else loading="lazy" @endif>
     @endif
     <h{{ $level }} class="card-title"><a href="{{ route('products.show', $product->slug) }}">{{ $product->title }}</a></h{{ $level }}>
     @if ($product->category)

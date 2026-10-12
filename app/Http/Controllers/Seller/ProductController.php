@@ -247,15 +247,27 @@ class ProductController extends Controller
 
         $added = DB::transaction(function () use ($product, $keys) {
             $locked = Product::query()->whereKey($product->id)->lockForUpdate()->firstOrFail();
-            $added = 0;
+            $byFingerprint = [];
             foreach ($keys as $key) {
-                $fingerprint = hash_hmac('sha256', $key, (string) config('app.key'));
-                if (ProductLicenseKey::query()->where('product_id', $locked->id)->where('key_fingerprint', $fingerprint)->exists()) {
-                    continue;
-                }
-                $locked->licenseKeys()->create(['key_encrypted' => mb_substr($key, 0, 500), 'key_fingerprint' => $fingerprint]);
-                $added++;
+                $byFingerprint[hash_hmac('sha256', $key, (string) config('app.key'))] = $key;
             }
+            // One lookup and batched inserts instead of two queries per key (up to
+            // 2,000 statements while the product row is locked).
+            $existing = ProductLicenseKey::query()->where('product_id', $locked->id)
+                ->whereIn('key_fingerprint', array_keys($byFingerprint))->pluck('key_fingerprint')->flip();
+            $now = now();
+            $rows = [];
+            foreach ($byFingerprint as $fingerprint => $key) {
+                if (! isset($existing[$fingerprint])) {
+                    // Through the model so key_encrypted is encrypted by its cast.
+                    $rows[] = (new ProductLicenseKey)->forceFill(['product_id' => $locked->id, 'key_encrypted' => mb_substr($key, 0, 500),
+                        'key_fingerprint' => $fingerprint, 'created_at' => $now, 'updated_at' => $now])->getAttributes();
+                }
+            }
+            foreach (array_chunk($rows, 200) as $chunk) {
+                ProductLicenseKey::query()->insert($chunk);
+            }
+            $added = count($rows);
             if ($added > 0) {
                 $locked->stock = ($locked->stock ?? 0) + $added;
                 $locked->save();

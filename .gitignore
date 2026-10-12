@@ -21,6 +21,7 @@
 /storage/*.key
 /storage/pail
 /storage/security-gate
+/storage/performance-gate
 /vendor
 _ide_helper.php
 Homestead.json

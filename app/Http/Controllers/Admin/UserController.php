@@ -104,7 +104,7 @@ class UserController extends Controller
         $replace = [
             'amount' => Money::format($amount, $data['currency']),
             'email' => $user->email,
-            'balance' => Money::format($user->fresh()->balance_minor, $user->fresh()->currency),
+            'balance' => Money::format(($fresh = $user->fresh())->balance_minor, $fresh->currency),
         ];
 
         return back()->with('success', $data['direction'] === 'credit'

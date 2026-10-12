@@ -10,6 +10,7 @@ use Brick\Math\RoundingMode;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -130,6 +131,8 @@ class CatalogService
 
     public const FILTER_SELLERS = 50;
 
+    public const FILTER_SELLERS_CACHE_KEY = 'catalog.filter-sellers';
+
     /**
      * Sellers for the catalogue's seller filter: approved sellers with at least
      * one visible product, the best-selling FILTER_SELLERS of them (by units
@@ -147,8 +150,12 @@ class CatalogService
             ->join('users', 'users.id', '=', 'seller_profiles.user_id')->where('users.status', 'active')->where('users.role', '!=', 'buyer')
             ->groupBy('seller_profiles.user_id', 'seller_profiles.display_name');
 
-        $sellers = $eligible()->orderByRaw('SUM(products.units_sold) DESC')->orderBy('seller_profiles.user_id')
-            ->limit(self::FILTER_SELLERS)->pluck('seller_profiles.display_name', 'seller_profiles.user_id');
+        // Cached as long as the ranking it follows (refreshSalesRanking); a plain
+        // array, as the cache refuses objects. Suspended sellers may linger in the
+        // list until then, but their products are filtered out (visible()).
+        $sellers = collect(Cache::remember(self::FILTER_SELLERS_CACHE_KEY, 600, fn () => $eligible()
+            ->orderByRaw('SUM(products.units_sold) DESC')->orderBy('seller_profiles.user_id')
+            ->limit(self::FILTER_SELLERS)->pluck('seller_profiles.display_name', 'seller_profiles.user_id')->all()));
         if ($selected !== null && ! $sellers->has($selected)) {
             $sellers = $sellers->union($eligible()->where('seller_profiles.user_id', $selected)->pluck('seller_profiles.display_name', 'seller_profiles.user_id'));
         }

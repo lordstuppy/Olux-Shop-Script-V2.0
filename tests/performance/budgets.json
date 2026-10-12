@@ -1,0 +1,19 @@
+{
+ "status": "provisional",
+ "note": "Proposed initial budgets (docs/performance/performance-baselines.md). They hold until the owner approves or replaces them. Server-side latency of single sequential requests on the simulation stack with the dataset of scale-data.sql (lab conditions, 4 CPU cores shared with the load generator); not real-user data.",
+ "defaults": {"p95_ms": 300, "max_queries": 25},
+ "groups": [
+  {"match": "live poll", "p95_ms": 100, "max_queries": 20},
+  {"match": "search suggest", "p95_ms": 150, "max_queries": 15},
+  {"match": "admin reconciliation", "p95_ms": 5000, "max_queries": 25},
+  {"match": "admin ", "p95_ms": 1000, "max_queries": 60},
+  {"match": "seller ", "p95_ms": 300, "max_queries": 25},
+  {"match": "sitemap", "p95_ms": 300, "max_queries": 10}
+ ],
+ "assets": {
+  "public/css/app.css": {"raw_bytes": 25000, "gzip_bytes": 6500},
+  "public/js/enhance.js": {"raw_bytes": 30000, "gzip_bytes": 8000}
+ },
+ "image": {"app_max_mb": 400, "web_max_mb": 120},
+ "web_vitals_lab": {"lcp_ms": 2500, "cls": 0.1, "tbt_ms": 200, "inp_ms_lab": 200}
+}

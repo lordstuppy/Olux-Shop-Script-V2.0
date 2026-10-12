@@ -1,0 +1,24 @@
+Performance regression tests run against the code BEFORE the fixes (revision e224388,
+git worktree with the new test files copied in; PHPUnit 12, PostgreSQL 16 test database).
+Command: php artisan test tests/Feature/PerformanceAuditTest.php tests/Feature/DisputeTest.php tests/Feature/FilesAndSubscriptionsTest.php --filter 'perf|test_images_are_reencoded'
+
+Result: failed, 17 tests, 4 passed, 13 failed.
+The 4 that pass before the fixes are guard tests (catalogue, product, account/seller and admin pages
+had no growing query counts); they keep it that way.
+
+Failures before the fixes:
+- test_perf04_wishlist_queries_do_not_grow_with_items: Queries for http://localhost/wishlist grow with the data: 8 -> 14 Failed asserting that 14 is identical to 8.
+- test_perf04_cart_queries_do_not_grow_with_lines: Queries for http://localhost/cart grow with the data: 3 -> 8 Failed asserting that 8 is identical to 3.
+- test_perf12_top_lists_are_filtered_by_currency_in_sql: Failed asserting that two arrays are identical. --- Expected +++ Actual @@ @@ -Array &0 [ - 0 => 'EUR', - 1 => 'EUR', -] +Array &0 []
+- test_perf06_sitemap_is_cached_compressed_and_sessionless: Header [Cache-Control] was found, but value [no-cache, private] does not match [max-age=3600, public]. Failed asserting that two strings are equal. --- Expected +++ Actual @@ @@ -'max-age=3600, public' +'no-cache, private'
+- test_perf02_sales_ranking_counts_paid_units_only: The command "shop:refresh-sales-ranking" does not exist.
+- test_perf05_seller_filter_lists_the_top_sellers_and_the_selected_one: Undefined constant App\Services\CatalogService::FILTER_SELLERS
+- test_perf03_earning_sql_matches_earning_for: Call to undefined method App\Services\PayoutService::earningSql()
+- test_perf11_several_pending_refunds_are_polled_in_one_run: Attempted to lazy load [order] on model [App\Models\Payment] but lazy loading is disabled.
+- test_perf14_payment_polling_stops_after_failures_in_a_row: Undefined constant App\Services\PaymentService::POLL_FAILURES_BEFORE_STOP
+- test_perf14_transfer_polling_stops_after_failures_in_a_row: Attempted to lazy load [order] on model [App\Models\Payment] but lazy loading is disabled.
+- test_perf15_expired_cache_entries_are_pruned: The command "shop:prune-cache" does not exist.
+- test_perf11_several_overdue_disputes_escalate_in_one_sweep: Attempted to lazy load [buyer] on model [App\Models\Dispute] but lazy loading is disabled.
+- test_images_are_reencoded_and_served: Unknown named parameter $preview
+
+After the fixes (revision ad68a6a and later): all pass; full suite 312/312 (see performance-remediation-log.md).

@@ -36,6 +36,9 @@ EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT seller_profiles.display_name, selle
   WHERE seller_profiles.status = 'approved' GROUP BY seller_profiles.user_id, seller_profiles.display_name ORDER BY SUM(products.units_sold) DESC, seller_profiles.user_id LIMIT 50;
 \echo '### Q09 buyer order list version (live updates): latest change of the buyer''s orders'
 EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT max(updated_at) FROM orders WHERE buyer_id = 16;
+SELECT buyer_id AS quiet_buyer FROM orders GROUP BY buyer_id ORDER BY max(updated_at) LIMIT 1 \gset
+\echo '### Q09b the same for a buyer whose last order is old (most buyers): the latest-change scan walks all newer orders'
+EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT max(updated_at) FROM orders WHERE buyer_id = :quiet_buyer;
 \echo '### Q10 seller live version: latest sale id'
 EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT max(id) FROM order_items WHERE seller_id = 6;
 \echo '### Q11 seller live version: latest ledger entry id'
