@@ -1,0 +1,2215 @@
+{
+ "meta": {
+  "generated": "2026-10-12T13:06:20Z",
+  "revision": "dfcf4b9f4d648ef260974695d971f1d38d480fa5",
+  "image": "sha256:511fe368e8a798262019f38d0f32e348e9a37e6d579ba5d3fc8719c4bac824b9",
+  "runs": 30,
+  "warmup": 3,
+  "cpus": 4,
+  "rows": {
+   "products": 20200,
+   "orders": 200000,
+   "order_items": 250000,
+   "users": 50565,
+   "audit_log": 1001517,
+   "user_notifications": 500010,
+   "product_reviews": 40000,
+   "seller_ledger_entries": 420000,
+   "webhook_events": 200000
+  }
+ },
+ "pages": [
+  {
+   "name": "home",
+   "who": "anonymous",
+   "path": "/",
+   "status": 200,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 18.4,
+   "slowest": [
+    {
+     "ms": 7.808,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc limit 6",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.484,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.897,
+     "sql": "select * from \"product_images\" where \"product_images\".\"product_id\" in (195, 196, 197, 198, 199, 200) order by \"position\" asc",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 3, 4, 6, 7)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (195, 196, 197, 198, 199, 200) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 51.2,
+   "p95_ms": 67.2,
+   "p99_ms": 73.9,
+   "max_ms": 75.3,
+   "mean_ms": 53.0,
+   "stdev_ms": 7.2,
+   "bytes_gzip": 8357
+  },
+  {
+   "name": "catalog",
+   "who": "anonymous",
+   "path": "/products",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 49.9,
+   "slowest": [
+    {
+     "ms": 35.158,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.504,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.9379999999999997,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 2, 3, 4, 6, 7, 8)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 71.1,
+   "p95_ms": 101.0,
+   "p99_ms": 108.6,
+   "max_ms": 109.3,
+   "mean_ms": 74.6,
+   "stdev_ms": 11.5,
+   "bytes_gzip": 19126
+  },
+  {
+   "name": "catalog page 50",
+   "who": "anonymous",
+   "path": "/products?page=50",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 81.0,
+   "slowest": [
+    {
+     "ms": 39.721000000000004,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc, \"id\" desc limit 12 offset 588",
+     "kind": "execute"
+    },
+    {
+     "ms": 29.249000000000002,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
+     "kind": "execute"
+    },
+    {
+     "ms": 5.005999999999999,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 3, 5, 6, 7, 8)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (659, 2744, 3524, 5076, 5883, 9814, 10967, 11818, 14055, 16711, 19500, 19975) order by \"po",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 102.5,
+   "p95_ms": 136.0,
+   "p99_ms": 146.1,
+   "max_ms": 148.3,
+   "mean_ms": 107.4,
+   "stdev_ms": 13.9,
+   "bytes_gzip": 16993
+  },
+  {
+   "name": "catalog best sellers",
+   "who": "anonymous",
+   "path": "/products?sort=best",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 49.6,
+   "slowest": [
+    {
+     "ms": 34.221000000000004,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.6370000000000005,
+     "sql": "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.11,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 4, 5)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (19687, 19691, 19695, 19699, 19707, 19875, 19883, 19887, 19891, 19903, 19907, 20079) order",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 71.9,
+   "p95_ms": 96.6,
+   "p99_ms": 103.0,
+   "max_ms": 105.0,
+   "mean_ms": 76.1,
+   "stdev_ms": 10.3,
+   "bytes_gzip": 16969
+  },
+  {
+   "name": "catalog category",
+   "who": "anonymous",
+   "path": "/products?category=fonts",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 29.6,
+   "slowest": [
+    {
+     "ms": 10.675,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and exists (select * from \"categories\" where \"products\".\"category_id\" = \"categories\".\"id\" and \"slug\" = $4) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 9.989,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and exists (select * from \"categories\" where \"products\".\"category_id\" = \"categories\".\"id\" and \"slug\" = $4)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.522,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (5)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (60, 62, 70, 79, 88, 89, 124, 141, 150, 161, 182, 186) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 68.7,
+   "p95_ms": 78.1,
+   "p99_ms": 79.9,
+   "max_ms": 80.6,
+   "mean_ms": 69.4,
+   "stdev_ms": 5.2,
+   "bytes_gzip": 17390
+  },
+  {
+   "name": "catalog price range",
+   "who": "anonymous",
+   "path": "/products?price_min=5&price_max=50",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 35.1,
+   "slowest": [
+    {
+     "ms": 18.155,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and ((\"currency\" = $4 and \"price_minor\" >= $5 and \"price_minor\" <= $6) or (\"currency\" = $7 and \"price_minor\" >= $8 and \"price_minor\" <= $9))",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.7289999999999996,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.491,
+     "sql": "select * from \"categories\" order by \"name\" asc",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select \"rate\" from \"exchange_rates\" where \"base\" = $1 and \"quote\" = $2 limit 1",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 2, 3, 4, 5, 8)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (172, 174, 177, 181, 182, 185, 186, 187, 189, 190, 192, 197) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 71.5,
+   "p95_ms": 79.9,
+   "p99_ms": 129.5,
+   "max_ms": 149.6,
+   "mean_ms": 74.1,
+   "stdev_ms": 14.8,
+   "bytes_gzip": 19064
+  },
+  {
+   "name": "catalog seller",
+   "who": "anonymous",
+   "path": "/products?seller=6",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 19.0,
+   "slowest": [
+    {
+     "ms": 6.212,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"seller_id\" = $4",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.614000000000001,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.214,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"seller_id\" = $4 order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 2, 3, 5, 7)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (57, 61, 78, 79, 95, 104, 115, 121, 137, 160, 179, 195) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 62.1,
+   "p95_ms": 76.4,
+   "p99_ms": 84.6,
+   "max_ms": 87.9,
+   "mean_ms": 63.0,
+   "stdev_ms": 9.5,
+   "bytes_gzip": 17674
+  },
+  {
+   "name": "search",
+   "who": "anonymous",
+   "path": "/products?q=font",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 32.3,
+   "slowest": [
+    {
+     "ms": 16.578,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5)",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.8629999999999995,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.419,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (4, 5, 6, 8)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (135, 139, 146, 153, 167, 175, 178, 180, 182, 186, 192, 198) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 67.2,
+   "p95_ms": 79.6,
+   "p99_ms": 80.4,
+   "max_ms": 80.6,
+   "mean_ms": 67.9,
+   "stdev_ms": 7.3,
+   "bytes_gzip": 18042
+  },
+  {
+   "name": "search rare",
+   "who": "anonymous",
+   "path": "/products?q=zzzqx",
+   "status": 200,
+   "queries": 7,
+   "round_trips": 8,
+   "query_ms": 24.3,
+   "slowest": [
+    {
+     "ms": 13.171000000000001,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5)",
+     "kind": "execute"
+    },
+    {
+     "ms": 5.691,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.009,
+     "sql": "select * from \"categories\" order by \"name\" asc",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
+    "select * from \"categories\" order by \"name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 51.1,
+   "p95_ms": 61.2,
+   "p99_ms": 62.7,
+   "max_ms": 63.3,
+   "mean_ms": 52.3,
+   "stdev_ms": 4.8,
+   "bytes_gzip": 9962
+  },
+  {
+   "name": "search suggest",
+   "who": "anonymous",
+   "path": "/search/suggest?q=fon",
+   "status": 200,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 18.3,
+   "slowest": [
+    {
+     "ms": 10.612,
+     "sql": "select \"id\", \"slug\", \"title\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5) order by \"title\" asc limit 8",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.577,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.22,
+     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "BEGIN",
+    "select * from \"cache\" where \"key\" = $1 limit 1 for update",
+    "update \"cache\" set \"value\" = $1 where \"key\" = $2",
+    "COMMIT",
+    "select \"id\", \"slug\", \"title\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"u",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 48.0,
+   "p95_ms": 57.4,
+   "p99_ms": 59.3,
+   "max_ms": 59.9,
+   "mean_ms": 49.1,
+   "stdev_ms": 4.3,
+   "bytes_gzip": 859
+  },
+  {
+   "name": "product",
+   "who": "anonymous",
+   "path": "/products/perf-product-13000",
+   "status": 200,
+   "queries": 17,
+   "round_trips": 18,
+   "query_ms": 22.7,
+   "slowest": [
+    {
+     "ms": 5.154,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"slug\" = $4 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.5900000000000003,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.801,
+     "sql": "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"status\" = $2 order by \"id\" desc limit 20",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1)",
+    "select * from \"users\" where \"users\".\"id\" in (6)",
+    "select * from \"seller_profiles\" where \"seller_profiles\".\"user_id\" in (6)",
+    "select * from \"product_files\" where \"product_files\".\"product_id\" in (201)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (201) order by \"position\" asc",
+    "select \"rate\" from \"exchange_rates\" where \"base\" = $1 and \"quote\" = $2 limit 1",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (18775, 18787, 19903, 19907) order by \"position\" asc",
+    "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"status\" = $2 order by \"id\" desc li",
+    "select * from \"users\" where \"users\".\"id\" in (22420, 39420)",
+    "select AVG(rating) AS average, COUNT(*) AS count from \"product_reviews\" where \"product_id\" = $1 and \"status\" = $2 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 60.9,
+   "p95_ms": 74.5,
+   "p99_ms": 77.1,
+   "max_ms": 77.6,
+   "mean_ms": 61.8,
+   "stdev_ms": 6.2,
+   "bytes_gzip": 9578
+  },
+  {
+   "name": "sitemap",
+   "who": "anonymous",
+   "path": "/sitemap.xml",
+   "status": 200,
+   "queries": 2,
+   "round_trips": 3,
+   "query_ms": 5.5,
+   "slowest": [
+    {
+     "ms": 3.372,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.153,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 0.10300000000000001,
+     "sql": "set search_path to \"public\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)"
+   ],
+   "runs": 30,
+   "p50_ms": 30.1,
+   "p95_ms": 36.4,
+   "p99_ms": 39.1,
+   "max_ms": 40.0,
+   "mean_ms": 30.5,
+   "stdev_ms": 3.0,
+   "bytes_gzip": 154228
+  },
+  {
+   "name": "buyer orders",
+   "who": "buyer01@sim.test",
+   "path": "/orders",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 17.3,
+   "slowest": [
+    {
+     "ms": 3.5420000000000003,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.467,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.6979999999999995,
+     "sql": "select \"orders\".*, (select count(*) from \"order_items\" where \"orders\".\"id\" = \"order_items\".\"order_id\") as \"items_count\" from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null order by \"id\" desc limit 15 offset 0",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null",
+    "select \"orders\".*, (select count(*) from \"order_items\" where \"orders\".\"id\" = \"order_items\".\"order_id\") as \"items_count\" from \"orders\" where \"orders\".\"buyer_id\" ",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
+    "select count(*) as \"aggregate\" from \"orders\" where \"buyer_id\" = $1",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 55.3,
+   "p95_ms": 65.0,
+   "p99_ms": 65.6,
+   "max_ms": 65.7,
+   "mean_ms": 56.0,
+   "stdev_ms": 4.8,
+   "bytes_gzip": 16297
+  },
+  {
+   "name": "buyer order",
+   "who": "buyer01@sim.test",
+   "path": "/orders/0aa4f502-98dc-4a04-bbdd-d9487d8daa0c",
+   "status": 200,
+   "queries": 17,
+   "round_trips": 18,
+   "query_ms": 24.4,
+   "slowest": [
+    {
+     "ms": 4.654,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.8480000000000003,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.387,
+     "sql": "select * from \"products\" where \"products\".\"id\" in (17848, 17855)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"orders\" where \"public_id\" = $1 limit 1",
+    "select * from \"order_items\" where \"order_items\".\"order_id\" in (200000)",
+    "select * from \"products\" where \"products\".\"id\" in (17848, 17855)",
+    "select * from \"product_files\" where \"product_files\".\"product_id\" in (17848, 17855)",
+    "select * from \"payments\" where \"payments\".\"order_id\" in (200000)",
+    "select * from \"invoices\" where \"invoices\".\"order_id\" in (200000)",
+    "select * from \"disputes\" where \"order_id\" = $1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select * from \"orders\" where \"public_id\" = $1 limit 1",
+    "select COUNT(delivered_at) AS delivered, MAX(delivered_at) AS last_delivery, SUM(refunded_minor) AS refunded from \"order_items\" where \"order_id\" = $1 limit 1",
+    "select max(\"updated_at\") as \"aggregate\" from \"payments\" where \"order_id\" = $1",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"order_id\" = $1",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 67.8,
+   "p95_ms": 84.0,
+   "p99_ms": 91.6,
+   "max_ms": 94.3,
+   "mean_ms": 68.2,
+   "stdev_ms": 8.0,
+   "bytes_gzip": 8086
+  },
+  {
+   "name": "buyer notifications",
+   "who": "buyer01@sim.test",
+   "path": "/notifications",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 11.3,
+   "slowest": [
+    {
+     "ms": 3.299,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.131,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.666,
+     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1",
+    "select * from \"user_notifications\" where \"user_id\" = $1 order by \"id\" desc limit 20 offset 0",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"id\") as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"user_id\" = $2",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 49.8,
+   "p95_ms": 63.8,
+   "p99_ms": 65.2,
+   "max_ms": 65.7,
+   "mean_ms": 51.6,
+   "stdev_ms": 6.6,
+   "bytes_gzip": 17203
+  },
+  {
+   "name": "buyer live poll",
+   "who": "buyer01@sim.test",
+   "path": "/live?path=/orders",
+   "status": 200,
+   "queries": 16,
+   "round_trips": 17,
+   "query_ms": 18.9,
+   "slowest": [
+    {
+     "ms": 4.62,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.866,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.5449999999999995,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "BEGIN",
+    "select * from \"cache\" where \"key\" = $1 limit 1 for update",
+    "update \"cache\" set \"value\" = $1 where \"key\" = $2",
+    "COMMIT",
+    "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
+    "select count(*) as \"aggregate\" from \"orders\" where \"buyer_id\" = $1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 51.2,
+   "p95_ms": 64.8,
+   "p99_ms": 70.5,
+   "max_ms": 71.9,
+   "mean_ms": 52.3,
+   "stdev_ms": 6.6,
+   "bytes_gzip": 892
+  },
+  {
+   "name": "buyer wallet",
+   "who": "buyer01@sim.test",
+   "path": "/wallet",
+   "status": 200,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 10.3,
+   "slowest": [
+    {
+     "ms": 3.7859999999999996,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.007,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.1219999999999999,
+     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"balance_transactions\" where \"balance_transactions\".\"user_id\" = $1 and \"balance_transactions\".\"user_id\" is not null",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"id\") as \"aggregate\" from \"balance_transactions\" where \"user_id\" = $1 and \"user_id\" = $2",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 41.9,
+   "p95_ms": 51.5,
+   "p99_ms": 55.1,
+   "max_ms": 56.1,
+   "mean_ms": 43.0,
+   "stdev_ms": 5.0,
+   "bytes_gzip": 6141
+  },
+  {
+   "name": "buyer product",
+   "who": "buyer01@sim.test",
+   "path": "/products/perf-product-13000",
+   "status": 200,
+   "queries": 22,
+   "round_trips": 23,
+   "query_ms": 26.4,
+   "slowest": [
+    {
+     "ms": 3.935,
+     "sql": "select * from \"order_items\" where \"product_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"buyer_id\" = $2 and \"status\" in ($3, $4, $5)) order by \"id\" desc",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.67,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"slug\" = $4 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.077,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1)",
+    "select * from \"users\" where \"users\".\"id\" in (6)",
+    "select * from \"seller_profiles\" where \"seller_profiles\".\"user_id\" in (6)",
+    "select * from \"product_files\" where \"product_files\".\"product_id\" in (201)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (201) order by \"position\" asc",
+    "select \"rate\" from \"exchange_rates\" where \"base\" = $1 and \"quote\" = $2 limit 1",
+    "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (18775, 18787, 19903, 19907) order by \"position\" asc",
+    "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"status\" = $2 order by \"id\" desc li",
+    "select * from \"users\" where \"users\".\"id\" in (22420, 39420)",
+    "select AVG(rating) AS average, COUNT(*) AS count from \"product_reviews\" where \"product_id\" = $1 and \"status\" = $2 limit 1",
+    "select * from \"order_items\" where \"product_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"buyer_id\" = $2 and \"s",
+    "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"user_id\" = $2 limit 1",
+    "select exists(select * from \"wishlist_items\" where \"wishlist_items\".\"user_id\" = $1 and \"wishlist_items\".\"user_id\" is not null and \"product_id\" = $2) as \"exists\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 73.9,
+   "p95_ms": 93.8,
+   "p99_ms": 97.5,
+   "max_ms": 98.8,
+   "mean_ms": 76.7,
+   "stdev_ms": 9.1,
+   "bytes_gzip": 11405
+  },
+  {
+   "name": "seller dashboard",
+   "who": "seller01@sim.test",
+   "path": "/seller",
+   "status": 200,
+   "queries": 17,
+   "round_trips": 18,
+   "query_ms": 57.5,
+   "slowest": [
+    {
+     "ms": 24.274,
+     "sql": "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"order_items\".\"seller_id\" = $1 and \"order_items\".\"seller_earning_minor\" > $2 and \"orders\".\"status\" in ($3, $4, $5) and not exists (select 1 from \"disputes\" where \"disputes\".\"order_item_id\" = \"order_items\".\"id\" and \"disputes\".\"st",
+     "kind": "execute"
+    },
+    {
+     "ms": 8.322000000000001,
+     "sql": "select * from \"order_items\" where \"seller_id\" = $1 and \"delivered_at\" is null and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"status\" in ($2)) and exists (select * from \"products\" where \"order_items\".\"product_id\" = \"products\".\"id\" and \"delivery_type\" = $3) order by \"id\" asc limit 20",
+     "kind": "execute"
+    },
+    {
+     "ms": 5.133,
+     "sql": "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"order_items\" where \"seller_id\" = $1 and \"delivered_at\" is null and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" ",
+    "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
+    "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"orde",
+    "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"disputes\" inner join \"order_items\" on \"order_items\".\"id\" = \"disputes\".\"",
+    "select status, COUNT(*) AS c from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null group by \"status\"",
+    "select * from \"order_items\" where \"seller_id\" = $1 and \"seller_earning_minor\" is not null and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"o",
+    "select * from \"orders\" where \"orders\".\"id\" in (648, 17648, 34648, 51648, 68648, 119648, 136648, 153648, 170648, 187648)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"id\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 92.3,
+   "p95_ms": 111.2,
+   "p99_ms": 118.4,
+   "max_ms": 120.4,
+   "mean_ms": 94.0,
+   "stdev_ms": 9.0,
+   "bytes_gzip": 11282
+  },
+  {
+   "name": "seller sales",
+   "who": "seller01@sim.test",
+   "path": "/seller/sales",
+   "status": 200,
+   "queries": 14,
+   "round_trips": 15,
+   "query_ms": 42.9,
+   "slowest": [
+    {
+     "ms": 23.176,
+     "sql": "select count(*) as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"status\" in ($2, $3, $4, $5))",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.213,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.165,
+     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"",
+    "select * from \"order_items\" where \"seller_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"status\" in ($2, $3, $4",
+    "select * from \"orders\" where \"orders\".\"id\" in (648, 17648, 34648, 51648, 59279, 61696, 68648, 76279, 78696, 85648, 93279, 95696, 102648, 110279, 119648, 136648,",
+    "select * from \"products\" where \"products\".\"id\" in (599, 600)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"id\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 82.9,
+   "p95_ms": 95.9,
+   "p99_ms": 98.4,
+   "max_ms": 98.7,
+   "mean_ms": 83.9,
+   "stdev_ms": 6.0,
+   "bytes_gzip": 22408
+  },
+  {
+   "name": "seller products",
+   "who": "seller01@sim.test",
+   "path": "/seller/products",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 37.8,
+   "slowest": [
+    {
+     "ms": 21.561999999999998,
+     "sql": "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"product_license_keys\" where \"products\".\"id\" = \"product_license_keys\".\"product_id\") as \"license_keys_count\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null order by \"id\" desc limit 20 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.521,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.359,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null",
+    "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"produc",
+    "select * from \"categories\" where \"categories\".\"id\" in (2, 6)",
+    "select * from \"seller_profiles\" where \"seller_profiles\".\"user_id\" = $1 and \"seller_profiles\".\"user_id\" is not null limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 69.0,
+   "p95_ms": 88.5,
+   "p99_ms": 90.4,
+   "max_ms": 90.6,
+   "mean_ms": 72.3,
+   "stdev_ms": 9.9,
+   "bytes_gzip": 19533
+  },
+  {
+   "name": "seller product edit",
+   "who": "seller01@sim.test",
+   "path": "/seller/products/600/edit",
+   "status": 200,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 17.9,
+   "slowest": [
+    {
+     "ms": 3.338,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.201,
+     "sql": "select * from \"product_images\" where \"product_images\".\"product_id\" in (600) order by \"position\" asc",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.094,
+     "sql": "select * from \"products\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"products\" where \"id\" = $1 limit 1",
+    "select * from \"product_files\" where \"product_files\".\"product_id\" in (600)",
+    "select * from \"product_images\" where \"product_images\".\"product_id\" in (600) order by \"position\" asc",
+    "select * from \"categories\" order by \"name\" asc",
+    "select count(*) as \"aggregate\" from \"product_license_keys\" where \"product_license_keys\".\"product_id\" = $1 and \"product_license_keys\".\"product_id\" is not null an",
+    "select count(*) as \"aggregate\" from \"product_license_keys\" where \"product_license_keys\".\"product_id\" = $1 and \"product_license_keys\".\"product_id\" is not null an",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 63.6,
+   "p95_ms": 96.3,
+   "p99_ms": 137.3,
+   "max_ms": 151.9,
+   "mean_ms": 69.9,
+   "stdev_ms": 20.0,
+   "bytes_gzip": 13654
+  },
+  {
+   "name": "seller payouts",
+   "who": "seller01@sim.test",
+   "path": "/seller/payouts",
+   "status": 200,
+   "queries": 13,
+   "round_trips": 14,
+   "query_ms": 51.2,
+   "slowest": [
+    {
+     "ms": 28.872,
+     "sql": "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"order_items\".\"seller_id\" = $1 and \"order_items\".\"seller_earning_minor\" > $2 and \"orders\".\"status\" in ($3, $4, $5) and not exists (select 1 from \"disputes\" where \"disputes\".\"order_item_id\" = \"order_items\".\"id\" and \"disputes\".\"st",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.8580000000000005,
+     "sql": "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.951,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
+    "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"orde",
+    "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"disputes\" inner join \"order_items\" on \"order_items\".\"id\" = \"disputes\".\"",
+    "select count(*) as \"aggregate\" from \"payouts\" where \"seller_id\" = $1",
+    "select * from \"seller_profiles\" where \"seller_profiles\".\"user_id\" = $1 and \"seller_profiles\".\"user_id\" is not null limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"payouts\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 89.5,
+   "p95_ms": 112.1,
+   "p99_ms": 115.1,
+   "max_ms": 115.8,
+   "mean_ms": 91.0,
+   "stdev_ms": 9.6,
+   "bytes_gzip": 7489
+  },
+  {
+   "name": "seller live poll",
+   "who": "seller01@sim.test",
+   "path": "/live?path=/seller",
+   "status": 200,
+   "queries": 18,
+   "round_trips": 19,
+   "query_ms": 19.8,
+   "slowest": [
+    {
+     "ms": 3.852,
+     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.6390000000000002,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.399,
+     "sql": "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "BEGIN",
+    "select * from \"cache\" where \"key\" = $1 limit 1 for update",
+    "update \"cache\" set \"value\" = $1 where \"key\" = $2",
+    "COMMIT",
+    "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"id\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 54.3,
+   "p95_ms": 67.5,
+   "p99_ms": 76.1,
+   "max_ms": 79.2,
+   "mean_ms": 54.9,
+   "stdev_ms": 8.2,
+   "bytes_gzip": 892
+  },
+  {
+   "name": "seller reviews",
+   "who": "seller01@sim.test",
+   "path": "/seller/reviews",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 22.9,
+   "slowest": [
+    {
+     "ms": 5.356,
+     "sql": "select count(*) as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.6799999999999997,
+     "sql": "select * from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null) order by seller_replied_at IS NOT NULL, \"id\" desc limit 20 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.5269999999999997,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"selle",
+    "select * from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null) ord",
+    "select * from \"products\" where \"products\".\"id\" in (593, 594, 595, 596, 597, 598, 599, 600)",
+    "select * from \"users\" where \"users\".\"id\" in (727, 1766, 6885, 8358, 15989, 17727, 21977, 27701, 27870, 31516, 32385, 36370, 37674, 38108, 39582, 41489, 42793, 4",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"seller_id\" = $1) and \"product_id\" in (s",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 67.4,
+   "p95_ms": 87.1,
+   "p99_ms": 90.1,
+   "max_ms": 90.2,
+   "mean_ms": 69.6,
+   "stdev_ms": 9.6,
+   "bytes_gzip": 31935
+  },
+  {
+   "name": "admin dashboard",
+   "who": "superadmin@sim.test",
+   "path": "/admin",
+   "status": 200,
+   "queries": 50,
+   "round_trips": 51,
+   "query_ms": 585.6,
+   "slowest": [
+    {
+     "ms": 85.331,
+     "sql": "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net, SUM(order_items.seller_earning_minor) AS earnings from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" inner join \"users",
+     "kind": "execute"
+    },
+    {
+     "ms": 83.286,
+     "sql": "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" between $5 and $6 and \"or",
+     "kind": "execute"
+    },
+    {
+     "ms": 55.669000000000004,
+     "sql": "select sum(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor - order_items.seller_earning_minor) as \"aggregate\" from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" >= $5 and \"orders\".\"paid_at\" < $6 and \"orders\".\"currency\" = $7",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"disputes\" where \"status\" in ($1, $2)",
+    "select count(*) as \"aggregate\" from \"orders\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"products\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"seller_profiles\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"tickets\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"payouts\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"failed_jobs\"",
+    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "select count(*) as \"aggregate\" from \"orders\" where \"status\" = $1",
+    "select count(*) as \"aggregate\" from \"users\"",
+    "select * from \"orders\" order by \"id\" desc limit 10",
+    "select * from \"users\" where \"users\".\"id\" in (16, 50563, 50564, 50565)",
+    "select COUNT(*) AS n, COALESCE(SUM(total_minor - refunded_minor), 0) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" >= $5 and \"currency\" ",
+    "select sum(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor - order_items.seller_earning_minor) as ",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" >= $1",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" >= $1 and \"status\" in ($2, $3, $4, $5)",
+    "select count(*) as \"aggregate\" from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" >= $5",
+    "select count(distinct \"order_items\".\"seller_id\") as \"aggregate\" from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders",
+    "select COUNT(*) AS n, COALESCE(SUM(total_minor - refunded_minor), 0) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" >= $5 and \"paid_at\" <",
+    "select sum(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor - order_items.seller_earning_minor) as ",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" >= $1 and \"created_at\" < $2",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" >= $1 and \"created_at\" < $2 and \"status\" in ($3, $4, $5, $6)",
+    "select count(*) as \"aggregate\" from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" >= $5 and \"paid_at\" < $6",
+    "select count(distinct \"order_items\".\"seller_id\") as \"aggregate\" from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders",
+    "select currency, DATE(paid_at) AS day, SUM(total_minor - refunded_minor) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" between $5 and $6",
+    "select DATE(paid_at) AS day, COUNT(*) AS n from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" between $5 and $6 group by DATE(paid_at)",
+    "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity -",
+    "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor ",
+    "select count(*) as \"aggregate\" from \"seller_profiles\" where \"status\" = $1",
+    "select max(\"created_at\") as \"aggregate\" from \"gateway_logs\" where \"channel\" = $1 and \"outcome\" = $2",
+    "select count(*) as \"aggregate\" from \"gateway_logs\" where \"created_at\" >= $1 and \"outcome\" = $2",
+    "select count(*) as \"aggregate\" from \"gateway_logs\" where \"created_at\" >= $1 and \"channel\" = $2 and \"outcome\" in ($3, $4)",
+    "select count(*) as \"aggregate\" from \"gateway_logs\" where \"created_at\" >= $1 and \"channel\" = $2 and \"outcome\" = $3",
+    "select count(*) as \"aggregate\" from \"payments\" where \"provider\" = $1 and \"kind\" = $2 and \"status\" in ($3, $4) and \"created_at\" < $5 and exists (select * from \"o",
+    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "select count(*) as \"aggregate\" from \"payments\" where \"provider\" = $1 and \"status\" = $2 and \"created_at\" >= $3",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"payouts\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"tickets\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"products\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"seller_profiles\"",
+    "select count(*) as \"aggregate\" from \"failed_jobs\"",
+    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 568.9,
+   "p95_ms": 641.1,
+   "p99_ms": 666.4,
+   "max_ms": 673.0,
+   "mean_ms": 575.8,
+   "stdev_ms": 37.8,
+   "bytes_gzip": 51462
+  },
+  {
+   "name": "admin reports",
+   "who": "superadmin@sim.test",
+   "path": "/admin/reports",
+   "status": 200,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 206.9,
+   "slowest": [
+    {
+     "ms": 69.49,
+     "sql": "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net, SUM(order_items.seller_earning_minor) AS earnings from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" inner join \"users",
+     "kind": "execute"
+    },
+    {
+     "ms": 67.722,
+     "sql": "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" between $5 and $6 group b",
+     "kind": "execute"
+    },
+    {
+     "ms": 26.728,
+     "sql": "select currency, DATE(paid_at) AS day, SUM(total_minor - refunded_minor) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" between $5 and $6 group by \"currency\", DATE(paid_at)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select currency, DATE(paid_at) AS day, SUM(total_minor - refunded_minor) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" between $5 and $6",
+    "select currency, COUNT(*) AS orders, SUM(total_minor) AS gross, SUM(refunded_minor) AS refunded, SUM(discount_minor) AS discounts from \"orders\" where \"status\" i",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" between $1 and $2",
+    "select count(*) as \"aggregate\" from \"orders\" where \"created_at\" between $1 and $2 and \"status\" in ($3, $4, $5, $6)",
+    "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity -",
+    "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor ",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 265.9,
+   "p95_ms": 314.5,
+   "p99_ms": 316.5,
+   "max_ms": 316.9,
+   "mean_ms": 272.3,
+   "stdev_ms": 25.9,
+   "bytes_gzip": 30673
+  },
+  {
+   "name": "admin orders",
+   "who": "superadmin@sim.test",
+   "path": "/admin/orders",
+   "status": 200,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 46.7,
+   "slowest": [
+    {
+     "ms": 32.351,
+     "sql": "select count(*) as \"aggregate\" from \"orders\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.5460000000000003,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.958,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"orders\"",
+    "select * from \"orders\" order by \"id\" desc limit 30 offset 0",
+    "select * from \"users\" where \"users\".\"id\" in (16, 50558, 50559, 50560, 50561, 50562, 50563, 50564, 50565)",
+    "select \"display_name\", \"user_id\" from \"seller_profiles\" order by \"display_name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 100.7,
+   "p95_ms": 120.3,
+   "p99_ms": 122.1,
+   "max_ms": 122.5,
+   "mean_ms": 101.6,
+   "stdev_ms": 10.1,
+   "bytes_gzip": 67305
+  },
+  {
+   "name": "admin orders search",
+   "who": "superadmin@sim.test",
+   "path": "/admin/orders?q=perf",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 62.9,
+   "slowest": [
+    {
+     "ms": 48.779,
+     "sql": "select count(*) as \"aggregate\" from \"orders\" where CAST(public_id AS TEXT) LIKE $1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.934,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.107,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"orders\" where CAST(public_id AS TEXT) LIKE $1",
+    "select \"display_name\", \"user_id\" from \"seller_profiles\" order by \"display_name\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 116.1,
+   "p95_ms": 145.5,
+   "p99_ms": 156.0,
+   "max_ms": 159.5,
+   "mean_ms": 118.8,
+   "stdev_ms": 14.8,
+   "bytes_gzip": 45101
+  },
+  {
+   "name": "admin order",
+   "who": "superadmin@sim.test",
+   "path": "/admin/orders/0aa4f502-98dc-4a04-bbdd-d9487d8daa0c",
+   "status": 200,
+   "queries": 17,
+   "round_trips": 18,
+   "query_ms": 30.9,
+   "slowest": [
+    {
+     "ms": 7.609,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.773,
+     "sql": "select * from \"orders\" where \"public_id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.487,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"orders\" where \"public_id\" = $1 limit 1",
+    "select * from \"users\" where \"users\".\"id\" in (16)",
+    "select * from \"order_items\" where \"order_items\".\"order_id\" in (200000)",
+    "select * from \"users\" where \"users\".\"id\" in (507)",
+    "select * from \"payments\" where \"payments\".\"order_id\" in (200000)",
+    "select * from \"invoices\" where \"invoices\".\"order_id\" in (200000)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select * from \"orders\" where \"public_id\" = $1 limit 1",
+    "select COUNT(delivered_at) AS delivered, MAX(delivered_at) AS last_delivery, SUM(refunded_minor) AS refunded from \"order_items\" where \"order_id\" = $1 limit 1",
+    "select max(\"updated_at\") as \"aggregate\" from \"payments\" where \"order_id\" = $1",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"order_id\" = $1",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 73.5,
+   "p95_ms": 91.8,
+   "p99_ms": 92.7,
+   "max_ms": 93.0,
+   "mean_ms": 74.8,
+   "stdev_ms": 9.3,
+   "bytes_gzip": 15194
+  },
+  {
+   "name": "admin products",
+   "who": "superadmin@sim.test",
+   "path": "/admin/products",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 20.6,
+   "slowest": [
+    {
+     "ms": 5.986000000000001,
+     "sql": "select count(*) as \"aggregate\" from \"products\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.3229999999999995,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.206,
+     "sql": "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"product_license_keys\" where \"products\".\"id\" = \"product_license_keys\".\"product_id\") as \"license_keys_count\" from \"products\" order by \"updated_at\" desc limit 30 offset 0",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"products\"",
+    "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"produc",
+    "select * from \"users\" where \"users\".\"id\" in (101, 151, 156, 161, 211, 231, 236, 246, 256, 261, 291, 311, 316, 336, 341, 346, 351, 361, 391, 396, 416, 421, 451, ",
+    "select * from \"categories\" where \"categories\".\"id\" in (1, 2, 3, 4, 5, 6, 7, 8)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"products\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 71.5,
+   "p95_ms": 86.9,
+   "p99_ms": 91.7,
+   "max_ms": 93.3,
+   "mean_ms": 75.0,
+   "stdev_ms": 8.4,
+   "bytes_gzip": 59769
+  },
+  {
+   "name": "admin users",
+   "who": "superadmin@sim.test",
+   "path": "/admin/users",
+   "status": 200,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 19.4,
+   "slowest": [
+    {
+     "ms": 5.24,
+     "sql": "select count(*) as \"aggregate\" from \"users\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.968999999999999,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.016,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"users\"",
+    "select * from \"users\" order by \"id\" desc limit 30 offset 0",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 64.8,
+   "p95_ms": 80.2,
+   "p99_ms": 88.4,
+   "max_ms": 91.6,
+   "mean_ms": 66.9,
+   "stdev_ms": 8.3,
+   "bytes_gzip": 31504
+  },
+  {
+   "name": "admin users search",
+   "who": "superadmin@sim.test",
+   "path": "/admin/users?q=perf-buyer-4999",
+   "status": 200,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 178.8,
+   "slowest": [
+    {
+     "ms": 96.195,
+     "sql": "select * from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2) order by \"id\" desc limit 30 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 71.66,
+     "sql": "select count(*) as \"aggregate\" from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2)",
+     "kind": "execute"
+    },
+    {
+     "ms": 5.245,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2)",
+    "select * from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2) order by \"id\" desc limit 30 offset 0",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 183.6,
+   "p95_ms": 233.2,
+   "p99_ms": 248.7,
+   "max_ms": 253.1,
+   "mean_ms": 190.3,
+   "stdev_ms": 22.9,
+   "bytes_gzip": 17351
+  },
+  {
+   "name": "admin user",
+   "who": "superadmin@sim.test",
+   "path": "/admin/users/16",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 19.4,
+   "slowest": [
+    {
+     "ms": 4.175,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.071,
+     "sql": "select * from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null order by \"id\" desc limit 20",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.337,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"seller_profiles\" where \"seller_profiles\".\"user_id\" in (16)",
+    "select * from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null order by \"id\" desc limit 20",
+    "select * from \"balance_transactions\" where \"balance_transactions\".\"user_id\" = $1 and \"balance_transactions\".\"user_id\" is not null order by \"id\" desc limit 20",
+    "select count(*) as \"aggregate\" from \"sessions\" where \"user_id\" = $1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 72.0,
+   "p95_ms": 89.2,
+   "p99_ms": 96.1,
+   "max_ms": 98.4,
+   "mean_ms": 74.2,
+   "stdev_ms": 9.3,
+   "bytes_gzip": 22087
+  },
+  {
+   "name": "admin audit",
+   "who": "superadmin@sim.test",
+   "path": "/admin/audit",
+   "status": 200,
+   "queries": 9,
+   "round_trips": 10,
+   "query_ms": 41.8,
+   "slowest": [
+    {
+     "ms": 32.56,
+     "sql": "select count(*) as \"aggregate\" from \"audit_log\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.092,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.034,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"audit_log\"",
+    "select * from \"audit_log\" order by \"id\" desc limit 50 offset 0",
+    "select * from \"users\" where \"users\".\"id\" in (1, 6, 16)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 107.5,
+   "p95_ms": 132.6,
+   "p99_ms": 147.9,
+   "max_ms": 154.1,
+   "mean_ms": 109.1,
+   "stdev_ms": 15.2,
+   "bytes_gzip": 31631
+  },
+  {
+   "name": "admin payments",
+   "who": "superadmin@sim.test",
+   "path": "/admin/payments",
+   "status": 200,
+   "queries": 9,
+   "round_trips": 10,
+   "query_ms": 35.8,
+   "slowest": [
+    {
+     "ms": 18.371,
+     "sql": "select count(*) as \"aggregate\" from \"payments\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 5.930000000000001,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.377,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"payments\"",
+    "select * from \"payments\" order by \"id\" desc limit 40 offset 0",
+    "select * from \"orders\" where \"orders\".\"id\" in (570, 790, 3510, 5000, 19812, 26263, 34396, 45860, 53347, 57800, 63775, 66480, 68453, 71772, 73486, 78448, 81454, ",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 74.8,
+   "p95_ms": 93.1,
+   "p99_ms": 95.6,
+   "max_ms": 96.4,
+   "mean_ms": 78.5,
+   "stdev_ms": 8.7,
+   "bytes_gzip": 37824
+  },
+  {
+   "name": "admin payouts",
+   "who": "superadmin@sim.test",
+   "path": "/admin/payouts",
+   "status": 200,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 13.1,
+   "slowest": [
+    {
+     "ms": 4.259,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.6140000000000003,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.7409999999999999,
+     "sql": "select count(*) as \"aggregate\" from \"payouts\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"payouts\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"payouts\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 53.5,
+   "p95_ms": 73.2,
+   "p99_ms": 79.8,
+   "max_ms": 81.2,
+   "mean_ms": 55.7,
+   "stdev_ms": 9.0,
+   "bytes_gzip": 8637
+  },
+  {
+   "name": "admin gateway",
+   "who": "superadmin@sim.test",
+   "path": "/admin/gateway",
+   "status": 200,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 12.5,
+   "slowest": [
+    {
+     "ms": 4.261,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.004,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.185,
+     "sql": "select count(*) as \"aggregate\" from \"gateway_logs\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"gateway_logs\"",
+    "select * from \"gateway_logs\" order by \"id\" desc limit 50 offset 0",
+    "select channel, outcome, COUNT(*) AS c from \"gateway_logs\" where \"created_at\" >= $1 group by \"channel\", \"outcome\"",
+    "select max(\"created_at\") as \"aggregate\" from \"gateway_logs\" where \"channel\" = $1 and \"outcome\" = $2",
+    "select max(\"created_at\") as \"aggregate\" from \"gateway_logs\" where \"channel\" = $1 and \"outcome\" = $2",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 55.8,
+   "p95_ms": 66.7,
+   "p99_ms": 73.0,
+   "max_ms": 75.1,
+   "mean_ms": 56.2,
+   "stdev_ms": 7.6,
+   "bytes_gzip": 14809
+  },
+  {
+   "name": "admin health",
+   "who": "superadmin@sim.test",
+   "path": "/admin/health",
+   "status": 200,
+   "queries": 21,
+   "round_trips": 22,
+   "query_ms": 58.8,
+   "slowest": [
+    {
+     "ms": 38.134,
+     "sql": "select max(\"processed_at\") as \"aggregate\" from \"webhook_events\" where \"provider\" = $1 and \"status\" = $2",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.227,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.274,
+     "sql": "select COUNT(*) AS n, COALESCE(SUM(size), 0) AS bytes from \"product_files\" where \"retired_at\" is null limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "SHOW server_version",
+    "SELECT pg_database_size(current_database()) AS s",
+    "select \"migration\" from \"migrations\" order by \"batch\" asc, \"migration\" asc",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"jobs\"",
+    "select min(\"available_at\") as \"aggregate\" from \"jobs\" where \"reserved_at\" is null",
+    "select count(*) as \"aggregate\" from \"failed_jobs\"",
+    "select COUNT(*) AS n, COALESCE(SUM(size), 0) AS bytes from \"product_files\" where \"retired_at\" is null limit 1",
+    "select max(\"created_at\") as \"aggregate\" from \"gateway_logs\" where \"channel\" = $1 and \"outcome\" = $2",
+    "select max(\"processed_at\") as \"aggregate\" from \"webhook_events\" where \"provider\" = $1 and \"status\" = $2",
+    "select max(\"created_at\") as \"aggregate\" from \"gateway_logs\" where \"channel\" = $1 and \"outcome\" = $2",
+    "select \"outcome\" from \"gateway_logs\" where \"channel\" = $1 and \"created_at\" >= $2 order by \"id\" desc limit 20",
+    "select \"uuid\", \"queue\", \"payload\", \"exception\", \"failed_at\" from \"failed_jobs\" order by \"id\" desc limit 50",
+    "select count(*) as \"aggregate\" from \"failed_jobs\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 103.6,
+   "p95_ms": 118.2,
+   "p99_ms": 123.8,
+   "max_ms": 125.8,
+   "mean_ms": 103.6,
+   "stdev_ms": 9.1,
+   "bytes_gzip": 14257
+  },
+  {
+   "name": "admin reviews",
+   "who": "superadmin@sim.test",
+   "path": "/admin/reviews",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 18.3,
+   "slowest": [
+    {
+     "ms": 4.204000000000001,
+     "sql": "select count(*) as \"aggregate\" from \"product_reviews\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.169,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.2359999999999998,
+     "sql": "select * from \"products\" where \"products\".\"id\" in (19815, 19816, 19817, 19818, 19819, 19820, 19821, 19822, 19823, 19824, 19825, 19826)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"product_reviews\"",
+    "select * from \"product_reviews\" order by \"id\" desc limit 30 offset 0",
+    "select * from \"products\" where \"products\".\"id\" in (19815, 19816, 19817, 19818, 19819, 19820, 19821, 19822, 19823, 19824, 19825, 19826)",
+    "select * from \"users\" where \"users\".\"id\" in (973, 2711, 3750, 5054, 7396, 7566, 9304, 9473, 12250, 15631, 16066, 16935, 19277, 21354, 22223, 23092, 23527, 24131",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"product_reviews\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 73.8,
+   "p95_ms": 92.7,
+   "p99_ms": 95.8,
+   "max_ms": 96.1,
+   "mean_ms": 74.7,
+   "stdev_ms": 9.1,
+   "bytes_gzip": 43778
+  },
+  {
+   "name": "admin sellers",
+   "who": "superadmin@sim.test",
+   "path": "/admin/sellers",
+   "status": 200,
+   "queries": 10,
+   "round_trips": 11,
+   "query_ms": 15.9,
+   "slowest": [
+    {
+     "ms": 3.357,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.082,
+     "sql": "select * from \"seller_profiles\" order by CASE status WHEN 'pending' THEN 0 ELSE 1 END, \"id\" desc limit 30 offset 0",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.6310000000000002,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"seller_profiles\"",
+    "select * from \"seller_profiles\" order by CASE status WHEN 'pending' THEN 0 ELSE 1 END, \"id\" desc limit 30 offset 0",
+    "select * from \"users\" where \"users\".\"id\" in (536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, ",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"seller_profiles\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 63.1,
+   "p95_ms": 78.5,
+   "p99_ms": 80.8,
+   "max_ms": 81.8,
+   "mean_ms": 65.1,
+   "stdev_ms": 7.9,
+   "bytes_gzip": 23442
+  },
+  {
+   "name": "admin disputes",
+   "who": "superadmin@sim.test",
+   "path": "/admin/disputes",
+   "status": 200,
+   "queries": 9,
+   "round_trips": 10,
+   "query_ms": 13.0,
+   "slowest": [
+    {
+     "ms": 3.258,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.747,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.6679999999999997,
+     "sql": "select count(*) as \"aggregate\" from \"disputes\" where \"status\" in ($1, $2)",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select count(*) as \"aggregate\" from \"disputes\" where \"status\" in ($1, $2)",
+    "select status, COUNT(*) AS c from \"disputes\" group by \"status\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\"",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 54.8,
+   "p95_ms": 69.5,
+   "p99_ms": 73.6,
+   "max_ms": 74.9,
+   "mean_ms": 55.7,
+   "stdev_ms": 6.9,
+   "bytes_gzip": 8816
+  },
+  {
+   "name": "admin reconciliation",
+   "who": "superadmin@sim.test",
+   "path": "/admin/reconciliation",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 278.0,
+   "slowest": [
+    {
+     "ms": 110.217,
+     "sql": "select order_items.seller_id, orders.currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) group by \"order_items\".\"seller_id\", \"orders\".\"currency\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 72.849,
+     "sql": "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) - ((order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) * order_items.commission_bps + 5000) / 10000 AS expected fro",
+     "kind": "execute"
+    },
+    {
+     "ms": 54.293,
+     "sql": "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.qua",
+    "select order_items.seller_id, orders.currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_i",
+    "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
+    "select seller_id, currency, -SUM(amount_minor) AS total from \"payouts\" where \"status\" != $1 group by \"seller_id\", \"currency\"",
+    "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2) group by \"seller_id\", \"currency\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 382.3,
+   "p95_ms": 448.2,
+   "p99_ms": 459.2,
+   "max_ms": 462.4,
+   "mean_ms": 385.1,
+   "stdev_ms": 36.2,
+   "bytes_gzip": 8463
+  },
+  {
+   "name": "admin live poll dashboard",
+   "who": "superadmin@sim.test",
+   "path": "/live?path=/admin",
+   "status": 200,
+   "queries": 22,
+   "round_trips": 23,
+   "query_ms": 20.2,
+   "slowest": [
+    {
+     "ms": 3.87,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.1139999999999994,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.798,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "BEGIN",
+    "select * from \"cache\" where \"key\" = $1 limit 1 for update",
+    "update \"cache\" set \"value\" = $1 where \"key\" = $2",
+    "COMMIT",
+    "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"disputes\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"payouts\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"tickets\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"products\"",
+    "select max(\"updated_at\") as \"aggregate\" from \"seller_profiles\"",
+    "select count(*) as \"aggregate\" from \"failed_jobs\"",
+    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 67.4,
+   "p95_ms": 84.8,
+   "p99_ms": 87.1,
+   "max_ms": 87.9,
+   "mean_ms": 65.6,
+   "stdev_ms": 12.8,
+   "bytes_gzip": 892
+  },
+  {
+   "name": "admin live poll orders",
+   "who": "superadmin@sim.test",
+   "path": "/live?path=/admin/orders",
+   "status": 200,
+   "queries": 16,
+   "round_trips": 17,
+   "query_ms": 17.0,
+   "slowest": [
+    {
+     "ms": 4.2700000000000005,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.8469999999999995,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 1.652,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "BEGIN",
+    "select * from \"cache\" where \"key\" = $1 limit 1 for update",
+    "update \"cache\" set \"value\" = $1 where \"key\" = $2",
+    "COMMIT",
+    "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
+    "select max(\"delivered_at\") as \"aggregate\" from \"order_items\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 39.7,
+   "p95_ms": 44.9,
+   "p99_ms": 46.2,
+   "max_ms": 46.7,
+   "mean_ms": 39.6,
+   "stdev_ms": 3.3,
+   "bytes_gzip": 892
+  }
+ ]
+}

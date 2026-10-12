@@ -60,11 +60,14 @@ final class LivePages
                 $max('seller_ledger_entries', 'id', fn ($q) => $q->where('seller_id', $user->id))] : null,
             'seller.reviews' => $user->isSeller() ? [$max('product_reviews', 'updated_at', fn ($q) => $q->whereIn('product_id',
                 DB::table('products')->select('id')->where('seller_id', $user->id)))] : null,
-            'admin.dashboard' => $staff && $user->can('staff.dashboard') ? [
-                $max('orders', 'updated_at'), $max('disputes', 'updated_at'), $max('payouts', 'updated_at'), $max('tickets', 'updated_at'),
-                $max('products', 'updated_at'), $max('seller_profiles', 'updated_at'), DB::table('failed_jobs')->count(),
-                DB::table('webhook_events')->whereIn('status', ['failed', 'dead'])->count(),
-            ] : null,
+            // One statement for the eight figures (polled every 10 s per open dashboard).
+            'admin.dashboard' => $staff && $user->can('staff.dashboard') ? array_values((array) DB::selectOne(<<<'SQL'
+                SELECT (SELECT max(updated_at) FROM orders) AS orders, (SELECT max(updated_at) FROM disputes) AS disputes,
+                       (SELECT max(updated_at) FROM payouts) AS payouts, (SELECT max(updated_at) FROM tickets) AS tickets,
+                       (SELECT max(updated_at) FROM products) AS products, (SELECT max(updated_at) FROM seller_profiles) AS sellers,
+                       (SELECT count(*) FROM failed_jobs) AS failed_jobs,
+                       (SELECT count(*) FROM webhook_events WHERE status IN ('failed', 'dead')) AS failed_webhooks
+                SQL)) : null,
             'admin.orders.index' => $user->can('orders.view') ? [$max('orders', 'updated_at'), $max('order_items', 'delivered_at')] : null,
             'admin.orders.show' => $user->can('orders.view') ? self::order($user, (string) ($p['order'] ?? ''), staffView: true) : null,
             'admin.disputes.index' => $user->can('disputes.manage') ? [$max('disputes', 'updated_at')] : null,

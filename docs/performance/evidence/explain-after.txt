@@ -1,122 +1,147 @@
 ### Q01 catalog, newest first (page 1)
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Limit (actual time=0.114..0.149 rows=12 loops=1)
+   Buffers: shared hit=27
+   ->  Nested Loop (actual time=0.112..0.145 rows=12 loops=1)
+         Buffers: shared hit=27
+         ->  Index Scan Backward using products_status_created_at_id_index on products (actual time=0.082..0.090 rows=12 loops=1)
+               Index Cond: ((status)::text = 'active'::text)
+               Buffers: shared hit=3
+         ->  Memoize (actual time=0.004..0.004 rows=1 loops=12)
+               Cache Key: products.seller_id
+               Cache Mode: logical
+               Hits: 4  Misses: 8  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+               Buffers: shared hit=24
+               ->  Index Scan using users_pkey on users (actual time=0.004..0.004 rows=1 loops=8)
+                     Index Cond: (id = products.seller_id)
+                     Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
+                     Buffers: shared hit=24
+ Planning:
+   Buffers: shared hit=397 read=15
+ Planning Time: 5.774 ms
+ Execution Time: 0.351 ms
+(20 rows)
+
+### Q01b catalog, page 50 (deep page: still sorts)
                                                        QUERY PLAN                                                       
 ------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=26.694..26.698 rows=12 loops=1)
+ Limit (actual time=35.930..35.936 rows=12 loops=1)
    Buffers: shared hit=16891
-   ->  Sort (actual time=26.691..26.693 rows=12 loops=1)
+   ->  Sort (actual time=35.830..35.914 rows=600 loops=1)
          Sort Key: products.created_at DESC, products.id DESC
-         Sort Method: top-N heapsort  Memory: 33kB
+         Sort Method: top-N heapsort  Memory: 555kB
          Buffers: shared hit=16891
-         ->  Merge Join (actual time=0.037..18.872 rows=17185 loops=1)
+         ->  Merge Join (actual time=0.068..24.792 rows=17185 loops=1)
                Merge Cond: (products.seller_id = users.id)
                Buffers: shared hit=16888
-               ->  Index Scan using products_seller_id_index on products (actual time=0.020..16.220 rows=17185 loops=1)
+               ->  Index Scan using products_seller_id_index on products (actual time=0.041..21.366 rows=17185 loops=1)
                      Filter: ((status)::text = 'active'::text)
                      Rows Removed by Filter: 3015
                      Buffers: shared hit=16866
-               ->  Index Scan using users_pkey on users (actual time=0.012..0.282 rows=512 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.019..0.463 rows=512 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
  Planning:
-   Buffers: shared hit=381 read=12
- Planning Time: 3.043 ms
- Execution Time: 26.808 ms
+   Buffers: shared hit=9
+ Planning Time: 0.490 ms
+ Execution Time: 36.252 ms
 (21 rows)
 
 ### Q02 catalog count
                                                     QUERY PLAN                                                    
 ------------------------------------------------------------------------------------------------------------------
- Aggregate (actual time=14.685..14.687 rows=1 loops=1)
+ Aggregate (actual time=15.373..15.375 rows=1 loops=1)
    Buffers: shared hit=16888
-   ->  Merge Join (actual time=0.034..13.851 rows=17185 loops=1)
+   ->  Merge Join (actual time=0.037..14.493 rows=17185 loops=1)
          Merge Cond: (products.seller_id = users.id)
          Buffers: shared hit=16888
-         ->  Index Scan using products_seller_id_index on products (actual time=0.018..11.788 rows=17185 loops=1)
+         ->  Index Scan using products_seller_id_index on products (actual time=0.018..12.390 rows=17185 loops=1)
                Filter: ((status)::text = 'active'::text)
                Rows Removed by Filter: 3015
                Buffers: shared hit=16866
-         ->  Index Scan using users_pkey on users (actual time=0.013..0.243 rows=512 loops=1)
+         ->  Index Scan using users_pkey on users (actual time=0.014..0.287 rows=512 loops=1)
                Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                Rows Removed by Filter: 50
                Buffers: shared hit=22
  Planning:
    Buffers: shared hit=15
- Planning Time: 0.340 ms
- Execution Time: 14.792 ms
+ Planning Time: 0.504 ms
+ Execution Time: 15.458 ms
 (17 rows)
 
 ### Q03-old catalog, best selling (before: units summed per product in the query)
                                                                  QUERY PLAN                                                                  
 ---------------------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=709.175..709.181 rows=12 loops=1)
+ Limit (actual time=898.081..898.086 rows=12 loops=1)
    Buffers: shared hit=1074162
-   ->  Sort (actual time=709.173..709.177 rows=12 loops=1)
+   ->  Sort (actual time=898.078..898.081 rows=12 loops=1)
          Sort Key: ((SubPlan 1)) DESC, products.id DESC
          Sort Method: top-N heapsort  Memory: 38kB
          Buffers: shared hit=1074162
-         ->  Merge Join (actual time=0.050..699.170 rows=17185 loops=1)
+         ->  Merge Join (actual time=0.051..886.248 rows=17185 loops=1)
                Merge Cond: (products.seller_id = users.id)
                Buffers: shared hit=1074162
-               ->  Index Scan using products_seller_id_index on products (actual time=0.015..27.436 rows=17185 loops=1)
+               ->  Index Scan using products_seller_id_index on products (actual time=0.016..30.608 rows=17185 loops=1)
                      Filter: ((status)::text = 'active'::text)
                      Rows Removed by Filter: 3015
                      Buffers: shared hit=16866
-               ->  Index Scan using users_pkey on users (actual time=0.013..0.512 rows=512 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.013..0.540 rows=512 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
                SubPlan 1
-                 ->  Aggregate (actual time=0.038..0.038 rows=1 loops=17185)
+                 ->  Aggregate (actual time=0.049..0.049 rows=1 loops=17185)
                        Buffers: shared hit=1057274
-                       ->  Nested Loop (actual time=0.005..0.037 rows=11 loops=17185)
+                       ->  Nested Loop (actual time=0.006..0.048 rows=11 loops=17185)
                              Buffers: shared hit=1057274
-                             ->  Index Scan using order_items_product_id_index on order_items (actual time=0.002..0.004 rows=15 loops=17185)
+                             ->  Index Scan using order_items_product_id_index on order_items (actual time=0.002..0.005 rows=15 loops=17185)
                                    Index Cond: (product_id = products.id)
                                    Buffers: shared hit=57274
-                             ->  Index Scan using orders_pkey on orders (actual time=0.002..0.002 rows=1 loops=250000)
+                             ->  Index Scan using orders_pkey on orders (actual time=0.003..0.003 rows=1 loops=250000)
                                    Index Cond: (id = order_items.order_id)
                                    Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded}'::text[]))
                                    Rows Removed by Filter: 0
                                    Buffers: shared hit=1000000
  Planning:
-   Buffers: shared hit=329 read=14
- Planning Time: 3.049 ms
- Execution Time: 709.322 ms
+   Buffers: shared hit=332 read=11
+ Planning Time: 3.119 ms
+ Execution Time: 898.237 ms
 (34 rows)
 
 ### Q04-old related products (before)
                                                                  QUERY PLAN                                                                 
 --------------------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=86.601..86.606 rows=4 loops=1)
-   Buffers: shared hit=124556 read=5
-   ->  Sort (actual time=86.599..86.603 rows=4 loops=1)
+ Limit (actual time=95.738..95.743 rows=4 loops=1)
+   Buffers: shared hit=124561
+   ->  Sort (actual time=95.736..95.740 rows=4 loops=1)
          Sort Key: ((SubPlan 1)) DESC, products.id DESC
          Sort Method: top-N heapsort  Memory: 28kB
-         Buffers: shared hit=124556 read=5
-         ->  Merge Join (actual time=3.460..85.510 rows=2035 loops=1)
+         Buffers: shared hit=124561
+         ->  Merge Join (actual time=3.707..94.554 rows=2035 loops=1)
                Merge Cond: (users.id = products.seller_id)
-               Buffers: shared hit=124556 read=5
-               ->  Index Scan using users_pkey on users (actual time=0.012..0.269 rows=510 loops=1)
+               Buffers: shared hit=124561
+               ->  Index Scan using users_pkey on users (actual time=0.014..0.341 rows=510 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
-               ->  Sort (actual time=3.304..3.893 rows=2035 loops=1)
+               ->  Sort (actual time=3.472..4.192 rows=2035 loops=1)
                      Sort Key: products.seller_id
                      Sort Method: quicksort  Memory: 875kB
-                     Buffers: shared hit=815 read=5
-                     ->  Bitmap Heap Scan on products (actual time=0.357..1.951 rows=2035 loops=1)
+                     Buffers: shared hit=820
+                     ->  Bitmap Heap Scan on products (actual time=0.280..1.957 rows=2035 loops=1)
                            Recheck Cond: (((status)::text = 'active'::text) AND (category_id = 2))
                            Filter: (id <> 1000)
                            Heap Blocks: exact=811
-                           Buffers: shared hit=815 read=5
-                           ->  Bitmap Index Scan on products_status_category_id_index (actual time=0.268..0.268 rows=2035 loops=1)
+                           Buffers: shared hit=820
+                           ->  Bitmap Index Scan on products_status_category_id_index (actual time=0.193..0.193 rows=2035 loops=1)
                                  Index Cond: (((status)::text = 'active'::text) AND (category_id = 2))
-                                 Buffers: shared hit=4 read=5
+                                 Buffers: shared hit=9
                SubPlan 1
-                 ->  Aggregate (actual time=0.039..0.039 rows=1 loops=2035)
+                 ->  Aggregate (actual time=0.043..0.043 rows=1 loops=2035)
                        Buffers: shared hit=123719
-                       ->  Nested Loop (actual time=0.005..0.038 rows=11 loops=2035)
+                       ->  Nested Loop (actual time=0.005..0.042 rows=11 loops=2035)
                              Buffers: shared hit=123719
                              ->  Index Scan using order_items_product_id_index on order_items (actual time=0.002..0.005 rows=14 loops=2035)
                                    Index Cond: (product_id = products.id)
@@ -128,26 +153,26 @@
                                    Buffers: shared hit=116952
  Planning:
    Buffers: shared hit=32
- Planning Time: 0.765 ms
- Execution Time: 86.896 ms
+ Planning Time: 0.759 ms
+ Execution Time: 96.063 ms
 (42 rows)
 
 ### Q08-old seller filter options (before: every seller)
                                                             QUERY PLAN                                                            
 ----------------------------------------------------------------------------------------------------------------------------------
- Sort (actual time=2.803..2.819 rows=425 loops=1)
+ Sort (actual time=2.824..2.839 rows=425 loops=1)
    Sort Key: seller_profiles.display_name
    Sort Method: quicksort  Memory: 51kB
    Buffers: shared hit=1706
-   ->  Nested Loop Semi Join (actual time=0.044..2.378 rows=425 loops=1)
+   ->  Nested Loop Semi Join (actual time=0.047..2.427 rows=425 loops=1)
          Buffers: shared hit=1703
-         ->  Merge Join (actual time=0.031..0.453 rows=510 loops=1)
+         ->  Merge Join (actual time=0.034..0.458 rows=510 loops=1)
                Merge Cond: (seller_profiles.user_id = users.id)
                Buffers: shared hit=33
-               ->  Index Scan using seller_profiles_user_id_unique on seller_profiles (actual time=0.018..0.149 rows=510 loops=1)
+               ->  Index Scan using seller_profiles_user_id_unique on seller_profiles (actual time=0.017..0.144 rows=510 loops=1)
                      Filter: ((status)::text = 'approved'::text)
                      Buffers: shared hit=11
-               ->  Index Scan using users_pkey on users (actual time=0.010..0.190 rows=515 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.012..0.209 rows=515 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
@@ -157,22 +182,22 @@
                Rows Removed by Filter: 6
                Buffers: shared hit=1670
  Planning:
-   Buffers: shared hit=110 read=3
- Planning Time: 1.680 ms
- Execution Time: 2.908 ms
+   Buffers: shared hit=113
+ Planning Time: 1.295 ms
+ Execution Time: 2.979 ms
 (25 rows)
 
 ### Q03 catalog, best selling (stored ranking; after migration 2026_10_16_000100)
                                                             QUERY PLAN                                                            
 ----------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=0.056..0.090 rows=12 loops=1)
+ Limit (actual time=0.046..0.081 rows=12 loops=1)
    Buffers: shared hit=26
-   ->  Nested Loop (actual time=0.054..0.088 rows=12 loops=1)
+   ->  Nested Loop (actual time=0.044..0.078 rows=12 loops=1)
          Buffers: shared hit=26
-         ->  Index Scan Backward using products_status_units_sold_id_index on products (actual time=0.031..0.054 rows=12 loops=1)
+         ->  Index Scan Backward using products_status_units_sold_id_index on products (actual time=0.028..0.051 rows=12 loops=1)
                Index Cond: ((status)::text = 'active'::text)
                Buffers: shared hit=14
-         ->  Memoize (actual time=0.002..0.003 rows=1 loops=12)
+         ->  Memoize (actual time=0.002..0.002 rows=1 loops=12)
                Cache Key: products.seller_id
                Cache Mode: logical
                Hits: 8  Misses: 4  Evictions: 0  Overflows: 0  Memory Usage: 1kB
@@ -183,227 +208,227 @@
                      Buffers: shared hit=12
  Planning:
    Buffers: shared hit=13
- Planning Time: 0.325 ms
- Execution Time: 0.162 ms
+ Planning Time: 0.367 ms
+ Execution Time: 0.172 ms
 (20 rows)
 
 ### Q04 related products in a category (stored ranking)
                                                            QUERY PLAN                                                            
 ---------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=0.049..0.077 rows=4 loops=1)
+ Limit (actual time=0.171..0.195 rows=4 loops=1)
    Buffers: shared hit=40
-   ->  Nested Loop (actual time=0.048..0.075 rows=4 loops=1)
+   ->  Nested Loop (actual time=0.170..0.194 rows=4 loops=1)
          Buffers: shared hit=40
-         ->  Index Scan Backward using products_status_units_sold_id_index on products (actual time=0.035..0.057 rows=4 loops=1)
+         ->  Index Scan Backward using products_status_units_sold_id_index on products (actual time=0.146..0.163 rows=4 loops=1)
                Index Cond: ((status)::text = 'active'::text)
                Filter: ((id <> 1000) AND (category_id = 2))
                Rows Removed by Filter: 25
                Buffers: shared hit=31
-         ->  Memoize (actual time=0.004..0.004 rows=1 loops=4)
+         ->  Memoize (actual time=0.007..0.007 rows=1 loops=4)
                Cache Key: products.seller_id
                Cache Mode: logical
                Hits: 1  Misses: 3  Evictions: 0  Overflows: 0  Memory Usage: 1kB
                Buffers: shared hit=9
-               ->  Index Scan using users_pkey on users (actual time=0.004..0.004 rows=1 loops=3)
+               ->  Index Scan using users_pkey on users (actual time=0.007..0.007 rows=1 loops=3)
                      Index Cond: (id = products.seller_id)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Buffers: shared hit=9
  Planning:
    Buffers: shared hit=9
- Planning Time: 0.262 ms
- Execution Time: 0.142 ms
+ Planning Time: 0.324 ms
+ Execution Time: 0.280 ms
 (22 rows)
 
 ### Q05 search "font", title or description
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=1.763..1.766 rows=12 loops=1)
+ Limit (actual time=2.267..2.272 rows=12 loops=1)
    Buffers: shared hit=330
-   ->  Sort (actual time=1.762..1.763 rows=12 loops=1)
+   ->  Sort (actual time=2.266..2.269 rows=12 loops=1)
          Sort Key: products.created_at DESC, products.id DESC
          Sort Method: top-N heapsort  Memory: 37kB
          Buffers: shared hit=330
-         ->  Merge Join (actual time=1.331..1.631 rows=336 loops=1)
+         ->  Merge Join (actual time=1.656..2.099 rows=336 loops=1)
                Merge Cond: (users.id = products.seller_id)
                Buffers: shared hit=330
-               ->  Index Scan using users_pkey on users (actual time=0.014..0.174 rows=513 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.014..0.246 rows=513 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
-               ->  Sort (actual time=1.308..1.325 rows=336 loops=1)
+               ->  Sort (actual time=1.623..1.657 rows=336 loops=1)
                      Sort Key: products.seller_id
                      Sort Method: quicksort  Memory: 159kB
                      Buffers: shared hit=308
-                     ->  Bitmap Heap Scan on products (actual time=0.197..1.071 rows=336 loops=1)
+                     ->  Bitmap Heap Scan on products (actual time=0.185..1.225 rows=336 loops=1)
                            Recheck Cond: (((title)::text ~~* '%font%'::text) OR (description ~~* '%font%'::text))
                            Filter: ((status)::text = 'active'::text)
                            Rows Removed by Filter: 53
                            Heap Blocks: exact=298
                            Buffers: shared hit=308
-                           ->  BitmapOr (actual time=0.154..0.155 rows=0 loops=1)
+                           ->  BitmapOr (actual time=0.136..0.137 rows=0 loops=1)
                                  Buffers: shared hit=10
-                                 ->  Bitmap Index Scan on products_title_trgm (actual time=0.083..0.083 rows=353 loops=1)
+                                 ->  Bitmap Index Scan on products_title_trgm (actual time=0.092..0.093 rows=353 loops=1)
                                        Index Cond: ((title)::text ~~* '%font%'::text)
                                        Buffers: shared hit=5
-                                 ->  Bitmap Index Scan on products_description_trgm (actual time=0.070..0.070 rows=389 loops=1)
+                                 ->  Bitmap Index Scan on products_description_trgm (actual time=0.043..0.043 rows=389 loops=1)
                                        Index Cond: (description ~~* '%font%'::text)
                                        Buffers: shared hit=5
  Planning:
-   Buffers: shared hit=19 read=1
- Planning Time: 1.481 ms
- Execution Time: 1.990 ms
+   Buffers: shared hit=20
+ Planning Time: 1.596 ms
+ Execution Time: 2.608 ms
 (35 rows)
 
 ### Q06 search count
                                                         QUERY PLAN                                                        
 --------------------------------------------------------------------------------------------------------------------------
- Aggregate (actual time=1.168..1.169 rows=1 loops=1)
+ Aggregate (actual time=1.541..1.543 rows=1 loops=1)
    Buffers: shared hit=330
-   ->  Merge Join (actual time=0.901..1.148 rows=336 loops=1)
+   ->  Merge Join (actual time=1.171..1.521 rows=336 loops=1)
          Merge Cond: (users.id = products.seller_id)
          Buffers: shared hit=330
-         ->  Index Scan using users_pkey on users (actual time=0.011..0.168 rows=513 loops=1)
+         ->  Index Scan using users_pkey on users (actual time=0.013..0.269 rows=513 loops=1)
                Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                Rows Removed by Filter: 50
                Buffers: shared hit=22
-         ->  Sort (actual time=0.885..0.898 rows=336 loops=1)
+         ->  Sort (actual time=1.150..1.165 rows=336 loops=1)
                Sort Key: products.seller_id
                Sort Method: quicksort  Memory: 25kB
                Buffers: shared hit=308
-               ->  Bitmap Heap Scan on products (actual time=0.170..0.842 rows=336 loops=1)
+               ->  Bitmap Heap Scan on products (actual time=0.170..1.102 rows=336 loops=1)
                      Recheck Cond: (((title)::text ~~* '%font%'::text) OR (description ~~* '%font%'::text))
                      Filter: ((status)::text = 'active'::text)
                      Rows Removed by Filter: 53
                      Heap Blocks: exact=298
                      Buffers: shared hit=308
-                     ->  BitmapOr (actual time=0.131..0.131 rows=0 loops=1)
+                     ->  BitmapOr (actual time=0.130..0.131 rows=0 loops=1)
                            Buffers: shared hit=10
-                           ->  Bitmap Index Scan on products_title_trgm (actual time=0.091..0.091 rows=353 loops=1)
+                           ->  Bitmap Index Scan on products_title_trgm (actual time=0.087..0.087 rows=353 loops=1)
                                  Index Cond: ((title)::text ~~* '%font%'::text)
                                  Buffers: shared hit=5
-                           ->  Bitmap Index Scan on products_description_trgm (actual time=0.039..0.039 rows=389 loops=1)
+                           ->  Bitmap Index Scan on products_description_trgm (actual time=0.043..0.043 rows=389 loops=1)
                                  Index Cond: (description ~~* '%font%'::text)
                                  Buffers: shared hit=5
  Planning:
    Buffers: shared hit=11
- Planning Time: 0.861 ms
- Execution Time: 1.260 ms
+ Planning Time: 0.986 ms
+ Execution Time: 1.658 ms
 (31 rows)
 
 ### Q07 search suggestions "fon"
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=1.249..1.251 rows=8 loops=1)
+ Limit (actual time=1.520..1.524 rows=8 loops=1)
    Buffers: shared hit=326
-   ->  Sort (actual time=1.247..1.248 rows=8 loops=1)
+   ->  Sort (actual time=1.518..1.520 rows=8 loops=1)
          Sort Key: products.title
          Sort Method: top-N heapsort  Memory: 27kB
          Buffers: shared hit=326
-         ->  Merge Join (actual time=0.896..1.165 rows=336 loops=1)
+         ->  Merge Join (actual time=1.141..1.430 rows=336 loops=1)
                Merge Cond: (users.id = products.seller_id)
                Buffers: shared hit=326
-               ->  Index Scan using users_pkey on users (actual time=0.011..0.180 rows=513 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.038..0.225 rows=513 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
-               ->  Sort (actual time=0.880..0.894 rows=336 loops=1)
+               ->  Sort (actual time=1.095..1.111 rows=336 loops=1)
                      Sort Key: products.seller_id
                      Sort Method: quicksort  Memory: 58kB
                      Buffers: shared hit=304
-                     ->  Bitmap Heap Scan on products (actual time=0.155..0.756 rows=336 loops=1)
+                     ->  Bitmap Heap Scan on products (actual time=0.140..0.947 rows=336 loops=1)
                            Recheck Cond: (((title)::text ~~* '%fon%'::text) OR (description ~~* '%fon%'::text))
                            Filter: ((status)::text = 'active'::text)
                            Rows Removed by Filter: 53
                            Heap Blocks: exact=298
                            Buffers: shared hit=304
-                           ->  BitmapOr (actual time=0.118..0.118 rows=0 loops=1)
+                           ->  BitmapOr (actual time=0.100..0.101 rows=0 loops=1)
                                  Buffers: shared hit=6
-                                 ->  Bitmap Index Scan on products_title_trgm (actual time=0.090..0.090 rows=353 loops=1)
+                                 ->  Bitmap Index Scan on products_title_trgm (actual time=0.070..0.070 rows=353 loops=1)
                                        Index Cond: ((title)::text ~~* '%fon%'::text)
                                        Buffers: shared hit=3
-                                 ->  Bitmap Index Scan on products_description_trgm (actual time=0.027..0.027 rows=389 loops=1)
+                                 ->  Bitmap Index Scan on products_description_trgm (actual time=0.030..0.030 rows=389 loops=1)
                                        Index Cond: (description ~~* '%fon%'::text)
                                        Buffers: shared hit=3
  Planning:
    Buffers: shared hit=11
- Planning Time: 0.825 ms
- Execution Time: 1.392 ms
+ Planning Time: 0.985 ms
+ Execution Time: 1.683 ms
 (35 rows)
 
 ### Q08 seller filter options (top sellers by units sold)
                                                                   QUERY PLAN                                                                  
 ----------------------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=18.830..18.838 rows=50 loops=1)
+ Limit (actual time=24.815..24.825 rows=50 loops=1)
    Buffers: shared hit=17933
-   ->  Sort (actual time=18.829..18.833 rows=50 loops=1)
+   ->  Sort (actual time=24.814..24.820 rows=50 loops=1)
          Sort Key: (sum(products.units_sold)) DESC, seller_profiles.user_id
          Sort Method: top-N heapsort  Memory: 31kB
          Buffers: shared hit=17933
-         ->  HashAggregate (actual time=18.665..18.718 rows=425 loops=1)
+         ->  HashAggregate (actual time=23.887..23.961 rows=425 loops=1)
                Group Key: seller_profiles.user_id, seller_profiles.display_name
                Batches: 1  Memory Usage: 109kB
                Buffers: shared hit=17933
-               ->  Nested Loop (actual time=0.038..15.264 rows=17185 loops=1)
+               ->  Nested Loop (actual time=0.050..20.026 rows=17185 loops=1)
                      Buffers: shared hit=17933
-                     ->  Merge Join (actual time=0.026..0.569 rows=510 loops=1)
+                     ->  Merge Join (actual time=0.035..0.752 rows=510 loops=1)
                            Merge Cond: (seller_profiles.user_id = users.id)
                            Buffers: shared hit=33
-                           ->  Index Scan using seller_profiles_user_id_unique on seller_profiles (actual time=0.014..0.192 rows=510 loops=1)
+                           ->  Index Scan using seller_profiles_user_id_unique on seller_profiles (actual time=0.016..0.204 rows=510 loops=1)
                                  Filter: ((status)::text = 'approved'::text)
                                  Buffers: shared hit=11
-                           ->  Index Scan using users_pkey on users (actual time=0.009..0.222 rows=515 loops=1)
+                           ->  Index Scan using users_pkey on users (actual time=0.015..0.390 rows=515 loops=1)
                                  Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                                  Rows Removed by Filter: 50
                                  Buffers: shared hit=22
-                     ->  Index Scan using products_seller_id_index on products (actual time=0.004..0.026 rows=34 loops=510)
+                     ->  Index Scan using products_seller_id_index on products (actual time=0.004..0.034 rows=34 loops=510)
                            Index Cond: (seller_id = seller_profiles.user_id)
                            Filter: ((status)::text = 'active'::text)
                            Rows Removed by Filter: 6
                            Buffers: shared hit=17900
  Planning:
    Buffers: shared hit=45
- Planning Time: 0.847 ms
- Execution Time: 19.021 ms
+ Planning Time: 0.756 ms
+ Execution Time: 25.023 ms
 (31 rows)
 
 ### Q09 buyer order list version (live updates): latest change of the buyer's orders
                                                      QUERY PLAN                                                      
 ---------------------------------------------------------------------------------------------------------------------
- Result (actual time=0.265..0.266 rows=1 loops=1)
-   Buffers: shared hit=88 read=3
+ Result (actual time=0.193..0.193 rows=1 loops=1)
+   Buffers: shared hit=89
    InitPlan 1 (returns $0)
-     ->  Limit (actual time=0.262..0.262 rows=1 loops=1)
-           Buffers: shared hit=88 read=3
-           ->  Index Scan Backward using orders_updated_at_index on orders (actual time=0.261..0.261 rows=1 loops=1)
+     ->  Limit (actual time=0.190..0.190 rows=1 loops=1)
+           Buffers: shared hit=89
+           ->  Index Scan Backward using orders_updated_at_index on orders (actual time=0.189..0.189 rows=1 loops=1)
                  Index Cond: (updated_at IS NOT NULL)
                  Filter: (buyer_id = 16)
                  Rows Removed by Filter: 509
-                 Buffers: shared hit=88 read=3
+                 Buffers: shared hit=89
  Planning:
    Buffers: shared hit=6
- Planning Time: 0.187 ms
- Execution Time: 0.285 ms
+ Planning Time: 0.259 ms
+ Execution Time: 0.214 ms
 (14 rows)
 
 ### Q09b the same for a buyer whose last order is old (most buyers): the latest-change scan walks all newer orders
                                              QUERY PLAN                                              
 -----------------------------------------------------------------------------------------------------
- Aggregate (actual time=0.063..0.064 rows=1 loops=1)
-   Buffers: shared hit=6 read=1
-   ->  Index Scan using orders_buyer_id_id_index on orders (actual time=0.051..0.058 rows=4 loops=1)
+ Aggregate (actual time=0.050..0.051 rows=1 loops=1)
+   Buffers: shared hit=7
+   ->  Index Scan using orders_buyer_id_id_index on orders (actual time=0.036..0.044 rows=4 loops=1)
          Index Cond: (buyer_id = 10615)
-         Buffers: shared hit=6 read=1
- Planning Time: 0.162 ms
- Execution Time: 0.093 ms
+         Buffers: shared hit=7
+ Planning Time: 0.199 ms
+ Execution Time: 0.081 ms
 (7 rows)
 
 ### Q10 seller live version: latest sale id
                                                               QUERY PLAN                                                              
 --------------------------------------------------------------------------------------------------------------------------------------
- Result (actual time=0.040..0.040 rows=1 loops=1)
+ Result (actual time=0.040..0.041 rows=1 loops=1)
    Buffers: shared hit=4
    InitPlan 1 (returns $0)
-     ->  Limit (actual time=0.038..0.038 rows=1 loops=1)
+     ->  Limit (actual time=0.038..0.039 rows=1 loops=1)
            Buffers: shared hit=4
            ->  Index Only Scan Backward using order_items_seller_id_id_index on order_items (actual time=0.037..0.037 rows=1 loops=1)
                  Index Cond: ((seller_id = 6) AND (id IS NOT NULL))
@@ -411,83 +436,83 @@
                  Buffers: shared hit=4
  Planning:
    Buffers: shared hit=9
- Planning Time: 0.161 ms
- Execution Time: 0.061 ms
+ Planning Time: 0.170 ms
+ Execution Time: 0.062 ms
 (13 rows)
 
 ### Q11 seller live version: latest ledger entry id
                                                               QUERY PLAN                                                               
 ---------------------------------------------------------------------------------------------------------------------------------------
- Result (actual time=1.997..1.998 rows=1 loops=1)
-   Buffers: shared hit=66 read=153
+ Result (actual time=1.488..1.489 rows=1 loops=1)
+   Buffers: shared hit=219
    InitPlan 1 (returns $0)
-     ->  Limit (actual time=1.993..1.994 rows=1 loops=1)
-           Buffers: shared hit=66 read=153
-           ->  Index Scan Backward using seller_ledger_entries_pkey on seller_ledger_entries (actual time=1.992..1.992 rows=1 loops=1)
+     ->  Limit (actual time=1.484..1.485 rows=1 loops=1)
+           Buffers: shared hit=219
+           ->  Index Scan Backward using seller_ledger_entries_pkey on seller_ledger_entries (actual time=1.483..1.483 rows=1 loops=1)
                  Index Cond: (id IS NOT NULL)
                  Filter: (seller_id = 6)
                  Rows Removed by Filter: 11973
-                 Buffers: shared hit=66 read=153
+                 Buffers: shared hit=219
  Planning:
-   Buffers: shared hit=75 read=4
- Planning Time: 0.597 ms
- Execution Time: 2.015 ms
+   Buffers: shared hit=79
+ Planning Time: 0.642 ms
+ Execution Time: 1.512 ms
 (14 rows)
 
 ### Q12 seller dashboard / sales page: latest paid sales
                                                            QUERY PLAN                                                           
 --------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=0.033..0.150 rows=25 loops=1)
+ Limit (actual time=0.037..0.198 rows=25 loops=1)
    Buffers: shared hit=105
-   ->  Nested Loop (actual time=0.032..0.147 rows=25 loops=1)
+   ->  Nested Loop (actual time=0.037..0.195 rows=25 loops=1)
          Buffers: shared hit=105
-         ->  Index Scan Backward using order_items_seller_id_id_index on order_items (actual time=0.017..0.021 rows=25 loops=1)
+         ->  Index Scan Backward using order_items_seller_id_id_index on order_items (actual time=0.018..0.022 rows=25 loops=1)
                Index Cond: (seller_id = 6)
                Buffers: shared hit=5
-         ->  Index Scan using orders_pkey on orders (actual time=0.004..0.004 rows=1 loops=25)
+         ->  Index Scan using orders_pkey on orders (actual time=0.006..0.006 rows=1 loops=25)
                Index Cond: (id = order_items.order_id)
                Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded,refunded}'::text[]))
                Buffers: shared hit=100
  Planning:
    Buffers: shared hit=66
- Planning Time: 0.736 ms
- Execution Time: 0.186 ms
+ Planning Time: 0.676 ms
+ Execution Time: 0.237 ms
 (15 rows)
 
 ### Q13 seller balances: held earnings
                                                                                                                                  QUERY PLAN                                                                                                                                  
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Finalize GroupAggregate (actual time=15.107..19.518 rows=1 loops=1)
+ Finalize GroupAggregate (actual time=17.551..23.260 rows=1 loops=1)
    Group Key: orders.currency
-   Buffers: shared hit=22268 read=20
-   ->  Gather Merge (actual time=15.096..19.506 rows=3 loops=1)
+   Buffers: shared hit=22288
+   ->  Gather Merge (actual time=17.542..23.250 rows=3 loops=1)
          Workers Planned: 2
          Workers Launched: 2
-         Buffers: shared hit=22268 read=20
-         ->  Partial GroupAggregate (actual time=8.619..8.622 rows=1 loops=3)
+         Buffers: shared hit=22288
+         ->  Partial GroupAggregate (actual time=11.368..11.371 rows=1 loops=3)
                Group Key: orders.currency
-               Buffers: shared hit=22268 read=20
-               ->  Sort (actual time=8.596..8.600 rows=53 loops=3)
+               Buffers: shared hit=22288
+               ->  Sort (actual time=11.336..11.342 rows=53 loops=3)
                      Sort Key: orders.currency
-                     Sort Method: quicksort  Memory: 31kB
-                     Buffers: shared hit=22268 read=20
+                     Sort Method: quicksort  Memory: 30kB
+                     Buffers: shared hit=22288
                      Worker 0:  Sort Method: quicksort  Memory: 26kB
-                     Worker 1:  Sort Method: quicksort  Memory: 25kB
-                     ->  Nested Loop Anti Join (actual time=0.806..8.506 rows=53 loops=3)
+                     Worker 1:  Sort Method: quicksort  Memory: 27kB
+                     ->  Nested Loop Anti Join (actual time=0.770..11.260 rows=53 loops=3)
                            Join Filter: (disputes.order_item_id = order_items.id)
-                           Buffers: shared hit=22254 read=20
-                           ->  Nested Loop (actual time=0.792..8.443 rows=53 loops=3)
-                                 Buffers: shared hit=22254 read=20
-                                 ->  Parallel Bitmap Heap Scan on order_items (actual time=0.276..0.924 rows=1842 loops=3)
+                           Buffers: shared hit=22274
+                           ->  Nested Loop (actual time=0.757..11.177 rows=53 loops=3)
+                                 Buffers: shared hit=22274
+                                 ->  Parallel Bitmap Heap Scan on order_items (actual time=0.236..1.018 rows=1842 loops=3)
                                        Recheck Cond: (seller_id = 6)
                                        Filter: (seller_earning_minor > 0)
                                        Rows Removed by Filter: 118
-                                       Heap Blocks: exact=110
-                                       Buffers: shared hit=148 read=20
-                                       ->  Bitmap Index Scan on order_items_seller_id_delivered_at_index (actual time=0.593..0.594 rows=5880 loops=1)
+                                       Heap Blocks: exact=86
+                                       Buffers: shared hit=168
+                                       ->  Bitmap Index Scan on order_items_seller_id_delivered_at_index (actual time=0.583..0.583 rows=5880 loops=1)
                                              Index Cond: (seller_id = 6)
-                                             Buffers: shared read=20
-                                 ->  Index Scan using orders_pkey on orders (actual time=0.004..0.004 rows=0 loops=5526)
+                                             Buffers: shared hit=20
+                                 ->  Index Scan using orders_pkey on orders (actual time=0.005..0.005 rows=0 loops=5526)
                                        Index Cond: (id = order_items.order_id)
                                        Filter: (((status)::text = ANY ('{paid,delivered,partially_refunded}'::text[])) AND ((paid_at > (now() - '00:00:00'::interval)) OR (order_items.delivered_at IS NULL) OR (order_items.delivered_at > (now() - '14 days'::interval))))
                                        Rows Removed by Filter: 1
@@ -495,135 +520,135 @@
                            ->  Seq Scan on disputes (actual time=0.000..0.000 rows=0 loops=159)
                                  Filter: ((status)::text = ANY ('{awaiting_seller,awaiting_staff}'::text[]))
  Planning:
-   Buffers: shared hit=165 read=8
- Planning Time: 1.599 ms
- Execution Time: 19.710 ms
+   Buffers: shared hit=173
+ Planning Time: 1.642 ms
+ Execution Time: 23.526 ms
 (41 rows)
 
 ### Q14 admin dashboard KPI: paid orders in the last 30 days
                                                             QUERY PLAN                                                            
 ----------------------------------------------------------------------------------------------------------------------------------
- Aggregate (actual time=10.838..10.841 rows=1 loops=1)
+ Aggregate (actual time=12.572..12.575 rows=1 loops=1)
    Buffers: shared hit=4018
-   ->  Bitmap Heap Scan on orders (actual time=2.111..10.019 rows=13025 loops=1)
+   ->  Bitmap Heap Scan on orders (actual time=2.120..11.702 rows=13022 loops=1)
          Recheck Cond: (paid_at >= (now() - '30 days'::interval))
          Filter: ((currency = 'USD'::bpchar) AND ((status)::text = ANY ('{paid,delivered,partially_refunded,refunded}'::text[])))
          Heap Blocks: exact=3977
          Buffers: shared hit=4018
-         ->  Bitmap Index Scan on orders_paid_at_index (actual time=1.604..1.604 rows=13025 loops=1)
+         ->  Bitmap Index Scan on orders_paid_at_index (actual time=1.615..1.616 rows=13022 loops=1)
                Index Cond: (paid_at >= (now() - '30 days'::interval))
                Buffers: shared hit=41
  Planning:
    Buffers: shared hit=9
- Planning Time: 0.216 ms
- Execution Time: 10.952 ms
+ Planning Time: 0.243 ms
+ Execution Time: 12.690 ms
 (14 rows)
 
 ### Q15 admin dashboard KPI: commission in the last 30 days
                                                                      QUERY PLAN                                                                     
 ----------------------------------------------------------------------------------------------------------------------------------------------------
- Finalize Aggregate (actual time=36.639..43.224 rows=1 loops=1)
-   Buffers: shared hit=59390
-   ->  Gather (actual time=36.359..43.212 rows=3 loops=1)
+ Finalize Aggregate (actual time=43.248..51.681 rows=1 loops=1)
+   Buffers: shared hit=59378
+   ->  Gather (actual time=42.851..51.664 rows=3 loops=1)
          Workers Planned: 2
          Workers Launched: 2
-         Buffers: shared hit=59390
-         ->  Partial Aggregate (actual time=30.673..30.675 rows=1 loops=3)
-               Buffers: shared hit=59390
-               ->  Nested Loop (actual time=0.886..29.956 rows=5433 loops=3)
-                     Buffers: shared hit=59390
-                     ->  Parallel Bitmap Heap Scan on orders (actual time=0.810..6.823 rows=4342 loops=3)
+         Buffers: shared hit=59378
+         ->  Partial Aggregate (actual time=35.872..35.875 rows=1 loops=3)
+               Buffers: shared hit=59378
+               ->  Nested Loop (actual time=0.938..35.206 rows=5432 loops=3)
+                     Buffers: shared hit=59378
+                     ->  Parallel Bitmap Heap Scan on orders (actual time=0.852..8.130 rows=4341 loops=3)
                            Recheck Cond: (paid_at >= (now() - '30 days'::interval))
                            Filter: ((currency = 'USD'::bpchar) AND ((status)::text = ANY ('{paid,delivered,partially_refunded,refunded}'::text[])))
-                           Heap Blocks: exact=2041
+                           Heap Blocks: exact=2159
                            Buffers: shared hit=4015
-                           ->  Bitmap Index Scan on orders_paid_at_index (actual time=1.805..1.806 rows=13025 loops=1)
+                           ->  Bitmap Index Scan on orders_paid_at_index (actual time=1.847..1.848 rows=13022 loops=1)
                                  Index Cond: (paid_at >= (now() - '30 days'::interval))
                                  Buffers: shared hit=38
-                     ->  Index Scan using order_items_order_id_index on order_items (actual time=0.004..0.005 rows=1 loops=13025)
+                     ->  Index Scan using order_items_order_id_index on order_items (actual time=0.005..0.006 rows=1 loops=13022)
                            Index Cond: (order_id = orders.id)
-                           Buffers: shared hit=55375
+                           Buffers: shared hit=55363
  Planning:
    Buffers: shared hit=16
- Planning Time: 0.373 ms
- Execution Time: 43.355 ms
+ Planning Time: 0.399 ms
+ Execution Time: 51.811 ms
 (25 rows)
 
 ### Q16 admin dashboard KPI: orders created in the last 30 days
                                                  QUERY PLAN                                                  
 -------------------------------------------------------------------------------------------------------------
- Aggregate (actual time=2.650..2.651 rows=1 loops=1)
-   Buffers: shared hit=4 read=44
-   ->  Index Only Scan using orders_created_at_index on orders (actual time=0.057..1.910 rows=16054 loops=1)
+ Aggregate (actual time=2.626..2.627 rows=1 loops=1)
+   Buffers: shared hit=48
+   ->  Index Only Scan using orders_created_at_index on orders (actual time=0.046..1.884 rows=16052 loops=1)
          Index Cond: (created_at >= (now() - '30 days'::interval))
          Heap Fetches: 0
-         Buffers: shared hit=4 read=44
+         Buffers: shared hit=48
  Planning:
    Buffers: shared hit=3
- Planning Time: 0.199 ms
- Execution Time: 2.684 ms
+ Planning Time: 0.170 ms
+ Execution Time: 2.658 ms
 (10 rows)
 
 ### Q17 admin order list version (live updates): latest delivery
                                                               QUERY PLAN                                                              
 --------------------------------------------------------------------------------------------------------------------------------------
- Result (actual time=0.052..0.052 rows=1 loops=1)
-   Buffers: shared hit=1 read=3
+ Result (actual time=0.041..0.041 rows=1 loops=1)
+   Buffers: shared hit=4
    InitPlan 1 (returns $0)
-     ->  Limit (actual time=0.050..0.050 rows=1 loops=1)
-           Buffers: shared hit=1 read=3
-           ->  Index Only Scan Backward using order_items_delivered_at_index on order_items (actual time=0.048..0.048 rows=1 loops=1)
+     ->  Limit (actual time=0.039..0.039 rows=1 loops=1)
+           Buffers: shared hit=4
+           ->  Index Only Scan Backward using order_items_delivered_at_index on order_items (actual time=0.038..0.038 rows=1 loops=1)
                  Index Cond: (delivered_at IS NOT NULL)
                  Heap Fetches: 0
-                 Buffers: shared hit=1 read=3
- Planning Time: 0.104 ms
- Execution Time: 0.082 ms
+                 Buffers: shared hit=4
+ Planning Time: 0.106 ms
+ Execution Time: 0.064 ms
 (11 rows)
 
 ### Q18 shop:recover-stuck-orders (every minute): uninvoiced paid orders of the last 7 days
                                                         QUERY PLAN                                                         
 ---------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=9.308..9.312 rows=0 loops=1)
-   Buffers: shared hit=10165 read=1
-   ->  Nested Loop Anti Join (actual time=9.306..9.309 rows=0 loops=1)
-         Buffers: shared hit=10165 read=1
-         ->  Bitmap Heap Scan on orders (actual time=0.858..4.090 rows=2686 loops=1)
+ Limit (actual time=9.346..9.349 rows=0 loops=1)
+   Buffers: shared hit=10152
+   ->  Nested Loop Anti Join (actual time=9.344..9.346 rows=0 loops=1)
+         Buffers: shared hit=10152
+         ->  Bitmap Heap Scan on orders (actual time=0.889..4.326 rows=2682 loops=1)
                Recheck Cond: ((paid_at < (now() - '00:10:00'::interval)) AND (paid_at > (now() - '7 days'::interval)))
                Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded}'::text[]))
-               Rows Removed by Filter: 220
-               Heap Blocks: exact=2096
-               Buffers: shared hit=2107
-               ->  Bitmap Index Scan on orders_paid_at_index (actual time=0.614..0.615 rows=2906 loops=1)
+               Rows Removed by Filter: 219
+               Heap Blocks: exact=2094
+               Buffers: shared hit=2105
+               ->  Bitmap Index Scan on orders_paid_at_index (actual time=0.644..0.644 rows=2901 loops=1)
                      Index Cond: ((paid_at < (now() - '00:10:00'::interval)) AND (paid_at > (now() - '7 days'::interval)))
                      Buffers: shared hit=11
-         ->  Index Only Scan using invoices_order_id_unique on invoices (actual time=0.002..0.002 rows=1 loops=2686)
+         ->  Index Only Scan using invoices_order_id_unique on invoices (actual time=0.002..0.002 rows=1 loops=2682)
                Index Cond: (order_id = orders.id)
                Heap Fetches: 0
-               Buffers: shared hit=8058 read=1
+               Buffers: shared hit=8047
  Planning:
-   Buffers: shared hit=72 read=3
- Planning Time: 0.763 ms
- Execution Time: 9.404 ms
+   Buffers: shared hit=75
+ Planning Time: 0.702 ms
+ Execution Time: 9.451 ms
 (21 rows)
 
 ### Q19 shop:recover-stuck-orders: undelivered instant lines
                                                                QUERY PLAN                                                                
 -----------------------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=0.026..0.027 rows=0 loops=1)
+ Limit (actual time=0.028..0.029 rows=0 loops=1)
    Buffers: shared hit=3
-   ->  Unique (actual time=0.024..0.025 rows=0 loops=1)
+   ->  Unique (actual time=0.027..0.027 rows=0 loops=1)
          Buffers: shared hit=3
-         ->  Sort (actual time=0.024..0.025 rows=0 loops=1)
+         ->  Sort (actual time=0.026..0.027 rows=0 loops=1)
                Sort Key: orders.id
                Sort Method: quicksort  Memory: 25kB
                Buffers: shared hit=3
-               ->  Nested Loop Anti Join (actual time=0.016..0.016 rows=0 loops=1)
+               ->  Nested Loop Anti Join (actual time=0.018..0.019 rows=0 loops=1)
                      Buffers: shared hit=3
-                     ->  Nested Loop (actual time=0.015..0.016 rows=0 loops=1)
+                     ->  Nested Loop (actual time=0.018..0.018 rows=0 loops=1)
                            Buffers: shared hit=3
-                           ->  Nested Loop (actual time=0.015..0.016 rows=0 loops=1)
+                           ->  Nested Loop (actual time=0.018..0.018 rows=0 loops=1)
                                  Buffers: shared hit=3
-                                 ->  Index Scan using orders_status_expires_at_index on orders (actual time=0.015..0.015 rows=0 loops=1)
+                                 ->  Index Scan using orders_status_expires_at_index on orders (actual time=0.017..0.018 rows=0 loops=1)
                                        Index Cond: ((status)::text = 'paid'::text)
                                        Filter: ((paid_at < (now() - '00:10:00'::interval)) AND (paid_at > (now() - '7 days'::interval)))
                                        Buffers: shared hit=3
@@ -638,59 +663,59 @@
                            Filter: ((action)::text = 'delivery.failed'::text)
  Planning:
    Buffers: shared hit=159
- Planning Time: 1.645 ms
- Execution Time: 0.093 ms
+ Planning Time: 1.761 ms
+ Execution Time: 0.101 ms
 (31 rows)
 
 ### Q20 admin reports: revenue per day, last 30 days
                                              QUERY PLAN                                              
 -----------------------------------------------------------------------------------------------------
- HashAggregate (actual time=14.499..14.576 rows=31 loops=1)
+ HashAggregate (actual time=22.180..22.257 rows=31 loops=1)
    Group Key: currency, date(paid_at)
    Batches: 1  Memory Usage: 409kB
    Buffers: shared hit=4015
-   ->  Bitmap Heap Scan on orders (actual time=2.715..12.043 rows=13025 loops=1)
+   ->  Bitmap Heap Scan on orders (actual time=9.639..19.786 rows=13022 loops=1)
          Recheck Cond: ((paid_at >= (now() - '30 days'::interval)) AND (paid_at <= now()))
          Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded,refunded}'::text[]))
          Heap Blocks: exact=3977
          Buffers: shared hit=4015
-         ->  Bitmap Index Scan on orders_paid_at_index (actual time=2.064..2.065 rows=13025 loops=1)
+         ->  Bitmap Index Scan on orders_paid_at_index (actual time=9.015..9.016 rows=13022 loops=1)
                Index Cond: ((paid_at >= (now() - '30 days'::interval)) AND (paid_at <= now()))
                Buffers: shared hit=38
  Planning:
    Buffers: shared hit=18
- Planning Time: 0.214 ms
- Execution Time: 15.091 ms
+ Planning Time: 0.271 ms
+ Execution Time: 22.816 ms
 (16 rows)
 
 ### Q21 system health: last processed webhook
                                                   QUERY PLAN                                                  
 --------------------------------------------------------------------------------------------------------------
- Finalize Aggregate (actual time=28.321..31.267 rows=1 loops=1)
+ Finalize Aggregate (actual time=26.884..30.139 rows=1 loops=1)
    Buffers: shared hit=96 read=5965
-   ->  Gather (actual time=28.114..31.256 rows=3 loops=1)
+   ->  Gather (actual time=26.671..30.126 rows=3 loops=1)
          Workers Planned: 2
          Workers Launched: 2
          Buffers: shared hit=96 read=5965
-         ->  Partial Aggregate (actual time=22.589..22.590 rows=1 loops=3)
+         ->  Partial Aggregate (actual time=22.432..22.433 rows=1 loops=3)
                Buffers: shared hit=96 read=5965
-               ->  Parallel Seq Scan on webhook_events (actual time=0.033..17.308 rows=66667 loops=3)
+               ->  Parallel Seq Scan on webhook_events (actual time=0.032..17.399 rows=66667 loops=3)
                      Filter: (((provider)::text = 'shkeeper'::text) AND ((status)::text = 'processed'::text))
                      Buffers: shared hit=96 read=5965
  Planning:
    Buffers: shared hit=56
- Planning Time: 0.663 ms
- Execution Time: 31.410 ms
+ Planning Time: 0.614 ms
+ Execution Time: 30.211 ms
 (15 rows)
 
 ### Q22 CSV export, OFFSET paging: page 150 of a year of orders
                                               QUERY PLAN                                              
 ------------------------------------------------------------------------------------------------------
- Limit (actual time=305.379..307.380 rows=1000 loops=1)
+ Limit (actual time=487.127..489.784 rows=1000 loops=1)
    Buffers: shared hit=264367
-   ->  Nested Loop (actual time=0.060..301.085 rows=151000 loops=1)
+   ->  Nested Loop (actual time=0.075..480.362 rows=151000 loops=1)
          Buffers: shared hit=264367
-         ->  Index Scan using orders_pkey on orders (actual time=0.037..177.672 rows=151000 loops=1)
+         ->  Index Scan using orders_pkey on orders (actual time=0.045..281.263 rows=151000 loops=1)
                Filter: ((created_at <= now()) AND (created_at >= (now() - '366 days'::interval)))
                Buffers: shared hit=151114
          ->  Memoize (actual time=0.001..0.001 rows=1 loops=151000)
@@ -698,29 +723,29 @@
                Cache Mode: logical
                Hits: 113249  Misses: 37751  Evictions: 0  Overflows: 0  Memory Usage: 5308kB
                Buffers: shared hit=113253
-               ->  Index Scan using users_pkey on users (actual time=0.001..0.001 rows=1 loops=37751)
+               ->  Index Scan using users_pkey on users (actual time=0.002..0.002 rows=1 loops=37751)
                      Index Cond: (id = orders.buyer_id)
                      Buffers: shared hit=113253
  Planning:
    Buffers: shared hit=46
- Planning Time: 0.903 ms
- Execution Time: 309.183 ms
+ Planning Time: 0.805 ms
+ Execution Time: 492.349 ms
 (19 rows)
 
 ### Q23 CSV export, keyset paging: the same page
                                                      QUERY PLAN                                                     
 --------------------------------------------------------------------------------------------------------------------
- Limit (actual time=16.073..18.542 rows=1000 loops=1)
+ Limit (actual time=19.362..21.965 rows=1000 loops=1)
    Buffers: shared hit=2175
    InitPlan 1 (returns $0)
-     ->  Limit (actual time=15.963..15.965 rows=1 loops=1)
+     ->  Limit (actual time=19.235..19.237 rows=1 loops=1)
            Buffers: shared hit=413
-           ->  Index Only Scan using orders_pkey on orders orders_1 (actual time=0.033..11.019 rows=150001 loops=1)
+           ->  Index Only Scan using orders_pkey on orders orders_1 (actual time=0.038..13.934 rows=150001 loops=1)
                  Heap Fetches: 0
                  Buffers: shared hit=413
-   ->  Nested Loop (actual time=16.071..18.465 rows=1000 loops=1)
+   ->  Nested Loop (actual time=19.360..21.889 rows=1000 loops=1)
          Buffers: shared hit=2175
-         ->  Index Scan using orders_pkey on orders (actual time=16.041..17.605 rows=1000 loops=1)
+         ->  Index Scan using orders_pkey on orders (actual time=19.325..20.954 rows=1000 loops=1)
                Index Cond: (id > $0)
                Filter: ((created_at <= now()) AND (created_at >= (now() - '366 days'::interval)))
                Buffers: shared hit=1419
@@ -734,17 +759,17 @@
                      Buffers: shared hit=756
  Planning:
    Buffers: shared hit=22
- Planning Time: 0.619 ms
- Execution Time: 19.637 ms
+ Planning Time: 0.584 ms
+ Execution Time: 23.202 ms
 (26 rows)
 
 ### Q24 reconciliation check 1 in SQL: lines whose earning does not follow from their amounts
                                                                                                          QUERY PLAN                                                                                                          
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Hash Join (actual time=52.876..52.880 rows=0 loops=1)
+ Hash Join (actual time=64.679..64.685 rows=0 loops=1)
    Hash Cond: (order_items.order_id = orders.id)
    Buffers: shared hit=6203
-   ->  Seq Scan on order_items (actual time=52.874..52.874 rows=0 loops=1)
+   ->  Seq Scan on order_items (actual time=64.677..64.679 rows=0 loops=1)
          Filter: (seller_earning_minor <> ((((unit_price_minor * quantity) - discount_minor) - refunded_minor) - ((((((unit_price_minor * quantity) - discount_minor) - refunded_minor) * commission_bps) + 5000) / 10000)))
          Rows Removed by Filter: 250000
          Buffers: shared hit=6203
@@ -753,107 +778,107 @@
                Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded}'::text[]))
  Planning:
    Buffers: shared hit=16
- Planning Time: 0.360 ms
- Execution Time: 52.909 ms
+ Planning Time: 0.450 ms
+ Execution Time: 64.721 ms
 (14 rows)
 
 ### Q25 sitemap
                                                        QUERY PLAN                                                       
 ------------------------------------------------------------------------------------------------------------------------
- Limit (actual time=23.038..25.029 rows=17185 loops=1)
+ Limit (actual time=38.886..41.790 rows=17185 loops=1)
    Buffers: shared hit=16888
-   ->  Sort (actual time=23.036..23.987 rows=17185 loops=1)
+   ->  Sort (actual time=38.884..40.300 rows=17185 loops=1)
          Sort Key: products.id
          Sort Method: quicksort  Memory: 2115kB
          Buffers: shared hit=16888
-         ->  Merge Join (actual time=0.040..16.216 rows=17185 loops=1)
+         ->  Merge Join (actual time=0.042..27.975 rows=17185 loops=1)
                Merge Cond: (products.seller_id = users.id)
                Buffers: shared hit=16888
-               ->  Index Scan using products_seller_id_index on products (actual time=0.024..14.099 rows=17185 loops=1)
+               ->  Index Scan using products_seller_id_index on products (actual time=0.018..24.306 rows=17185 loops=1)
                      Filter: ((status)::text = 'active'::text)
                      Rows Removed by Filter: 3015
                      Buffers: shared hit=16866
-               ->  Index Scan using users_pkey on users (actual time=0.012..0.249 rows=512 loops=1)
+               ->  Index Scan using users_pkey on users (actual time=0.020..0.419 rows=512 loops=1)
                      Filter: (((role)::text <> 'buyer'::text) AND ((status)::text = 'active'::text))
                      Rows Removed by Filter: 50
                      Buffers: shared hit=22
  Planning:
    Buffers: shared hit=9
- Planning Time: 0.468 ms
- Execution Time: 26.307 ms
+ Planning Time: 0.485 ms
+ Execution Time: 43.918 ms
 (21 rows)
 
 ### Q26 unread notifications badge (every signed-in page and poll)
                                                               QUERY PLAN                                                               
 ---------------------------------------------------------------------------------------------------------------------------------------
- Aggregate (actual time=0.055..0.056 rows=1 loops=1)
+ Aggregate (actual time=0.081..0.081 rows=1 loops=1)
    Buffers: shared hit=4
-   ->  Index Only Scan using user_notifications_user_id_read_at_index on user_notifications (actual time=0.047..0.049 rows=20 loops=1)
+   ->  Index Only Scan using user_notifications_user_id_read_at_index on user_notifications (actual time=0.069..0.072 rows=20 loops=1)
          Index Cond: ((user_id = 16) AND (read_at IS NULL))
          Heap Fetches: 0
          Buffers: shared hit=4
  Planning:
    Buffers: shared hit=65
- Planning Time: 0.648 ms
- Execution Time: 0.176 ms
+ Planning Time: 0.815 ms
+ Execution Time: 0.127 ms
 (10 rows)
 
 ### Q27 admin audit log, newest page
                                                QUERY PLAN                                               
 --------------------------------------------------------------------------------------------------------
- Limit (actual time=0.019..0.087 rows=50 loops=1)
+ Limit (actual time=0.029..0.094 rows=50 loops=1)
    Buffers: shared hit=53
-   ->  Index Scan Backward using audit_log_pkey on audit_log (actual time=0.017..0.082 rows=50 loops=1)
+   ->  Index Scan Backward using audit_log_pkey on audit_log (actual time=0.028..0.086 rows=50 loops=1)
          Buffers: shared hit=53
  Planning:
    Buffers: shared hit=20
- Planning Time: 0.305 ms
- Execution Time: 0.106 ms
+ Planning Time: 0.359 ms
+ Execution Time: 0.120 ms
 (8 rows)
 
 ### Q28 sales ranking refresh (shop:refresh-sales-ranking), read part
                                                             QUERY PLAN                                                            
 ----------------------------------------------------------------------------------------------------------------------------------
- Hash Left Join (actual time=133.234..146.464 rows=20200 loops=1)
+ Hash Left Join (actual time=145.350..154.262 rows=20200 loops=1)
    Hash Cond: (products.id = sold.product_id)
-   Buffers: shared hit=10481
-   ->  Index Only Scan using products_pkey on products (actual time=0.029..3.521 rows=20200 loops=1)
+   Buffers: shared hit=10472
+   ->  Index Only Scan using products_status_created_at_id_index on products (actual time=0.041..2.185 rows=20200 loops=1)
          Heap Fetches: 0
-         Buffers: shared hit=113
-   ->  Hash (actual time=133.063..135.152 rows=17000 loops=1)
+         Buffers: shared hit=104
+   ->  Hash (actual time=145.095..146.691 rows=17000 loops=1)
          Buckets: 32768  Batches: 1  Memory Usage: 1053kB
          Buffers: shared hit=10368
-         ->  Subquery Scan on sold (actual time=120.312..129.555 rows=17000 loops=1)
+         ->  Subquery Scan on sold (actual time=132.944..141.450 rows=17000 loops=1)
                Buffers: shared hit=10368
-               ->  Finalize HashAggregate (actual time=120.311..127.022 rows=17000 loops=1)
+               ->  Finalize HashAggregate (actual time=132.942..139.047 rows=17000 loops=1)
                      Group Key: order_items.product_id
                      Batches: 1  Memory Usage: 2321kB
                      Buffers: shared hit=10368
-                     ->  Gather (actual time=106.512..113.089 rows=18502 loops=1)
+                     ->  Gather (actual time=119.378..125.514 rows=18507 loops=1)
                            Workers Planned: 2
                            Workers Launched: 2
                            Buffers: shared hit=10368
-                           ->  Partial HashAggregate (actual time=101.315..102.863 rows=6167 loops=3)
+                           ->  Partial HashAggregate (actual time=112.479..114.148 rows=6169 loops=3)
                                  Group Key: order_items.product_id
                                  Batches: 1  Memory Usage: 1297kB
                                  Buffers: shared hit=10368
                                  Worker 0:  Batches: 1  Memory Usage: 1553kB
                                  Worker 1:  Batches: 1  Memory Usage: 1297kB
-                                 ->  Parallel Hash Join (actual time=33.154..89.185 rows=62500 loops=3)
+                                 ->  Parallel Hash Join (actual time=37.518..100.022 rows=62500 loops=3)
                                        Hash Cond: (order_items.order_id = orders.id)
                                        Buffers: shared hit=10368
-                                       ->  Parallel Seq Scan on order_items (actual time=0.008..9.875 rows=83333 loops=3)
+                                       ->  Parallel Seq Scan on order_items (actual time=0.006..10.980 rows=83333 loops=3)
                                              Buffers: shared hit=6203
-                                       ->  Parallel Hash (actual time=32.358..32.360 rows=50000 loops=3)
+                                       ->  Parallel Hash (actual time=36.721..36.723 rows=50000 loops=3)
                                              Buckets: 262144  Batches: 1  Memory Usage: 7968kB
                                              Buffers: shared hit=4159
-                                             ->  Parallel Seq Scan on orders (actual time=0.022..16.334 rows=50000 loops=3)
+                                             ->  Parallel Seq Scan on orders (actual time=0.023..18.700 rows=50000 loops=3)
                                                    Filter: ((status)::text = ANY ('{paid,delivered,partially_refunded}'::text[]))
                                                    Rows Removed by Filter: 16667
                                                    Buffers: shared hit=4159
  Planning:
    Buffers: shared hit=16
- Planning Time: 0.429 ms
- Execution Time: 149.827 ms
+ Planning Time: 0.505 ms
+ Execution Time: 157.261 ms
 (41 rows)
 

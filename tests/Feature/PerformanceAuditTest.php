@@ -374,4 +374,28 @@ class PerformanceAuditTest extends TestCase
         $this->assertSame('NEW-7', $stored->key_encrypted);
         $this->assertNotSame('NEW-7', DB::table('product_license_keys')->where('id', $stored->id)->value('key_encrypted'));
     }
+
+    // PERF-18: the admin dashboard's live version read eight figures with eight queries every 10 s.
+    public function test_perf18_admin_dashboard_version_is_one_query_and_still_tracks_changes(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $order = $this->buy(Product::factory()->create(['price_minor' => 500]));
+        $first = $this->getJson('/live?path=/admin')->json('version');
+        $this->assertNotNull($first);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->getJson('/live?path=/admin')->assertOk();
+        $versionQueries = array_filter(DB::getQueryLog(), fn ($q) => str_contains($q['query'], 'max(updated_at)') || str_contains($q['query'], 'max("updated_at")'));
+        DB::disableQueryLog();
+        $this->assertCount(1, $versionQueries);
+
+        $this->travel(2)->seconds();
+        $order->touch();
+        $second = $this->getJson('/live?path=/admin')->json('version');
+        $this->assertNotSame($first, $second);
+        DB::table('webhook_events')->insert(['provider' => 'shkeeper', 'event_key' => str_repeat('a', 64), 'payload' => '{}', 'status' => 'dead', 'attempts' => 5]);
+        $this->assertNotSame($second, $this->getJson('/live?path=/admin')->json('version'));
+    }
 }
+
