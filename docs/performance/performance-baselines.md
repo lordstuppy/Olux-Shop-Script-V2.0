@@ -13,6 +13,7 @@ All figures are lab measurements on the disposable simulation stack. They are no
   - database cache, sessions and queue (the shipped defaults).
 - **Baseline:** code `e224388` (image `sha256:5dbe52973f08`, built from that revision with its own compose files, so `random_page_cost` was 4).
 - **Candidate:** code `de3000b` (image `sha256:3276b8e01c84`, web image `sha256:d32c84c3ad54`), plus the nginx template change of `577d35f`, which is mounted by compose, not baked into the image.
+- **Release candidate:** code `69801fc` (image `sha256:cdd92eb5e1e2`, web image `sha256:c97f969e4486`). It sends the same SQL as `de3000b`; only the reconciliation page was measured on it again (`bench-candidate-reconciliation.json`: p50 372 ms, p95 433 ms, 11 queries).
 
 The `revision` field in the bench JSON is the revision of the measuring harness, not of the measured code.
 

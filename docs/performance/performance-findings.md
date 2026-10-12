@@ -1,6 +1,6 @@
 # Performance and Code Quality Findings
 
-**Scope:** the whole application at `e224388` (baseline) and candidate `de3000b`, plus the deployment configuration. Measurements come from the simulation stack with the first-year dataset from `tests/performance/scale-data.sql` (conditions: [performance-baselines.md](performance-baselines.md)).
+**Scope:** the whole application at `e224388` (baseline) and candidate `de3000b` (measured; release candidate `69801fc` sends the same SQL), plus the deployment configuration. Measurements come from the simulation stack with the first-year dataset from `tests/performance/scale-data.sql` (conditions: [performance-baselines.md](performance-baselines.md)).
 
 **How the findings were made:**
 

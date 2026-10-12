@@ -2,7 +2,7 @@
 
 Each change in the order it was made, with its regression test and the measurement before and after. Commits are on branch `claude/zen-pasteur-vs99pr`.
 
-**Baseline:** `e224388`. **Candidate:** `de3000b`, application code and image. The nginx template change of `577d35f` is mounted at run time.
+**Baseline:** `e224388`. **Measured candidate:** `de3000b`, application code and image. **Release candidate:** `69801fc` (same SQL; see the last row). The nginx template change of `577d35f` is mounted at run time.
 
 **Measured with:**
 
@@ -37,6 +37,7 @@ Conditions are in [performance-baselines.md](performance-baselines.md).
 | PERF-17 static analysis | 571ac38 | `phpstan.neon`, models (generics), `InAppNotice`, `JsonFormatterTap`, seeders, `config/shop.php`, three `match` expressions | Gate `quality-types` | 392 findings | 0 |
 | PERF-18 admin poll | de3000b | `LivePages` | `test_perf18_admin_dashboard_version_is_one_query_and_still_tracks_changes` | 22 queries per poll | 15 |
 | PERF-19 download memory | 577d35f | `docker/nginx/default.conf.template` (`limit_conn` 6 per client) | `tests/performance/slow-downloads.py` | 25 of 25 buffered at once | 6 x 200, 19 x 429; counter +6 |
+| SAST rule on raw SQL | 69801fc | `PayoutService` (`EARNING_SQL` constant), migration `2026_10_16_000200` (literal statements), `scripts/security-gate.sh` (Trivy database from ghcr.io first) | `test_perf03_*`; security gate `sast` | 4 findings of `shop-no-interpolated-raw-sql` | 0; reconciliation 372 ms p50, identical statements (`bench-candidate-reconciliation.json`) |
 | Gate and CI | b8e72ce, 571ac38 | `scripts/performance-gate.sh`, `tests/performance/budgets.json`, `check-budgets.py`, `.github/workflows/ci.yml` (job `performance`), `composer.json` (Larastan) | Gate run locally: PASS for every check that can run without the stack | - | - |
 
 ## Before-and-after verification
@@ -48,7 +49,8 @@ Conditions are in [performance-baselines.md](performance-baselines.md).
   - ASCII check clean;
   - all page and query budgets met in two benchmark runs;
   - lab Web Vitals within budget.
-- **Simulation:** 101 scenarios on the candidate image, recorded in the summary.
+- **Simulation:** 101 / 101 on the release candidate image (`evidence/simulation-candidate.md`).
+- **Security gate:** 9 / 9 PASS on the release candidate (`evidence/security-gate-candidate.json`).
 
 ## Process errors, corrected
 

@@ -3,7 +3,10 @@
   "generated": "2026-10-12",
   "tested_revision": {
     "baseline_code": "e224388",
-    "candidate_code": "de3000b",
+    "candidate_code": "de3000b (measured)",
+    "release_candidate_code": "69801fc (same SQL as de3000b; SAST-only refactor; reconciliation re-measured, PHPUnit 314/314, simulation 101/101, security gate 9/9 PASS)",
+    "release_candidate_app_image": "sha256:cdd92eb5e1e2c1f8321424ce17d5bc56f4e40fff4d0ea6a71ca83411bd845903 (328 MB, sandbox build)",
+    "release_candidate_web_image": "sha256:c97f969e4486bc2b6d9a537e656fde5b654e0bba95dfa035bb44edd784d3256b",
     "candidate_runtime_config": "577d35f (nginx template, mounted by compose)",
     "app_image": "sha256:3276b8e01c84ff04c693566e348210b168e4c0671b7a05d955d940dc12a831c1 (330 MB, sandbox build with Composer installing from git)",
     "web_image": "sha256:d32c84c3ad54d15f6636edec568912a560b6ffffa4026ab0cdbd55f822d75abb",
@@ -70,7 +73,7 @@
     {
       "id": "P11", "title": "Reliability and failure-path efficiency", "status": "PASS",
       "criteria": "Critical workflows fail safely, without retry amplification, preserving consistency.",
-      "evidence": ["PERF-14 polling stop tests", "PERF-11 sweeps fixed", "Queue: bounded tries with backoff, retry_after 90 s > worker timeout 60 s", "Simulation recovery phase (database, queue, mail and Shkeeper outages, disk full) on the candidate image"]
+      "evidence": ["PERF-14 polling stop tests", "PERF-11 sweeps fixed", "Queue: bounded tries with backoff, retry_after 90 s > worker timeout 60 s", "Simulation 101/101 on the release candidate image, including the recovery phase (database, queue, mail and Shkeeper outages, disk full): evidence/simulation-candidate.md"]
     },
     {
       "id": "P12", "title": "Build, bundle and deployment efficiency", "status": "PASS",

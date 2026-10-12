@@ -1,0 +1,70 @@
+{
+ "meta": {
+  "generated": "2026-10-12T14:41:16Z",
+  "revision": "9db2716e656add26c245bb01ef3a5c178eeac50d",
+  "image": "sha256:cdd92eb5e1e2c1f8321424ce17d5bc56f4e40fff4d0ea6a71ca83411bd845903",
+  "runs": 30,
+  "warmup": 3,
+  "cpus": 4,
+  "rows": {
+   "products": 20200,
+   "orders": 200000,
+   "order_items": 250000,
+   "users": 50565,
+   "audit_log": 1000001,
+   "user_notifications": 500004,
+   "product_reviews": 40000,
+   "seller_ledger_entries": 420000,
+   "webhook_events": 200000
+  }
+ },
+ "pages": [
+  {
+   "name": "admin reconciliation",
+   "who": "superadmin@sim.test",
+   "path": "/admin/reconciliation",
+   "status": 200,
+   "queries": 11,
+   "round_trips": 12,
+   "query_ms": 303.0,
+   "slowest": [
+    {
+     "ms": 112.69999999999999,
+     "sql": "select order_items.seller_id, orders.currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) group by \"order_items\".\"seller_id\", \"orders\".\"currency\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 73.39099999999999,
+     "sql": "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
+     "kind": "execute"
+    },
+    {
+     "ms": 72.075,
+     "sql": "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) - ((order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) * order_items.commission_bps + 5000) / 10000 AS expected fro",
+     "kind": "execute"
+    }
+   ],
+   "statements": [
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "select * from \"users\" where \"id\" = $1 limit 1",
+    "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.qua",
+    "select order_items.seller_id, orders.currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_i",
+    "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
+    "select seller_id, currency, -SUM(amount_minor) AS total from \"payouts\" where \"status\" != $1 group by \"seller_id\", \"currency\"",
+    "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2) group by \"seller_id\", \"currency\"",
+    "select * from \"cache\" where \"key\" in ($1)",
+    "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+    "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
+   ],
+   "runs": 30,
+   "p50_ms": 372.1,
+   "p95_ms": 432.7,
+   "p99_ms": 472.5,
+   "max_ms": 488.6,
+   "mean_ms": 377.1,
+   "stdev_ms": 33.7,
+   "bytes_gzip": 8463
+  }
+ ]
+}

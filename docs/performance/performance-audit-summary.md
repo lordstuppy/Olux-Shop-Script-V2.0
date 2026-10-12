@@ -17,12 +17,25 @@ The security audit's own BLOCKED decision ([docs/security](../security/security-
 ## Tested revision and artifacts
 
 - **Baseline:** code `e224388`, app image `5dbe52973f08` (1.01 GB).
-- **Candidate:** code `de3000b`, app image `3276b8e01c84` (330 MB) and web image `d32c84c3ad54`.
-- **Runtime configuration:** the nginx template of `577d35f`, mounted by compose.
+- **Measured candidate:** code `de3000b`, app image `3276b8e01c84` (330 MB) and web image `d32c84c3ad54`. All benchmarks, query plans, Web Vitals and load tests below ran on it.
+- **Release candidate:** code `69801fc`, app image `cdd92eb5e1e2` (328 MB) and web image `c97f969e4486`.
+- **Runtime configuration (both):** the nginx template of `577d35f`, mounted by compose.
 
-Later commits add documentation and evidence only.
+**`69801fc` against `de3000b`.** The application code differs in two places, both so the SAST rule against interpolated raw SQL passes:
 
-Both were measured on the same simulation stack with the same restored dataset:
+- the reconciliation's earning expression is a constant;
+- the index migration uses four literal statements.
+
+The SQL the database receives is identical. The reconciliation page was measured again on the release candidate: 372 ms p50 and 433 ms p95, 11 queries, with the same statements ([evidence/bench-candidate-reconciliation.json](evidence/bench-candidate-reconciliation.json)). Later commits add documentation and evidence only.
+
+**Verified on the release candidate:**
+
+- PHPUnit 314 / 314;
+- PHPStan 0 errors, Pint and the ASCII check clean;
+- simulation 101 / 101;
+- security gate 9 / 9 PASS.
+
+Baseline and measured candidate ran on the same simulation stack with the same dataset:
 
 - 20,200 products, 200,000 orders, 250,000 order lines;
 - 1,000,000 audit entries, 500,000 notifications;
@@ -165,8 +178,8 @@ Details: [integration-best-practices.md](integration-best-practices.md).
 | Pint | Clean |
 | PHPStan level 5 | 0 errors |
 | ASCII check | Clean |
-| Simulation, 101 scenarios on the candidate image | SIM_RESULT |
-| Security gate on the candidate | SECURITY_RESULT |
+| Simulation, 101 scenarios on the release candidate image | 101 / 101 PASS ([evidence/simulation-candidate.md](evidence/simulation-candidate.md)) |
+| Security gate (`scripts/security-gate.sh`) on the release candidate and its images | PASS, 9 of 9 checks; 0 HIGH or CRITICAL in both images ([evidence/security-gate-candidate.json](evidence/security-gate-candidate.json)) |
 | Security regression tests | Part of the PHPUnit suite, all passing |
 | Performance gate (`scripts/performance-gate.sh`) | PASS for every check that runs without the stack (style, types, performance tests, assets). With the measurement files of this audit, the bench, Web Vitals and image checks also pass. |
 
