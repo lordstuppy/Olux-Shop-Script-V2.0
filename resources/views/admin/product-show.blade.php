@@ -28,7 +28,7 @@
     @else
         <ul class="image-list">
             @foreach ($product->images as $image)
-                <li><a href="{{ $image->url() }}"><img src="{{ $image->url('thumb') }}" width="{{ $image->width }}" height="{{ $image->height }}" alt="{{ $image->alt_text ?? __('Product image') }}"></a></li>
+                <li><a href="{{ $image->url(preview: true) }}"><img src="{{ $image->url('thumb', preview: true) }}" width="{{ $image->width }}" height="{{ $image->height }}" alt="{{ $image->alt_text ?? __('Product image') }}"></a></li>
             @endforeach
         </ul>
     @endif

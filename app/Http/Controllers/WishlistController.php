@@ -12,7 +12,7 @@ class WishlistController extends Controller
 {
     public function index(Request $request): View
     {
-        $items = $request->user()->wishlistItems()->with('product.images', 'product.category')->latest('id')->get();
+        $items = $request->user()->wishlistItems()->with('product.images', 'product.category', 'product.seller')->latest('id')->get();
         // Listed products only (sold-out ones stay, shown as sold out).
         $listed = Product::query()->visible()->whereIn('id', $items->pluck('product_id'))->pluck('id')->all();
         $items = $items->filter(fn ($i) => in_array($i->product_id, $listed, true));

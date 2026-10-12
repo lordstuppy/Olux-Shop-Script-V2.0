@@ -143,7 +143,7 @@ class OrderController extends Controller
 
         $added = 0;
         $skipped = [];
-        foreach ($order->items()->with('product')->get() as $item) {
+        foreach ($order->items()->with('product.seller')->get() as $item) {
             $product = $item->product;
             $quantity = $product?->stock === null ? $item->quantity : min($item->quantity, (int) $product->stock);
             try {

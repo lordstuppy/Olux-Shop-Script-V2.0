@@ -32,7 +32,7 @@ class ProductController extends Controller
             [$filters['price_min'], $filters['price_max']] = [$filters['price_max'], $filters['price_min']];
         }
         $filters['price_currency'] = $cart->currency();
-        $sellers = $catalog->sellers();
+        $sellers = $catalog->sellers(isset($filters['seller']) ? (int) $filters['seller'] : null);
 
         return view('products.index', [
             'products' => $catalog->paginate($filters),

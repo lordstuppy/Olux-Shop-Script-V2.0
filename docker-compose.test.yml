@@ -64,6 +64,8 @@ services:
     command:
       - postgres
       - -c
+      - random_page_cost=1.1
+      - -c
       - log_min_duration_statement=200
       - -c
       - log_statement=mod

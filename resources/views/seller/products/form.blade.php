@@ -90,7 +90,7 @@
             <ul class="image-list">
                 @foreach ($product->images as $image)
                     <li>
-                        <img src="{{ $image->url('thumb') }}" width="{{ $image->width }}" height="{{ $image->height }}" alt="{{ $image->alt_text ?? __('Product image') }}">
+                        <img src="{{ $image->url('thumb', preview: true) }}" width="{{ $image->width }}" height="{{ $image->height }}" alt="{{ $image->alt_text ?? __('Product image') }}">
                         <form method="post" action="{{ route('seller.products.images.destroy', [$product->id, $image->id]) }}">
                             @csrf
                             @method('DELETE')

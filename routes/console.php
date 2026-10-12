@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
+use App\Services\CatalogService;
 use App\Services\DisputeService;
 use App\Services\Notifier;
 use App\Services\OrderService;
@@ -194,6 +195,32 @@ Artisan::command('shop:prune-notifications', function () {
     $this->info("Deleted {$read} read notifications older than 90 days and {$old} older than a year.");
 })->purpose('Delete read notifications after 90 days and all after a year');
 
+Artisan::command('shop:refresh-sales-ranking', function (CatalogService $catalog) {
+    $this->info('Updated the units sold of '.$catalog->refreshSalesRanking().' products.');
+})->purpose('Recompute units sold per product for the "best selling" sort');
+
+Artisan::command('shop:prune-cache', function () {
+    // The database cache store deletes an expired entry only when that key is
+    // read again, so per-address rate-limit counters of one-time visitors
+    // would stay forever. Other stores (Redis) expire entries themselves.
+    $store = config('cache.stores.'.config('cache.default'));
+    if (($store['driver'] ?? null) !== 'database') {
+        $this->info('The cache store is not the database; nothing to prune.');
+
+        return 0;
+    }
+    $table = DB::connection($store['connection'] ?? null)->table($store['table'] ?? 'cache');
+    $deleted = 0;
+    do {
+        // Batches keep each delete short (no long lock on a busy table).
+        $keys = (clone $table)->where('expiration', '<=', now()->getTimestamp())->limit(5000)->pluck('key');
+        $deleted += $keys->isEmpty() ? 0 : (clone $table)->whereIn('key', $keys->all())->where('expiration', '<=', now()->getTimestamp())->delete();
+    } while ($keys->count() === 5000);
+    $this->info("Deleted {$deleted} expired cache entries.");
+
+    return 0;
+})->purpose('Delete expired entries from the database cache table');
+
 Artisan::command('shop:prune-saved-carts', function () {
     $count = DB::table('saved_carts')->where('updated_at', '<', now()->subDays((int) config('shop.saved_cart_days')))->delete();
     $this->info("Deleted {$count} saved carts.");
@@ -243,8 +270,10 @@ Artisan::command('shop:lang-extract {--check : Exit 1 if lang/en.json is out of 
 
 Schedule::command('shop:expire-orders')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:recover-stuck-orders')->everyMinute()->withoutOverlapping();
-Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping();
-Schedule::command('shop:reconcile-shkeeper-transfers')->everyFiveMinutes()->withoutOverlapping();
+// HTTP-bound polls run in the background so a slow Shkeeper cannot delay the
+// other tasks of the same minute (order expiry, webhook retries).
+Schedule::command('shop:reconcile-payments')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
+Schedule::command('shop:reconcile-shkeeper-transfers')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('shop:retry-webhooks')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:reconcile-payouts')->dailyAt('03:15');
 Schedule::command('queue:prune-failed --hours=720')->daily();
@@ -253,6 +282,8 @@ Schedule::command('shop:escalate-disputes')->everyFifteenMinutes()->withoutOverl
 Schedule::command('auth:clear-resets')->hourly();
 Schedule::command('shop:prune-gateway-logs')->dailyAt('04:10');
 Schedule::command('shop:prune-saved-carts')->dailyAt('04:20');
+Schedule::command('shop:refresh-sales-ranking')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('shop:prune-cache')->hourly()->withoutOverlapping();
 Schedule::command('shop:prune-notifications')->dailyAt('04:30');
 Schedule::command('shop:staff-digest')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('shop:health-alerts')->everyFiveMinutes()->withoutOverlapping();

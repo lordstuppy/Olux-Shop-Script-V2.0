@@ -36,6 +36,19 @@ class PayoutService
         return $netMinor - Money::applyBps($netMinor, $commissionBps);
     }
 
+    /**
+     * earningFor() as a PostgreSQL expression over an order_items row: the net
+     * line amount after refunds minus the commission rounded half up
+     * (Money::applyBps). Amounts are never negative, so adding 5000 before the
+     * integer division by 10000 rounds half up.
+     */
+    public static function earningSql(string $table): string
+    {
+        $net = "({$table}.unit_price_minor * {$table}.quantity - {$table}.discount_minor - {$table}.refunded_minor)";
+
+        return "{$net} - ({$net} * {$table}.commission_bps + 5000) / 10000";
+    }
+
     /** Called inside the transaction that marks the order paid. */
     public function recordSale(OrderItem $item, string $currency): void
     {
@@ -175,16 +188,19 @@ class PayoutService
         $paidStates = array_map(fn (OrderStatus $s) => $s->value, array_filter(OrderStatus::cases(), fn (OrderStatus $s) => $s->isPaidState()));
         $mismatches = [];
 
-        // 1. Each item's stored earning must follow from its amounts.
-        OrderItem::query()->whereHas('order', fn ($q) => $q->whereIn('status', $paidStates))->with('order:id,currency')
-            ->chunkById(500, function ($items) use (&$mismatches) {
-                foreach ($items as $item) {
-                    $expected = self::earningFor($item->netMinor() - $item->refunded_minor, $item->commission_bps);
-                    if ($expected !== $item->seller_earning_minor) {
-                        $mismatches[] = ['seller_id' => $item->seller_id, 'currency' => $item->order->currency, 'check' => "order_item {$item->id} earning", 'expected' => $expected, 'actual' => $item->seller_earning_minor];
-                    }
-                }
-            });
+        // 1. Each item's stored earning must follow from its amounts. Computed in
+        // SQL so only mismatching lines come back (walking every paid line in PHP
+        // took 18 s at 250,000 lines).
+        $expected = self::earningSql('order_items');
+        $rows = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereIn('orders.status', $paidStates)
+            ->whereRaw("order_items.seller_earning_minor <> {$expected}")
+            ->select('order_items.id', 'order_items.seller_id', 'orders.currency', 'order_items.seller_earning_minor')
+            ->selectRaw("{$expected} AS expected")->orderBy('order_items.id')->get();
+        foreach ($rows as $row) {
+            $mismatches[] = ['seller_id' => (int) $row->seller_id, 'currency' => $row->currency, 'check' => "order_item {$row->id} earning",
+                'expected' => (int) $row->expected, 'actual' => (int) $row->seller_earning_minor];
+        }
 
         // 2. Ledger sales per seller and currency must equal the earnings of completed orders.
         $expectedSales = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')

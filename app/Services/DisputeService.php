@@ -162,8 +162,10 @@ class DisputeService
     public function escalateOverdue(): int
     {
         $count = 0;
-        Dispute::query()->where('status', DisputeStatus::AwaitingSeller->value)->where('seller_respond_by', '<', now())
-            ->orderBy('id')->each(function (Dispute $dispute) use (&$count) {
+        // lazyById, not each(): each() pages with OFFSET, and escalating changes the
+        // status this query filters on, so later pages would skip cases.
+        Dispute::query()->with(['buyer', 'seller', 'item'])->where('status', DisputeStatus::AwaitingSeller->value)->where('seller_respond_by', '<', now())
+            ->lazyById(200)->each(function (Dispute $dispute) use (&$count) {
                 $escalated = DB::transaction(function () use ($dispute) {
                     $locked = Dispute::query()->whereKey($dispute->id)->lockForUpdate()->firstOrFail();
                     if ($locked->status !== DisputeStatus::AwaitingSeller) {

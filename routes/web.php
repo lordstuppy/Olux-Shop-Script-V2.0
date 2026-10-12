@@ -44,13 +44,19 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
-Route::get('/product-images/{image}/{size}', ProductImageController::class)->whereIn('size', ['thumb', 'large'])->name('products.image');
+// Listed products' images: no session (see ProductImageController). Unlisted
+// products' images go through the preview route, which needs the signed-in owner or staff.
+Route::get('/product-images/{image}/{size}', ProductImageController::class)->whereIn('size', ['thumb', 'large'])->name('products.image')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class, EnsureUserIsActive::class]);
+Route::get('/product-images/{image}/{size}/preview', [ProductImageController::class, 'preview'])->whereIn('size', ['thumb', 'large'])
+    ->middleware('auth')->name('products.image.preview');
 Route::get('/search/suggest', [ProductController::class, 'suggest'])->middleware('throttle:search')->name('search.suggest');
 
 Route::get('/terms', [PageController::class, 'terms'])->name('pages.terms');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('pages.privacy');
 Route::get('/data-retention', [PageController::class, 'retention'])->name('pages.retention');
-Route::get('/sitemap.xml', [PageController::class, 'sitemap'])->name('sitemap');
+Route::get('/sitemap.xml', [PageController::class, 'sitemap'])->name('sitemap')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class, EnsureUserIsActive::class]);
 Route::get('/robots.txt', [PageController::class, 'robots'])->name('robots');
 Route::get('/.well-known/security.txt', [PageController::class, 'securityTxt'])->name('security-txt');
 

@@ -108,8 +108,16 @@ class Product extends Model
 
     public function isPurchasable(): bool
     {
-        return $this->status === ProductStatus::Active && ($this->stock === null || $this->stock > 0)
-            && $this->seller()->where('status', UserStatus::Active->value)->where('role', '!=', UserRole::Buyer->value)->exists();
+        if ($this->status !== ProductStatus::Active || ($this->stock !== null && $this->stock <= 0)) {
+            return false;
+        }
+        // Lists eager-load the seller; checking it in memory saves one query per
+        // product (wishlist, cart). Otherwise ask the database.
+        if ($this->relationLoaded('seller')) {
+            return $this->seller !== null && $this->seller->status === UserStatus::Active && $this->seller->role !== UserRole::Buyer;
+        }
+
+        return $this->seller()->where('status', UserStatus::Active->value)->where('role', '!=', UserRole::Buyer->value)->exists();
     }
 
     public function isSoldOut(): bool

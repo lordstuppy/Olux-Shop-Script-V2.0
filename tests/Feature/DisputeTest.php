@@ -180,6 +180,25 @@ class DisputeTest extends TestCase
         $this->assertDatabaseHas('dispute_messages', ['dispute_id' => $dispute->id, 'author_role' => 'system']);
     }
 
+    /** PERF-11: several overdue cases in one sweep (lazy loading on a multi-row result used to throw outside production). */
+    public function test_perf11_several_overdue_disputes_escalate_in_one_sweep(): void
+    {
+        $this->openDispute();
+        $this->actingAs($this->buyer);
+        $other = $this->order->items()->where('product_id', $this->otherSellerProduct->id)->firstOrFail();
+        $this->postForm(route('disputes.store', [$this->order, $other]), [
+            'reason' => 'not_delivered', 'requested_outcome' => 'refund', 'body' => 'The download link never worked.',
+        ])->assertRedirect();
+        $this->assertSame(2, Dispute::count());
+
+        $this->travel(3)->days();
+        $this->travel(1)->minutes();
+        $this->artisan('shop:escalate-disputes')->expectsOutputToContain('Escalated 2')->assertSuccessful();
+        $this->assertSame(2, Dispute::query()->where('status', DisputeStatus::AwaitingStaff->value)->count());
+        // Buyer and seller of each case, plus staff: three mails per case.
+        Mail::assertQueued(DisputeEscalatedMail::class, 6);
+    }
+
     public function test_refund_comes_out_of_the_disputed_line_only(): void
     {
         $dispute = $this->openDispute('refund');

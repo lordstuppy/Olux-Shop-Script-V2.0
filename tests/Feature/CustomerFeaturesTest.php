@@ -85,6 +85,8 @@ class CustomerFeaturesTest extends TestCase
         $this->buy($popular);
         $this->buy($popular);
         $other = Product::factory()->create(['title' => 'Unrelated']);
+        // Rankings are refreshed every ten minutes (PERF-02).
+        $this->artisan('shop:refresh-sales-ranking')->assertSuccessful();
 
         $titles = collect(app(CatalogService::class)->paginate(['sort' => 'best'])->items())->pluck('title')->all();
         $this->assertSame('Popular tool', $titles[0]);

@@ -14,8 +14,9 @@ class ProductImage extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function url(string $size = 'large'): string
+    /** $preview: the seller's and staff's URL, which also works while the product is not listed. */
+    public function url(string $size = 'large', bool $preview = false): string
     {
-        return route('products.image', ['image' => $this->id, 'size' => $size === 'thumb' ? 'thumb' : 'large']);
+        return route($preview ? 'products.image.preview' : 'products.image', ['image' => $this->id, 'size' => $size === 'thumb' ? 'thumb' : 'large']);
     }
 }

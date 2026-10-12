@@ -4,7 +4,11 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
+# Composer falls back to git clones when a dist download fails (rate limits,
+# proxies); their .git directories are not needed at run time (in a sandbox
+# build they were 340 MB of the 466 MB vendor directory).
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist \
+    && find vendor -name .git -type d -prune -exec rm -rf {} +
 COPY . .
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
@@ -28,8 +32,8 @@ COPY docker/entrypoint.sh /usr/local/bin/shop-entrypoint
 WORKDIR /var/www/html
 COPY --from=vendor --chown=www-data:www-data /app /var/www/html
 # Not needed at run time: Laravel's repository-split tool (a Go binary with an
-# old Go runtime that image scanners flag) and the browser test packages.
-RUN rm -rf tests/browser/node_modules vendor/laravel/framework/bin \
+# old Go runtime that image scanners flag). Tests and docs are kept out by .dockerignore.
+RUN rm -rf vendor/laravel/framework/bin \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/invoices storage/app/private/products \
     && chown -R www-data:www-data storage bootstrap/cache
 

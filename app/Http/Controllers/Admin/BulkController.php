@@ -119,7 +119,8 @@ class BulkController extends Controller
         return response()->streamDownload(function () use ($query) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['public_id', 'created_at', 'paid_at', 'status', 'buyer_email', 'currency', 'units', 'subtotal', 'discount', 'total', 'refunded']);
-            $query->orderBy('orders.id')->chunk(1000, function ($rows) use ($out) {
+            // Keyset pages, not OFFSET (see ExportController::download).
+            $query->chunkById(1000, function ($rows) use ($out) {
                 foreach ($rows as $r) {
                     fputcsv($out, array_map([ExportController::class, 'cell'], [
                         $r->public_id, $r->created_at, $r->paid_at, $r->status, $r->buyer_email, $r->currency, $r->units,
@@ -127,7 +128,7 @@ class BulkController extends Controller
                         Money::toDecimal((int) $r->total_minor, $r->currency), Money::toDecimal((int) $r->refunded_minor, $r->currency),
                     ]));
                 }
-            });
+            }, 'orders.id', 'id');
             fclose($out);
         }, 'orders-selection-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }

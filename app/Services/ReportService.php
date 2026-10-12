@@ -56,22 +56,24 @@ class ReportService
     }
 
     /** @return Collection<int, object> */
-    public function topProducts(Carbon $from, Carbon $to, int $limit = 15): Collection
+    public function topProducts(Carbon $from, Carbon $to, int $limit = 15, ?string $currency = null): Collection
     {
         return DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('orders.status', self::PAID)->whereBetween('orders.paid_at', [$from, $to])
+            ->when($currency !== null, fn ($q) => $q->where('orders.currency', $currency))
             ->groupBy('order_items.product_id', 'order_items.title', 'orders.currency')
             ->selectRaw('order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net')
             ->orderByDesc('net')->limit($limit)->get();
     }
 
     /** @return Collection<int, object> */
-    public function topSellers(Carbon $from, Carbon $to, int $limit = 15): Collection
+    public function topSellers(Carbon $from, Carbon $to, int $limit = 15, ?string $currency = null): Collection
     {
         return DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('users', 'users.id', '=', 'order_items.seller_id')
             ->leftJoin('seller_profiles', 'seller_profiles.user_id', '=', 'users.id')
             ->whereIn('orders.status', self::PAID)->whereBetween('orders.paid_at', [$from, $to])
+            ->when($currency !== null, fn ($q) => $q->where('orders.currency', $currency))
             ->groupBy('order_items.seller_id', 'users.email', 'seller_profiles.display_name', 'orders.currency')
             ->selectRaw('order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net, SUM(order_items.seller_earning_minor) AS earnings')
             ->orderByDesc('net')->limit($limit)->get();

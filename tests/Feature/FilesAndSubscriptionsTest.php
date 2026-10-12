@@ -155,13 +155,18 @@ class FilesAndSubscriptionsTest extends TestCase
             ->assertSessionHas('error', 'The image must be a JPEG, PNG or WebP file.');
         $this->assertSame(1, $product->images()->count());
 
-        // Unlisted: only the seller (and staff) can see it.
-        $this->get($image->url('thumb'))->assertOk()->assertHeader('Content-Type', 'image/webp');
-        $this->postForm('/logout');
+        // Unlisted: only the seller (and staff) can see it, through the preview URL.
+        $this->get($image->url('thumb', preview: true))->assertOk()->assertHeader('Content-Type', 'image/webp')
+            ->assertHeader('Cache-Control', 'no-store, private');
         $this->get($image->url('thumb'))->assertNotFound();
+        $this->actingAs(User::factory()->create())->get($image->url('thumb', preview: true))->assertNotFound();
+        $this->postForm('/logout');
+        $this->get($image->url('thumb', preview: true))->assertRedirect(route('login'));
 
         $product->update(['status' => ProductStatus::Active]);
-        $this->get($image->url())->assertOk()->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
+        // PERF-07: listed products' images are served without a session: no cookies, cacheable by shared caches.
+        $response = $this->get($image->url())->assertOk()->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
+        $this->assertSame([], $response->headers->getCookies());
         $this->get(route('products.show', $product->slug))->assertSee($image->url(), false)->assertSee('Main window');
     }
 

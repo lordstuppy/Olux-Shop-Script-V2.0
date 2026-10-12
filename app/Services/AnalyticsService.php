@@ -89,12 +89,12 @@ class AnalyticsService
 
     public function topProducts(Carbon $from, Carbon $to, string $currency, int $limit = 5): Collection
     {
-        return $this->reports->topProducts($from, $to, 50)->where('currency', $currency)->take($limit)->values();
+        return $this->reports->topProducts($from, $to, $limit, $currency);
     }
 
     public function topSellers(Carbon $from, Carbon $to, string $currency, int $limit = 5): Collection
     {
-        return $this->reports->topSellers($from, $to, 50)->where('currency', $currency)->take($limit)->values();
+        return $this->reports->topSellers($from, $to, $limit, $currency);
     }
 
     public function approvedSellers(): int

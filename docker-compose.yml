@@ -87,6 +87,11 @@ services:
 
   db:
     image: postgres:15-alpine
+    # random_page_cost 1.1 instead of 4 (spinning disks): on SSD storage the
+    # default makes the planner skip the catalogue search's trigram indexes
+    # (130 ms sequential scan instead of 2 ms at 20,000 products; see
+    # docs/performance/database-performance-audit.md). Set the same on a managed database.
+    command: ["postgres", "-c", "random_page_cost=1.1"]
     environment:
       POSTGRES_DB: ${DB_DATABASE:-shop}
       POSTGRES_USER: ${DB_USERNAME:-shop}

@@ -19,3 +19,9 @@ tests/simulation/reports
 tests/simulation/tls
 tests/simulation/sim.env
 /storage/security-gate
+# Not part of the runtime image (the test suites, reports and CI scripts run outside it)
+tests
+docs
+scripts
+.github
+.semgrep

@@ -26,7 +26,7 @@ class CatalogService
      */
     public function paginate(array $filters, ?int $perPage = null): LengthAwarePaginator
     {
-        $query = Product::query()->visible()->with(['category', 'seller', 'images']);
+        $query = Product::query()->visible()->with(['category', 'images']);
 
         $term = trim((string) ($filters['q'] ?? ''));
         if ($term !== '') {
@@ -53,7 +53,7 @@ class CatalogService
             'price_asc' => $query->orderBy('price_minor')->orderBy('id'),
             'price_desc' => $query->orderByDesc('price_minor')->orderBy('id'),
             'title' => $query->orderBy('title')->orderBy('id'),
-            'best' => $query->orderByDesc($this->unitsSold())->orderByDesc('id'),
+            'best' => $query->orderByDesc('units_sold')->orderByDesc('id'),
             default => $query->orderByDesc('created_at')->orderByDesc('id'),
         };
 
@@ -91,7 +91,7 @@ class CatalogService
 
         return Product::query()->visible()->with(['category', 'images'])
             ->where('category_id', $product->category_id)->whereKeyNot($product->id)
-            ->orderByDesc($this->unitsSold())->orderByDesc('id')->limit($limit)->get();
+            ->orderByDesc('units_sold')->orderByDesc('id')->limit($limit)->get();
     }
 
     /**
@@ -128,23 +128,52 @@ class CatalogService
         });
     }
 
-    /** Approved sellers with at least one visible product, for the seller filter. */
-    public function sellers(): \Illuminate\Support\Collection
+    public const FILTER_SELLERS = 50;
+
+    /**
+     * Sellers for the catalogue's seller filter: approved sellers with at least
+     * one visible product, the best-selling FILTER_SELLERS of them (by units
+     * sold, see refreshSalesRanking) plus $selected, ordered by name. Every
+     * seller used to be listed, which put 28 KB of options into every
+     * catalogue page at 500 sellers; any seller's products stay reachable
+     * through "More from this seller" on their product pages.
+     *
+     * @return \Illuminate\Support\Collection<int, string> display name by seller id
+     */
+    public function sellers(?int $selected = null): \Illuminate\Support\Collection
     {
-        return DB::table('seller_profiles')->where('status', 'approved')
-            ->whereExists(fn ($q) => $q->from('products')->whereColumn('products.seller_id', 'seller_profiles.user_id')->where('products.status', 'active'))
-            ->whereExists(fn ($q) => $q->from('users')->whereColumn('users.id', 'seller_profiles.user_id')->where('users.status', 'active')->where('users.role', '!=', 'buyer'))
-            ->orderBy('display_name')->pluck('display_name', 'user_id');
+        $eligible = fn () => DB::table('seller_profiles')->where('seller_profiles.status', 'approved')
+            ->join('products', 'products.seller_id', '=', 'seller_profiles.user_id')->where('products.status', 'active')
+            ->join('users', 'users.id', '=', 'seller_profiles.user_id')->where('users.status', 'active')->where('users.role', '!=', 'buyer')
+            ->groupBy('seller_profiles.user_id', 'seller_profiles.display_name');
+
+        $sellers = $eligible()->orderByRaw('SUM(products.units_sold) DESC')->orderBy('seller_profiles.user_id')
+            ->limit(self::FILTER_SELLERS)->pluck('seller_profiles.display_name', 'seller_profiles.user_id');
+        if ($selected !== null && ! $sellers->has($selected)) {
+            $sellers = $sellers->union($eligible()->where('seller_profiles.user_id', $selected)->pluck('seller_profiles.display_name', 'seller_profiles.user_id'));
+        }
+
+        return $sellers->sortBy(fn (string $name) => mb_strtolower($name));
     }
 
-    /** Units sold in paid orders, as a sortable subquery. */
-    private function unitsSold(): \Illuminate\Database\Query\Builder
+    /**
+     * Recomputes products.units_sold (units in paid, delivered or partly
+     * refunded orders) for the "best selling" sort. Run every ten minutes by
+     * shop:refresh-sales-ranking: rankings may lag sales by that much, in
+     * exchange for catalogue pages that do not sum all order lines per view.
+     * Only rows whose figure changed are written.
+     */
+    public function refreshSalesRanking(): int
     {
-        return DB::table('order_items')
-            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->whereColumn('order_items.product_id', 'products.id')
-            ->whereIn('orders.status', ['paid', 'delivered', 'partially_refunded'])
-            ->selectRaw('COALESCE(SUM(order_items.quantity), 0)');
+        return DB::update(<<<'SQL'
+            UPDATE products SET units_sold = s.units
+            FROM (SELECT products.id, COALESCE(sold.units, 0) AS units FROM products
+                  LEFT JOIN (SELECT order_items.product_id, SUM(order_items.quantity) AS units FROM order_items
+                             JOIN orders ON orders.id = order_items.order_id
+                             WHERE orders.status IN ('paid', 'delivered', 'partially_refunded')
+                             GROUP BY order_items.product_id) sold ON sold.product_id = products.id) s
+            WHERE s.id = products.id AND products.units_sold <> s.units
+            SQL);
     }
 
     /**

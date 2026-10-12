@@ -33,6 +33,9 @@ class ShkeeperPayoutService
     /** A transfer Shkeeper still does not know this long after the request was never created. */
     private const UNKNOWN_AFTER_MINUTES = 30;
 
+    /** Status polls that failed in a row during the current reconcile() run. */
+    private int $pollFailures = 0;
+
     public function __construct(
         private readonly ShkeeperClient $client,
         private readonly PayoutService $payouts,
@@ -215,6 +218,7 @@ class ShkeeperPayoutService
             return 0;
         }
         $updated = 0;
+        $this->pollFailures = 0;
         $unknown = __('Shkeeper has no record of this transfer :minutes minutes after it was requested, so it was never sent.', ['minutes' => self::UNKNOWN_AFTER_MINUTES]);
         // The "never sent" rule only applies when the transfer request itself had
         // no answer (no task id). Once Shkeeper accepted it, only Shkeeper's own
@@ -224,14 +228,20 @@ class ShkeeperPayoutService
             $updated += $this->poll($payout->crypto, $payout->externalId(), $accepted ? null : $payout->processed_at,
                 fn () => $this->payoutFailed($payout, $unknown));
             $this->alertIfStuck('payout', $payout->id, $payout->processed_at, route('admin.payouts.index'));
+            if ($this->pollFailures >= PaymentService::POLL_FAILURES_BEFORE_STOP) {
+                return $updated;
+            }
         }
-        $pending = Payment::query()->where('kind', PaymentKind::Refund->value)->where('provider', PaymentProvider::Shkeeper->value)
+        $pending = Payment::query()->with('order')->where('kind', PaymentKind::Refund->value)->where('provider', PaymentProvider::Shkeeper->value)
             ->where('status', PaymentStatus::Pending->value)->limit(100)->get();
         foreach ($pending as $payment) {
             $accepted = (string) ($payment->raw_payload_json['task_id'] ?? '') !== '';
             $updated += $this->poll((string) $payment->crypto, 'refund-'.$payment->id, $accepted ? null : $payment->created_at,
                 fn () => $this->refunds->failPending($payment, $unknown));
             $this->alertIfStuck('refund', $payment->id, $payment->created_at, route('admin.orders.show', $payment->order));
+            if ($this->pollFailures >= PaymentService::POLL_FAILURES_BEFORE_STOP) {
+                break;
+            }
         }
 
         return $updated;
@@ -267,8 +277,11 @@ class ShkeeperPayoutService
         }
         try {
             $result = $this->client->payoutStatus($crypto, $externalId);
+            $this->pollFailures = 0;
         } catch (ShkeeperException $e) {
             Log::warning('Shkeeper payout status poll for {external_id} failed: {reason}', ['external_id' => $externalId, 'reason' => $e->getMessage()]);
+            // reconcile() stops after a few failures in a row (Shkeeper down), as PaymentService::reconcilePending does.
+            $this->pollFailures++;
 
             return 0;
         }

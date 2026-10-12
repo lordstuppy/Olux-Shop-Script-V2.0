@@ -144,7 +144,7 @@ class CartService
     {
         $currency = $this->currency();
         $items = $this->rawItems();
-        $products = Product::query()->with('category')->whereIn('id', array_keys($items))->get()->keyBy('id');
+        $products = Product::query()->with(['category', 'seller'])->whereIn('id', array_keys($items))->get()->keyBy('id');
 
         $lines = [];
         $problems = [];

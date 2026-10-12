@@ -33,6 +33,9 @@ use InvalidArgumentException;
  */
 class PaymentService
 {
+    /** Status polls that may fail in a row before reconcilePending() gives up until its next run. */
+    public const POLL_FAILURES_BEFORE_STOP = 3;
+
     public function __construct(
         private readonly ShkeeperClient $shkeeper,
         private readonly OrderService $orders,
@@ -299,18 +302,30 @@ class PaymentService
     public function reconcilePending(int $olderThanMinutes = 2): int
     {
         $count = 0;
+        $failures = 0;
+        // Newest first: they are the likeliest to have been paid just now.
         $payments = Payment::query()->with('order')
             ->where('provider', PaymentProvider::Shkeeper->value)->where('kind', PaymentKind::Charge->value)
             ->whereIn('status', [PaymentStatus::Pending->value, PaymentStatus::Partial->value, PaymentStatus::Rejected->value])
             ->where('created_at', '<', now()->subMinutes($olderThanMinutes))
             ->where('created_at', '>', now()->subDays(7))
+            ->orderByDesc('created_at')->orderByDesc('id')
             ->limit(200)->get();
 
         foreach ($payments as $payment) {
             try {
                 $status = $this->shkeeper->getInvoiceStatus($payment->order->public_id);
+                $failures = 0;
             } catch (ShkeeperException $e) {
                 Log::warning('Shkeeper status poll failed for order {public_id}: {reason}', ['public_id' => $payment->order->public_id, 'reason' => $e->getMessage()]);
+                // Shkeeper is down or unreachable: stop after a few failures in a
+                // row instead of waiting out the timeout for each of up to 200
+                // invoices (over half an hour); the next run tries again.
+                if (++$failures >= self::POLL_FAILURES_BEFORE_STOP) {
+                    Log::warning('Shkeeper status polling stopped after {failures} failures in a row', ['failures' => $failures]);
+
+                    break;
+                }
 
                 continue;
             }

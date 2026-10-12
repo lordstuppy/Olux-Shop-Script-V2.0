@@ -49,11 +49,13 @@ class ExportController extends Controller
         return response()->streamDownload(function () use ($columns, $query, $map) {
             $out = fopen('php://output', 'w');
             fputcsv($out, $columns);
-            $query->orderBy('id')->chunk(1000, function ($rows) use ($out, $map) {
+            // Keyset pages (id > last id): OFFSET pages re-read every earlier row,
+            // which makes a large export quadratic.
+            $query->chunkById(1000, function ($rows) use ($out, $map) {
                 foreach ($rows as $row) {
                     fputcsv($out, array_map([self::class, 'cell'], $map($row)));
                 }
-            });
+            }, $query->from.'.id', 'id');
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
