@@ -15,7 +15,9 @@
  *     loading indicator does this job).
  *  6. After a failed submission the error summary takes the focus, and table
  *     boxes that scroll sideways can be scrolled with the keyboard.
- *  7. Live updates for signed-in users: polls /live every 10 s while the tab
+ *  7. Leaving a page with a half-written text (a message, a review) asks
+ *     first, with the browser's own dialog.
+ *  8. Live updates for signed-in users: polls /live every 10 s while the tab
  *     is visible and someone used it in the last 20 minutes. Updates the
  *     unread badge and wallet balance (in every tab of this browser), shows
  *     new notifications with an optional sound, and re-fetches the page
@@ -280,6 +282,24 @@
         }, 200));
         // A response that does not leave the page (an error, a download) must not leave it spinning.
         busyTimers.push(setTimeout(clearBusy, 15000));
+    });
+    var unsaved = null;
+    document.addEventListener('input', function (event) {
+        var field = event.target;
+        if (field.tagName === 'TEXTAREA' && field.form && (field.form.getAttribute('method') || '').toLowerCase() === 'post' && field.value.trim() !== '') {
+            unsaved = field.form;
+        }
+    });
+    document.addEventListener('submit', function (event) {
+        if (!event.defaultPrevented) {
+            unsaved = null;
+        }
+    });
+    window.addEventListener('beforeunload', function (event) {
+        if (unsaved && document.contains(unsaved)) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
     });
     // Back/forward cache restores the page as it was, spinner included.
     window.addEventListener('pageshow', function (event) {

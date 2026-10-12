@@ -6,7 +6,7 @@
 @section('content')
     <h1>{{ $sellerName ? __('Products by :seller', ['seller' => $sellerName]) : __('Products') }}</h1>
 
-    <form class="filters" method="get" action="{{ route('products.index') }}" aria-label="{{ __('Filter products') }}">
+    <form class="filters catalogue-filters" method="get" action="{{ route('products.index') }}" aria-label="{{ __('Filter products') }}">
         <x-field name="q" :label="__('Search')" type="search" :value="$filters['q'] ?? ''" maxlength="100" />
         <x-select name="category" :label="__('Category')" :options="$categories->pluck('name', 'slug')->all()" :value="$filters['category'] ?? ''" :placeholder="__('All categories')" />
         <x-select name="sort" :label="__('Sort by')" :options="['newest' => __('Newest'), 'best' => __('Best selling'), 'price_asc' => __('Price: low to high'), 'price_desc' => __('Price: high to low'), 'title' => __('Title')]" :value="$filters['sort'] ?? 'newest'" />

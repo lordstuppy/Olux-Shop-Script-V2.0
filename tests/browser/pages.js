@@ -8,6 +8,8 @@ module.exports = {
         buyer: 'buyer@example.test',
         seller: 'seller@example.test',
         admin: 'admin@example.test',
+        // A second buyer (seeded with a balance), so purchase journeys stay under the per-email login limit.
+        customer: 'customer@example.test',
     },
     password: 'correct-horse-battery-1',
 };

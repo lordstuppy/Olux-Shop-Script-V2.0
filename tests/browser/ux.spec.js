@@ -1,7 +1,7 @@
 // UX regression checks: feedback, synchronisation between roles, session end,
 // confirmations and keyboard use (docs/ux). JavaScript on unless a test says otherwise.
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers');
+const { login, firstProductPath } = require('./helpers');
 
 test.use({ javaScriptEnabled: true });
 test.describe.configure({ mode: 'serial' });
@@ -67,6 +67,94 @@ test('when the session ends the page says so, keeps what was typed, and the form
 
     await page.getByRole('button', { name: 'Open ticket' }).click();
     await expect(page.locator('h1')).toContainText(subject);
+    await context.close();
+});
+
+test('a buyer\'s new order shows up in the staff order list without a reload', async ({ browser }) => {
+    test.setTimeout(150000);
+    const staffContext = await browser.newContext({ javaScriptEnabled: true });
+    const staff = await staffContext.newPage();
+    await login(staff, 'admin');
+    await staff.goto('/admin/orders');
+    await nextPoll(staff);
+
+    const buyerContext = await browser.newContext({ javaScriptEnabled: true });
+    const buyer = await buyerContext.newPage();
+    await login(buyer, 'buyer');
+    await buyer.goto(await firstProductPath(buyer));
+    await buyer.getByRole('button', { name: 'Add to cart' }).click();
+    await buyer.getByRole('link', { name: 'Continue to checkout' }).click();
+    await buyer.getByLabel('Shop balance').check();
+    await buyer.getByLabel(/I accept the/).check();
+    await buyer.getByRole('button', { name: /Place order and pay/ }).click();
+    const shortId = (await buyer.locator('.flash').innerText()).match(/Order ([0-9a-f]{8}) paid\./)[1];
+
+    await expect(staff.locator('#live-content')).toContainText(shortId, { timeout: 25000 });
+    await buyerContext.close();
+    await staffContext.close();
+});
+
+test('leaving a page with a half-written message asks first', async ({ page }) => {
+    await login(page, 'buyer');
+    await page.goto('/tickets/new');
+    await page.getByLabel('Message').fill('Half of a long explanation');
+    const dialog = new Promise((resolve) => page.once('dialog', (d) => { resolve(d.type()); d.dismiss(); }));
+    await page.close({ runBeforeUnload: true });
+    expect(await dialog).toBe('beforeunload');
+});
+
+// Moves the focus with Tab only, as a keyboard user would, until the check matches.
+async function tabTo(page, check, limit = 60) {
+    for (let i = 0; i < limit; i++) {
+        await page.keyboard.press('Tab');
+        if (await page.evaluate(check)) return;
+    }
+    throw new Error('not reachable with Tab: ' + check);
+}
+
+test('a purchase can be completed with the keyboard alone', async ({ page }) => {
+    await page.goto('/login');
+    await tabTo(page, () => document.activeElement.id === 'f-email');
+    await page.keyboard.type('customer@example.test');
+    await tabTo(page, () => document.activeElement.id === 'f-password');
+    await page.keyboard.type('correct-horse-battery-1');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.flash-success')).toContainText('Signed in as');
+
+    await page.goto(await firstProductPath(page));
+    await tabTo(page, () => document.activeElement.textContent.trim() === 'Add to cart');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.flash-success')).toContainText('to your cart');
+    await tabTo(page, () => document.activeElement.textContent.trim() === 'Continue to checkout');
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/\/checkout$/);
+    // One Tab stop per radio group; the arrow keys choose within it.
+    await tabTo(page, () => document.activeElement.name === 'payment_method');
+    for (let i = 0; i < 5 && await page.evaluate(() => document.activeElement.value) !== 'balance'; i++) {
+        await page.keyboard.press('ArrowDown');
+    }
+    await expect(page.getByLabel('Shop balance')).toBeChecked();
+    await tabTo(page, () => document.activeElement.name === 'accept_terms');
+    await page.keyboard.press('Space');
+    await tabTo(page, () => /Place order and pay/.test(document.activeElement.textContent));
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.flash')).toContainText(/Order [0-9a-f]{8} paid\./);
+});
+
+test('a purchase can be completed on a phone', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: true, viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    await login(page, 'customer');
+    await page.goto('/products');
+    await page.locator('article.product-card').first().tap({ position: { x: 20, y: 120 } }); // the whole card is the link
+    await expect(page.getByRole('button', { name: 'Add to cart' })).toBeVisible();
+    await page.getByRole('button', { name: 'Add to cart' }).tap();
+    await page.getByRole('link', { name: 'Continue to checkout' }).tap();
+    await page.getByLabel('Shop balance').tap();
+    await page.getByLabel(/I accept the/).tap();
+    await page.getByRole('button', { name: /Place order and pay/ }).tap();
+    await expect(page.locator('.flash')).toContainText(/Order [0-9a-f]{8} paid\./);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     await context.close();
 });
 
