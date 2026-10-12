@@ -1,0 +1,96 @@
+{
+  "audit": "Performance, code quality and engineering best practices",
+  "generated": "2026-10-12",
+  "tested_revision": {
+    "baseline_code": "e224388",
+    "candidate_code": "de3000b",
+    "candidate_runtime_config": "577d35f (nginx template, mounted by compose)",
+    "app_image": "sha256:3276b8e01c84ff04c693566e348210b168e4c0671b7a05d955d940dc12a831c1 (330 MB, sandbox build with Composer installing from git)",
+    "web_image": "sha256:d32c84c3ad54d15f6636edec568912a560b6ffffa4026ab0cdbd55f822d75abb",
+    "baseline_app_image": "sha256:5dbe52973f0865bf78b2e51358e81ee42881f4da04b343f65879d476558ab94f (1.01 GB)"
+  },
+  "statuses": ["PASS", "FAIL", "BLOCKED", "NOT VERIFIED", "NOT APPLICABLE"],
+  "decision": "BLOCKED - DO NOT SHIP",
+  "summary": {"total": 14, "PASS": 11, "FAIL": 0, "BLOCKED": 1, "NOT VERIFIED": 2, "NOT APPLICABLE": 0},
+  "gates": [
+    {
+      "id": "P1", "title": "Architecture and code quality", "status": "PASS",
+      "criteria": "No unresolved release-blocking code-quality defect, resource leak, correctness issue or high-impact architectural inefficiency.",
+      "evidence": ["code-quality-report.md", "performance-findings.md (PERF-01, 02, 11, 12, 17, 21)", "PHPStan level 5: 0 errors"],
+      "open": ["PERF-23 database-backed cache/sessions (recommendation for higher scale)", "duplicated paid-state lists (Low)"]
+    },
+    {
+      "id": "P2", "title": "Algorithmic and runtime performance", "status": "PASS",
+      "criteria": "Critical paths meet the documented (provisional) targets; high-impact inefficiencies resolved.",
+      "evidence": ["evidence/bench-after.json", "evidence/bench-after-run2.json: 0 pages over budget in both runs", "PERF-01: 18.6 s -> 0.4 s; PERF-02: 859 -> 91 ms; PERF-06: 891 -> 37 ms"],
+      "note": "Targets are provisional (see P14)."
+    },
+    {
+      "id": "P3", "title": "Database queries, indexes and data access", "status": "PASS",
+      "criteria": "High-impact access paths inspected with plans on representative data; every index and rewrite justified by evidence.",
+      "evidence": ["database-performance-audit.md", "evidence/explain-baseline.txt", "evidence/explain-after.txt", "query-count guard tests"]
+    },
+    {
+      "id": "P4", "title": "Caching strategy", "status": "PASS",
+      "criteria": "Caches justified, bounded, invalidated correctly, isolated between users; no auth, entitlement or financial state cached.",
+      "evidence": ["Sitemap 1 h (public data only)", "Seller filter list 10 min (public data, filtering still enforces visibility)", "Sales ranking 10 min (ranking only, never prices or stock)", "Public images without session or cookies; previews private, no-store", "Expired cache entries pruned hourly (PERF-15)", "HTML no-cache, private"]
+    },
+    {
+      "id": "P5", "title": "Compression and network transfer", "status": "PASS",
+      "criteria": "High-volume responses use an appropriate, verified transfer strategy.",
+      "evidence": ["gzip for CSS/JS/SVG verified (Content-Encoding, Vary)", "Sitemap gzip 2.07 MB -> 154 KB", "Catalogue HTML 42 KB -> 19 KB", "Round trips per page cut by about 3x (PERF-03)", "HTML compression off on purpose (BREACH, PERF-22)"]
+    },
+    {
+      "id": "P6", "title": "Images, media and static assets", "status": "PASS",
+      "criteria": "Critical pages meet asset budgets without image degradation or accessibility regressions.",
+      "evidence": ["asset-optimization-report.md", "CSS 17.9 KB / JS 20.5 KB within budgets", "WebP variants at upload, dimensions on every image, no lazy image above the fold", "Lab LCP catalogue 592 -> 436 ms"]
+    },
+    {
+      "id": "P7", "title": "Frontend rendering and Web Vitals", "status": "NOT VERIFIED",
+      "criteria": "Important journeys meet agreed Web Vitals budgets (field data at the 75th percentile where available).",
+      "evidence": ["evidence/webvitals-after.json: lab LCP 392-448 ms, CLS <= 0.026, TBT <= 64 ms, INP (lab approximation) <= 32 ms on home, catalogue, search, product"],
+      "reason": "Only lab data on one profile exists; no real-user (field) data before launch, and the budgets are provisional. Lab values are not presented as field data."
+    },
+    {
+      "id": "P8", "title": "Backend APIs and service integration", "status": "PASS",
+      "criteria": "Every critical integration has documented, tested handling for normal operation, rate limiting, timeouts, retries, duplicates and provider failure.",
+      "evidence": ["integration-best-practices.md (vendor docs consulted)", "Shkeeper: 10 s / 5 s connect timeouts, no redirects, idempotent invoice creation, webhook HMAC + dedup, polling stop after 3 failures (PERF-14)", "Simulation phase 2 and 8 scenarios on the candidate image"]
+    },
+    {
+      "id": "P9", "title": "Third-party package quality and usage", "status": "PASS",
+      "criteria": "Important dependencies used per their documentation, without unjustified performance or maintenance risk.",
+      "evidence": ["All direct Composer dependencies up to date (composer outdated --direct)", "Deprecated PDO constant avoided on PHP >= 8.4", "dompdf only in a queued job", "Security gate: advisories (composer, npm, OSV)"]
+    },
+    {
+      "id": "P10", "title": "Memory, CPU, concurrency and resource management", "status": "NOT VERIFIED",
+      "criteria": "Within defined resource limits at the target workload; predictable degradation; recovery without leaks.",
+      "evidence": ["evidence/staged-load-after.json: 20 req/s p95 123 ms, 40 req/s p95 550 ms, saturation at 60 req/s, no errors, self-abort works", "Recovery after load: 82-107 ms, 68 MB app container, no leftover DB connections", "evidence/slow-downloads.json: no FPM worker held by slow clients; download concurrency bounded (PERF-19)"],
+      "reason": "No target workload is defined, the sandbox shares 4 cores with the load generator, and no multi-hour soak test was run. Capacity on production hardware is unknown."
+    },
+    {
+      "id": "P11", "title": "Reliability and failure-path efficiency", "status": "PASS",
+      "criteria": "Critical workflows fail safely, without retry amplification, preserving consistency.",
+      "evidence": ["PERF-14 polling stop tests", "PERF-11 sweeps fixed", "Queue: bounded tries with backoff, retry_after 90 s > worker timeout 60 s", "Simulation recovery phase (database, queue, mail and Shkeeper outages, disk full) on the candidate image"]
+    },
+    {
+      "id": "P12", "title": "Build, bundle and deployment efficiency", "status": "PASS",
+      "criteria": "Artifacts contain only needed components, builds reproducible, size and startup budgets met.",
+      "evidence": ["App image 1.01 GB -> 330 MB (budget 400 MB), web image 93.7 MB (budget 120 MB)", "Pinned base images, composer.lock, multi-stage build", "Migrations on the full dataset: 2.0 s + 0.8 s + 0.05 s, indexes built concurrently", "Health checks on app and db"],
+      "note": "Measured on the sandbox build (Composer from git); the CI job checks the dist-based build against the same budget."
+    },
+    {
+      "id": "P13", "title": "Maintainability, types, testing and standards", "status": "PASS",
+      "criteria": "No high-impact correctness or maintainability defect; mandatory quality checks pass.",
+      "evidence": ["PHPUnit 313/313", "PHPStan level 5: 0 (from 392)", "Pint, ASCII check", "19 performance regression tests, 15 failed before the fixes"]
+    },
+    {
+      "id": "P14", "title": "Performance regression and benchmark verification", "status": "BLOCKED",
+      "criteria": "Required benchmarks complete; agreed budgets satisfied; no unacceptable regression.",
+      "evidence": ["Baseline and candidate measured on identical data and stack (performance-baselines.md)", "All provisional budgets met in two runs; run-to-run noise up to 18-25%"],
+      "reason": "The budgets are proposed by this audit and need the owner's approval (release policy: agreed budgets). Measurements on production-like hardware with a separate load generator are also required before the budgets can be called met."
+    }
+  ],
+  "ci": {"job": "performance", "script": "scripts/performance-gate.sh", "strict_mode": "GATE_STRICT=1 fails on any NOT VERIFIED check"},
+  "exceptions_approved": [],
+  "notes": "No exception was approved; the audit does not approve its own exceptions."
+}

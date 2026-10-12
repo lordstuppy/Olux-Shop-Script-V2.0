@@ -4,7 +4,7 @@
 
 | Process | Command | Notes |
 |---|---|---|
-| Web | PHP-FPM behind nginx (`docker/nginx/default.conf`) | Only `public/index.php` is executable |
+| Web | PHP-FPM behind nginx (`docker/nginx/default.conf.template`) | Only `public/index.php` is executable |
 | Queue worker | `php artisan queue:work --tries=1` | Delivery, invoices, emails, webhook retries. Jobs and emails define their own retries and backoff (emails: 5 tries over about 20 minutes) |
 | Scheduler | `php artisan schedule:work` (or cron `* * * * * php artisan schedule:run`) | See the table below |
 
@@ -13,10 +13,12 @@ Scheduled tasks (`routes/console.php`):
 | Task | Frequency | Purpose |
 |---|---|---|
 | `shop:expire-orders` | every minute | Expires unpaid orders past `SHOP_ORDER_TTL_MINUTES`; releases stock and coupon reservations |
-| `shop:reconcile-payments` | every 5 minutes | Polls Shkeeper invoice status for pending payments (covers lost webhooks) |
+| `shop:reconcile-payments` | every 5 minutes, in the background | Polls Shkeeper invoice status for pending payments (covers lost webhooks), newest first; stops after 3 failed polls in a row (Shkeeper down) and tries again next run |
 | `shop:retry-webhooks` | every minute | Re-queues failed webhook events whose backoff elapsed |
 | `shop:reconcile-payouts` | daily 03:15 | Seller ledger vs completed orders and payouts; exits 1 and logs errors on mismatch |
-| `shop:reconcile-shkeeper-transfers` | every 5 minutes | Polls Shkeeper for payouts and crypto refunds whose callback has not arrived |
+| `shop:reconcile-shkeeper-transfers` | every 5 minutes, in the background | Polls Shkeeper for payouts and crypto refunds whose callback has not arrived; same stop rule |
+| `shop:refresh-sales-ranking` | every 10 minutes | Recomputes units sold per product for the "best selling" sort and related products (rankings lag sales by up to 10 minutes) |
+| `shop:prune-cache` | hourly | Deletes expired entries from the database cache table (per-address rate-limit counters would otherwise stay forever) |
 | `shop:subscription-reminders` | hourly | Emails buyers whose subscription access ends within `SHOP_RENEWAL_REMINDER_DAYS` |
 | `shop:escalate-disputes` | every 15 minutes | Hands disputes to staff when the seller missed the response deadline |
 | `shop:prune-gateway-logs` | daily 04:10 | Deletes gateway log entries older than 90 days |
@@ -319,6 +321,28 @@ is meant for development only.
   EXIF metadata such as GPS positions).
 - `/.well-known/security.txt` names `SHOP_SECURITY_EMAIL` as the
   vulnerability contact (RFC 9116).
+- Images of listed products and `/sitemap.xml` are served without a session
+  (no cookies), so a CDN or shared cache may keep them. The sitemap is
+  rendered at most once an hour and sent gzip-compressed (it holds no secrets).
+- Downloads go through PHP (authorisation, download limits) and nginx buffers
+  them in `/tmp` (a tmpfs, so memory), which frees the PHP worker at once even
+  for a slow client. nginx allows 6 concurrent downloads per client address
+  (429 beyond that, before a download is counted).
+
+## Database performance settings
+
+- Set `random_page_cost = 1.1` on the PostgreSQL server (docker-compose.yml
+  does; on a managed database set it in its parameter group). With the default
+  of 4 the planner skips the trigram indexes of the catalogue search: 60-130 ms
+  sequential scans instead of 2-4 ms at 20,000 products
+  (docs/performance/database-performance-audit.md).
+- PDO sends each query with its parameters in one round trip
+  (`ATTR_DISABLE_PREPARES` in `config/database.php`). This also works behind
+  PgBouncer in transaction mode.
+- Indexes added by migrations on a live shop are built `CONCURRENTLY`, so
+  writes continue during the deploy.
+- The performance dataset, page benchmark and query plans in
+  `tests/performance/` reproduce the measurements; see its README.
 
 ## Reverse proxy, client addresses and TLS
 

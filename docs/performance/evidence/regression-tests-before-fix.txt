@@ -1,9 +1,9 @@
 Performance regression tests run against the code BEFORE the fixes (revision e224388,
-git worktree with the new test files copied in; PHPUnit 12, PostgreSQL 16 test database).
+git worktree with the final test files copied in; PHPUnit 12, PostgreSQL 16 test database), 2026-10-12.
 Command: php artisan test tests/Feature/PerformanceAuditTest.php tests/Feature/DisputeTest.php tests/Feature/FilesAndSubscriptionsTest.php --filter 'perf|test_images_are_reencoded'
 
-Result: failed, 17 tests, 4 passed, 13 failed.
-The 4 that pass before the fixes are guard tests (catalogue, product, account/seller and admin pages
+Result: failed, 19 tests, 4 passed, 15 failed.
+The 4 that pass before the fixes are guard tests (catalogue/home/product, account and seller pages, admin lists
 had no growing query counts); they keep it that way.
 
 Failures before the fixes:
@@ -11,6 +11,8 @@ Failures before the fixes:
 - test_perf04_cart_queries_do_not_grow_with_lines: Queries for http://localhost/cart grow with the data: 3 -> 8 Failed asserting that 8 is identical to 3.
 - test_perf12_top_lists_are_filtered_by_currency_in_sql: Failed asserting that two arrays are identical. --- Expected +++ Actual @@ @@ -Array &0 [ - 0 => 'EUR', - 1 => 'EUR', -] +Array &0 []
 - test_perf06_sitemap_is_cached_compressed_and_sessionless: Header [Cache-Control] was found, but value [no-cache, private] does not match [max-age=3600, public]. Failed asserting that two strings are equal. --- Expected +++ Actual @@ @@ -'max-age=3600, public' +'no-cache, private'
+- test_perf16_licence_key_import_uses_a_fixed_number_of_queries: Failed asserting that 866 is less than 25.
+- test_perf18_admin_dashboard_version_is_one_query_and_still_tracks_changes: Failed asserting that actual size 6 matches expected size 1.
 - test_perf02_sales_ranking_counts_paid_units_only: The command "shop:refresh-sales-ranking" does not exist.
 - test_perf05_seller_filter_lists_the_top_sellers_and_the_selected_one: Undefined constant App\Services\CatalogService::FILTER_SELLERS
 - test_perf03_earning_sql_matches_earning_for: Call to undefined method App\Services\PayoutService::earningSql()
@@ -21,4 +23,4 @@ Failures before the fixes:
 - test_perf11_several_overdue_disputes_escalate_in_one_sweep: Attempted to lazy load [buyer] on model [App\Models\Dispute] but lazy loading is disabled.
 - test_images_are_reencoded_and_served: Unknown named parameter $preview
 
-After the fixes (revision ad68a6a and later): all pass; full suite 312/312 (see performance-remediation-log.md).
+On the candidate (de3000b and later) all pass; full suite 313/313 (performance-remediation-log.md).

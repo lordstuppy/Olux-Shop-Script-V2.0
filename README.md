@@ -230,6 +230,9 @@ controls: Argon2id, CSRF, rate limits, CSP, signed downloads, audit log and
 webhook verification. The security audit with its release gates, findings,
 residual risks and evidence is in [docs/security/](docs/security/security-audit-summary.md);
 run the same automated checks locally with `scripts/security-gate.sh`.
+The performance and code quality audit (benchmarks, query plans, budgets and
+gates) is in [docs/performance/](docs/performance/performance-audit-summary.md);
+its CI gate is `scripts/performance-gate.sh`.
 
 ## Legal pages
 
