@@ -185,7 +185,9 @@ def statements_for(session, path):
             # Extended protocol: parse and bind (planning) are separate round trips; their time counts towards the next execute.
             pending_time = by_pid.setdefault(pid + ':pre', [0.0])
             pending_time[0] += float(ms or 0)
-            if kind.startswith('parse'):
+            # A named prepared statement (PDO's default) is its own round trip;
+            # an unnamed one (PQexecParams) travels with its bind and execute.
+            if kind.startswith('parse pdo_stmt_'):
                 stmts.append({'ms': 0.0, 'sql': 'PREPARE', 'kind': 'parse'})
             continue
         pre = by_pid.pop(pid + ':pre', [0.0])[0]

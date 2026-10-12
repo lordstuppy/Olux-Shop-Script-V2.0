@@ -8,6 +8,8 @@
 
 \echo '### Q01 catalog, newest first (page 1)'
 EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT * FROM products WHERE :visible ORDER BY created_at DESC, id DESC LIMIT 12;
+\echo '### Q01b catalog, page 50 (deep page: still sorts)'
+EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT * FROM products WHERE :visible ORDER BY created_at DESC, id DESC LIMIT 12 OFFSET 588;
 \echo '### Q02 catalog count'
 EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) SELECT count(*) FROM products WHERE :visible;
 \set units_sold '(SELECT COALESCE(SUM(order_items.quantity), 0) FROM order_items JOIN orders ON orders.id = order_items.order_id WHERE order_items.product_id = products.id AND orders.status IN (''paid'', ''delivered'', ''partially_refunded''))'
