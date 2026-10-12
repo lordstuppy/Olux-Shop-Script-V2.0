@@ -7,7 +7,7 @@ The inventory of the user interface, and the verification status of every critic
 | Aspect | What the application uses |
 |---|---|
 | Rendering | Server-rendered Blade pages (Laravel 13); every page and every flow works without JavaScript |
-| Script | One optional file, `public/js/enhance.js` (27.9 KB, 7.3 KB gzip), no framework |
+| Script | One optional file, `public/js/enhance.js` (29.4 KB, 7.7 KB gzip; 20.5 KB and 5.6 KB before this audit), no framework |
 | Styles | One stylesheet, `public/css/app.css`, with colour tokens for light and dark |
 | Fonts and assets | System fonts; no external fonts, scripts or styles (blocked by the Content Security Policy) |
 | Components | Blade components `field`, `select`, `textarea`, `status`, `confirm` (new) and partials (flash messages, product card, admin and seller menus, column chart) |

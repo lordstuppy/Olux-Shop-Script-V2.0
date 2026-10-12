@@ -1,0 +1,266 @@
+{
+  "audit": "UX, UI quality and product usability",
+  "generated": "2026-10-12",
+  "tested_revision": {
+    "baseline_code": "17a3380",
+    "candidate_code": "66ce3a5 (later commits: reports and evidence only)",
+    "browser": "Chromium (Playwright 1.56.1), axe-core 4.10.2",
+    "simulation_image": "digital-goods-shop 7596c7c4ee64, web c401e0174446 (built from c827db2; the later JavaScript and label changes do not affect the script-free simulation)"
+  },
+  "statuses": [
+    "PASS",
+    "FAIL",
+    "BLOCKED",
+    "NOT VERIFIED",
+    "NOT APPLICABLE"
+  ],
+  "decision": "BLOCKED - DO NOT SHIP",
+  "summary": {
+    "total": 15,
+    "PASS": 13,
+    "FAIL": 0,
+    "BLOCKED": 2,
+    "NOT VERIFIED": 0,
+    "NOT APPLICABLE": 0
+  },
+  "findings": {
+    "total": 24,
+    "High": 3,
+    "Medium": 4,
+    "Low": 14,
+    "Info": 3,
+    "open": [
+      "UX-15 (Low)",
+      "UX-16 (Low)",
+      "UX-17 (Low)",
+      "UX-18 (Low)",
+      "UX-09 remainder (Low)"
+    ],
+    "open_high_or_medium": 0
+  },
+  "gates": [
+    {
+      "id": "U1",
+      "title": "Complete UI and workflow inventory",
+      "status": "PASS",
+      "criteria": "Every critical user workflow inventoried and tested; no critical journey blocked by an unresolved usability defect.",
+      "evidence": [
+        "ux-workflow-inventory.md: 85 pages, 105 actions, 30 critical journeys for buyer, seller and staff",
+        "Crawl of 73 pages x 4 roles (evidence/crawl-after.json)",
+        "Every journey mapped to a browser test, PHPUnit test or simulation scenario"
+      ]
+    },
+    {
+      "id": "U2",
+      "title": "Interaction feedback and action states",
+      "status": "PASS",
+      "criteria": "Critical interactions give accurate feedback and leave a consistent state after success, failure or cancellation.",
+      "evidence": [
+        "UX-02 confirmation for 10 irreversible actions (no JS needed), cancel = close",
+        "UX-06 second submits dropped on every POST form",
+        "Busy indicator after 200 ms, cleared on errors, downloads and back/forward cache",
+        "Success messages come from the server after the change",
+        "Disabled payment option names its reason"
+      ],
+      "open": [
+        "UX-18 server-side duplicate protection for two staff money forms (Low, not reproduced)"
+      ]
+    },
+    {
+      "id": "U3",
+      "title": "Forms, passwords and input",
+      "status": "PASS",
+      "criteria": "Critical forms completable with supported input methods; validation failures understandable and recoverable.",
+      "evidence": [
+        "Show/hide password: keyboard (Enter, Space), aria-pressed and label, value kept, masked again on submit, spellcheck off while visible",
+        "autocomplete: email, current-password, new-password, one-time-code; inputmode decimal and numeric",
+        "Password rules stated before submission; reset answers known and unknown emails alike (simulation P3)",
+        "Server-side validation, field messages with aria-describedby, error summary focused (UX-07)",
+        "Input kept after errors; unsaved long text guarded (UX-12)"
+      ],
+      "open": [
+        "UX-17 optional fields not marked consistently (Low)"
+      ]
+    },
+    {
+      "id": "U4",
+      "title": "Automatic refresh and real-time synchronisation",
+      "status": "PASS",
+      "criteria": "Workflows needing automatic updates meet the documented freshness target, and stay correct, authorised and recoverable.",
+      "evidence": [
+        "ux-realtime-sync-report.md: polling every 10 s, 26 pages, documented targets",
+        "Staff to user (payment, ticket reply, product approval) and user to staff (new order) tested in the browser",
+        "Several tabs, connection loss and recovery, session end, rate limit tested",
+        "Authorisation of versions tested (NotificationCentreTest, UxAuditTest)",
+        "UX-04 fixed: seller pages were stale"
+      ],
+      "open": [
+        "UX-15 header navigation after a role change updates on the next page load (Low)"
+      ]
+    },
+    {
+      "id": "U5",
+      "title": "Notifications and alerts",
+      "status": "PASS",
+      "criteria": "Notifications accurate, timely, accessible and consistent with the underlying events.",
+      "evidence": [
+        "Toasts only for real notifications, once per notification across tabs; badge equal in all tabs (live.spec.js)",
+        "Notification centre keeps every message; links stay inside the shop; secret links excluded (NotificationCentreTest)",
+        "One polite status region; flash messages role=status or alert; background refreshes announced once, briefly",
+        "Sound and seller email preferences respected; UX-24 label fixed",
+        "UX-23 no false 'Connection lost' when rate-limited"
+      ],
+      "not_applicable": [
+        "Push notifications: not offered"
+      ]
+    },
+    {
+      "id": "U6",
+      "title": "Responsive desktop, tablet and mobile",
+      "status": "PASS",
+      "criteria": "Critical workflows work at supported viewport sizes without inaccessible controls, clipping, unusable forms or broken navigation.",
+      "evidence": [
+        "ux-responsive-audit.md: 6 viewports incl. landscape, both schemes; 0 overflow, 0 axe violations, text spacing pass",
+        "Purchase completed on a 375 px touch viewport (ux.spec.js)",
+        "UX-08, 09, 10, 11 fixed"
+      ],
+      "limits": [
+        "Chromium device emulation only; no iOS Safari, Firefox or real devices"
+      ]
+    },
+    {
+      "id": "U7",
+      "title": "Dark mode, themes and visual consistency",
+      "status": "PASS",
+      "criteria": "Required themes render correctly and consistently; coherent design system with verified contrast and states.",
+      "evidence": [
+        "Light, dark, and same-as-device; server-rendered attribute, so no flash of the wrong theme",
+        "axe contrast in dark at 375 and 1280 px (crawl) and at 1280 px in CI: 0 violations, confirmation panels opened",
+        "Theme setting survives reloads and applies to every page (ux.spec.js)",
+        "One stylesheet with colour tokens; components reused (field, select, textarea, status, confirm)"
+      ],
+      "decisions": [
+        "UX-19 theme per browser, set in the footer"
+      ]
+    },
+    {
+      "id": "U8",
+      "title": "Accessibility (WCAG 2.2 AA target)",
+      "status": "BLOCKED",
+      "criteria": "Critical barriers resolved, automated checks pass, required manual checks documented.",
+      "evidence": [
+        "axe WCAG 2.2 AA: 0 violations in CI (light, dark, phone) and in the crawl (was 26, UX-01)",
+        "Keyboard-only purchase journey; focus management; search, confirmations and toggle by keyboard",
+        "UX-01, 05, 07, 22 fixed"
+      ],
+      "reason": "No screen reader (NVDA, JAWS, VoiceOver, TalkBack) is available in this environment, and automated scans alone do not establish conformance. The screen-reader script in ux-accessibility-report.md has to be run."
+    },
+    {
+      "id": "U9",
+      "title": "Navigation, discoverability and information architecture",
+      "status": "PASS",
+      "criteria": "Critical journeys completable without broken navigation, confusing labels or dead ends.",
+      "evidence": [
+        "Current page marked (aria-current) in main and section menus; section menus scroll to the current entry on phones",
+        "Deep link kept through the sign-in (ux.spec.js); filters live in the URL, so back and forward keep them",
+        "404, 403, 419, 429 and 500 pages say what happened, with a way back and a request id",
+        "Search: empty result with 'Clear filters'; result count announced",
+        "Role menus show only permitted sections (StaffRolesTest)"
+      ]
+    },
+    {
+      "id": "U10",
+      "title": "Data freshness, consistency and state management",
+      "status": "PASS",
+      "criteria": "Critical views stay consistent with the server within their freshness requirement; concurrency and failure do not corrupt the interface.",
+      "evidence": [
+        "Single source of truth (server); no client cache, no optimistic updates",
+        "One poll and one refresh at a time; version compares state, so missed or repeated updates are harmless",
+        "Typing protected from refresh; form tokens renewed after re-sign-in",
+        "Financial and permission state always read from the server; concurrent staff decisions refused with a message (UxAuditTest)"
+      ]
+    },
+    {
+      "id": "U11",
+      "title": "Loading, empty, offline and error states",
+      "status": "PASS",
+      "criteria": "Every critical workflow has meaningful loading, success, empty and error behaviour.",
+      "evidence": [
+        "Busy indicator on slow submits; no skeletons that could misrepresent content",
+        "Empty states with a next step (cart, orders, wishlist, notifications, search, seller lists)",
+        "Connection lost and restored messages with automatic retry and back-off",
+        "Expired session: warning before (UX-22), message after (UX-03), explained 419 page",
+        "Error pages without technical detail (request id only); partial delivery failure does not block the other items (simulation P1)"
+      ]
+    },
+    {
+      "id": "U12",
+      "title": "Admin and multi-role experience",
+      "status": "PASS",
+      "criteria": "Every role completes its authorised workflows; the UI reflects real permissions and backend state.",
+      "evidence": [
+        "Five staff roles with permission-filtered menus and server-side checks (StaffRolesTest)",
+        "Destructive staff actions confirmed (UX-02); sensitive ones need a recent password",
+        "Live staff lists (orders, payouts, disputes, tickets, products, sellers, reviews)",
+        "Concurrent decisions refused with a message (UxAuditTest::test_u12)",
+        "Audit log with actor and change; bulk actions report skipped rows"
+      ],
+      "open": [
+        "UX-15 (Low)"
+      ]
+    },
+    {
+      "id": "U13",
+      "title": "Internationalisation and content quality",
+      "status": "PASS",
+      "criteria": "Supported locales present correct, consistent content and usable layouts.",
+      "evidence": [
+        "One supported locale (English); every string translatable and listed in lang/en.json (TranslationCatalogTest)",
+        "Plurals via trans_choice; fixed money and date formats, times labelled UTC",
+        "Text spacing (WCAG 1.4.12) passes on 73 pages; buttons wrap",
+        "UX-13 and UX-24 wording fixes"
+      ],
+      "not_applicable": [
+        "Right-to-left layout and further locales: not supported by the product"
+      ],
+      "open": [
+        "UX-16 times in UTC only (Low, product decision)"
+      ]
+    },
+    {
+      "id": "U14",
+      "title": "Real-world UX testing",
+      "status": "BLOCKED",
+      "criteria": "Critical journeys pass reproducible end-to-end tests; no unresolved high-impact usability defect.",
+      "evidence": [
+        "Browser tests for: first purchase, login and recovery, editing and deleting, staff changes seen by users, two sessions, failed submission, network loss and recovery, phone, theme, keyboard-only, deep links, session expiry",
+        "Simulation: 101 scenarios on the production stack",
+        "Screenshots, console errors and failed requests recorded per page (crawl)"
+      ],
+      "reason": "Two required parts could not be done here: screen-reader behaviour of the important interactions (no screen reader available) and sessions with real users (none available)."
+    },
+    {
+      "id": "U15",
+      "title": "Final UX regression review",
+      "status": "PASS",
+      "criteria": "The candidate passes the mandatory UX regression suite without unacceptable regressions.",
+      "evidence": [
+        "Browser suite 37/37 on 66ce3a5 (evidence/browser-suite-final.txt)",
+        "Crawl 584 page views on 66ce3a5: 0 overflow, 0 axe violations, 0 console errors (evidence/crawl-after.json)",
+        "PHPUnit 322/322; Pint, PHPStan level 5, ASCII clean",
+        "Simulation 101/101 (evidence/simulation-ux-candidate.md)",
+        "Security gate 9/9 PASS (evidence/security-gate-ux-candidate.json)",
+        "Performance gate: asset budgets met (enhance.js 29,437 B / 7,668 B gzip of 30,000 / 8,000); Web Vitals A/B unchanged within noise (evidence/webvitals-ab.json)",
+        "Regression found and fixed during the audit: UX-14"
+      ],
+      "note": "enhance.js uses 98 % of its size budget"
+    }
+  ],
+  "ci": {
+    "job": "browser",
+    "workflow": ".github/workflows/ci.yml",
+    "suite": "tests/browser/run.sh: nojs.spec.js, live.spec.js, ux.spec.js, a11y.spec.js in projects light, dark and mobile; screenshots and traces uploaded on failure"
+  },
+  "exceptions_approved": [],
+  "notes": "No exception was approved; the audit does not approve its own exceptions."
+}

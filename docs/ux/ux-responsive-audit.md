@@ -26,10 +26,7 @@
 - **Unnamed controls:** buttons or links without an accessible name.
 - **axe-core** with WCAG 2.2 AA tags at 375 and 1280 px.
 - **Text spacing (after only):** WCAG 1.4.12 at 375 px (line height 1.5, letter spacing 0.12 em, word spacing 0.16 em, paragraph spacing 2 em), looking for overflow and cut-off text.
-- **Screenshots** of every page at 375 and 1280 px, reviewed by eye for the key pages:
-  - catalogue, product, cart, checkout, order;
-  - seller dashboard and product form;
-  - admin dashboard, orders, gateway and categories.
+- **Screenshots** of every page at 375 and 1280 px. The ones looked at by eye are listed in [ux-regression-report.md](ux-regression-report.md#visual-review); the rest are covered by the automatic layout checks above.
 
 **Interaction on a phone:** `ux.spec.js` completes a purchase at 375 px with touch:
 
@@ -45,7 +42,7 @@
 | Page overflow or elements past the edge | 0 | 0 (after fixing UX-14, a regression of this audit, and UX-11) |
 | axe WCAG 2.2 AA violations | 26 (`scrollable-region-focusable` at 375 px, 13 per scheme) | 0 |
 | axe target-size (2.5.8) violations | 0 | 0 |
-| Touch targets below 44 px (320, 375 and 768 px) | 438 instances | 211 instances (the card overlay is not counted) |
+| Touch targets below 44 px (320, 375 and 768 px) | 438 instances | 207 instances (the card overlay is not counted) |
 | Console errors or failed requests (excluding the deliberate 404 page) | 0 | 0 |
 | Unnamed controls | 0 | 0 |
 | Text spacing: overflow or cut-off text | not measured | 0 of 73 pages |

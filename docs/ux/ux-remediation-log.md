@@ -17,7 +17,7 @@ Each change, in the order it was made, with its regression test and the verifica
 | UX-06 second submits | e4b35b4 | `enhance.js` (all POST forms, 10 s or until the page changes) | `ux.spec.js` "a form sent twice ..." | 2 POSTs | 1 |
 | UX-07 error summary focus | e4b35b4 | `enhance.js` | `ux.spec.js` "the error summary takes the focus ..." | Focus at the top of the document | On the summary |
 | UX-08 catalogue on phones | e4b35b4, c827db2 | `products/index` ("Clear filters", class), `app.css` | `UxAuditTest::test_ux07_*`; crawl | First product at 837 px | 651 px |
-| UX-09 touch targets | e4b35b4 | `partials/product-card`, `app.css` | `ux.spec.js` "a purchase can be completed on a phone" (taps the card body) | 438 below 44 px | 211 |
+| UX-09 touch targets | e4b35b4 | `partials/product-card`, `app.css` | `ux.spec.js` "a purchase can be completed on a phone" (taps the card body) | 438 below 44 px | 207 |
 | UX-13 stray space | e4b35b4 | `orders/show` | `UxAuditTest::test_ux08_*` | "Paid ." | "Paid -" |
 | Translation catalogue | e4b35b4, 3a382f8 | `lang/en.json` (`shop:lang-extract`) | `TranslationCatalogTest` | - | Pass |
 | CI | e4b35b4 | `ci.yml` (artifact upload on failure), `playwright.config.js` (phone project, traces) | The CI job `browser` runs `ux.spec.js` and `a11y.spec.js` in 3 projects | - | - |

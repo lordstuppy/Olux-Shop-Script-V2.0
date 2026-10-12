@@ -248,7 +248,7 @@ After an approval the seller got a notification toast, while the list on screen 
 
 **Counted on touch viewports (320, 375 and 768 px):**
 
-- below 44 px: 438 -> 211 instances;
+- below 44 px: 438 -> 207 instances;
 - the site name is gone from the list.
 
 The crawl measures the link element itself, so the card overlay is not counted (`ux.spec.js` taps the card body).
