@@ -398,4 +398,3 @@ class PerformanceAuditTest extends TestCase
         $this->assertNotSame($second, $this->getJson('/live?path=/admin')->json('version'));
     }
 }
-

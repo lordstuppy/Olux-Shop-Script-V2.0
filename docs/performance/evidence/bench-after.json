@@ -1,8 +1,8 @@
 {
  "meta": {
-  "generated": "2026-10-12T13:02:37Z",
-  "revision": "dfcf4b9f4d648ef260974695d971f1d38d480fa5",
-  "image": "sha256:511fe368e8a798262019f38d0f32e348e9a37e6d579ba5d3fc8719c4bac824b9",
+  "generated": "2026-10-12T13:13:42Z",
+  "revision": "de3000b4055982721338e0a0070ae48b64393953",
+  "image": "sha256:3276b8e01c84ff04c693566e348210b168e4c0671b7a05d955d940dc12a831c1",
   "runs": 30,
   "warmup": 3,
   "cpus": 4,
@@ -12,7 +12,7 @@
    "order_items": 250000,
    "users": 50565,
    "audit_log": 1001037,
-   "user_notifications": 500007,
+   "user_notifications": 500011,
    "product_reviews": 40000,
    "seller_ledger_entries": 420000,
    "webhook_events": 200000
@@ -26,20 +26,20 @@
    "status": 200,
    "queries": 8,
    "round_trips": 9,
-   "query_ms": 13.8,
+   "query_ms": 16.9,
    "slowest": [
     {
-     "ms": 5.483,
+     "ms": 5.786,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc limit 6",
      "kind": "execute"
     },
     {
-     "ms": 3.07,
+     "ms": 4.8709999999999996,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.821,
+     "ms": 2.173,
      "sql": "select * from \"product_images\" where \"product_images\".\"product_id\" in (195, 196, 197, 198, 199, 200) order by \"position\" asc",
      "kind": "execute"
     }
@@ -55,12 +55,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 54.6,
-   "p95_ms": 73.2,
-   "p99_ms": 74.7,
-   "max_ms": 75.2,
-   "mean_ms": 56.8,
-   "stdev_ms": 8.2,
+   "p50_ms": 52.0,
+   "p95_ms": 60.1,
+   "p99_ms": 66.1,
+   "max_ms": 68.2,
+   "mean_ms": 52.4,
+   "stdev_ms": 5.2,
    "bytes_gzip": 8357
   },
   {
@@ -70,20 +70,20 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 31.8,
+   "query_ms": 32.2,
    "slowest": [
     {
-     "ms": 21.067,
+     "ms": 21.555999999999997,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
      "kind": "execute"
     },
     {
-     "ms": 3.7670000000000003,
+     "ms": 3.1949999999999994,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.123,
+     "ms": 2.629,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     }
@@ -101,12 +101,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 77.8,
-   "p95_ms": 91.1,
-   "p99_ms": 96.0,
-   "max_ms": 97.8,
-   "mean_ms": 78.9,
-   "stdev_ms": 8.1,
+   "p50_ms": 88.3,
+   "p95_ms": 115.4,
+   "p99_ms": 124.8,
+   "max_ms": 126.5,
+   "mean_ms": 90.6,
+   "stdev_ms": 12.5,
    "bytes_gzip": 19126
   },
   {
@@ -116,20 +116,20 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 153.5,
+   "query_ms": 68.8,
    "slowest": [
     {
-     "ms": 79.613,
+     "ms": 30.923,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"created_at\" desc, \"id\" desc limit 12 offset 588",
      "kind": "execute"
     },
     {
-     "ms": 60.821,
+     "ms": 29.561,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
      "kind": "execute"
     },
     {
-     "ms": 3.1149999999999998,
+     "ms": 3.375,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
@@ -147,12 +147,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 109.8,
-   "p95_ms": 139.7,
-   "p99_ms": 144.9,
-   "max_ms": 146.5,
-   "mean_ms": 111.9,
-   "stdev_ms": 14.2,
+   "p50_ms": 112.0,
+   "p95_ms": 154.6,
+   "p99_ms": 200.7,
+   "max_ms": 217.9,
+   "mean_ms": 120.8,
+   "stdev_ms": 24.7,
    "bytes_gzip": 16993
   },
   {
@@ -162,21 +162,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 45.3,
+   "query_ms": 47.2,
    "slowest": [
     {
-     "ms": 30.357,
+     "ms": 32.224000000000004,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3)",
      "kind": "execute"
     },
     {
-     "ms": 4.611,
+     "ms": 5.7490000000000006,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.6029999999999998,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 2.8009999999999997,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) order by \"units_sold\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     }
    ],
@@ -193,12 +193,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 91.1,
-   "p95_ms": 117.5,
-   "p99_ms": 122.1,
-   "max_ms": 123.7,
-   "mean_ms": 91.9,
-   "stdev_ms": 12.7,
+   "p50_ms": 84.4,
+   "p95_ms": 107.4,
+   "p99_ms": 115.4,
+   "max_ms": 116.3,
+   "mean_ms": 86.2,
+   "stdev_ms": 9.8,
    "bytes_gzip": 16969
   },
   {
@@ -208,21 +208,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 29.2,
+   "query_ms": 26.3,
    "slowest": [
     {
-     "ms": 12.556000000000001,
+     "ms": 12.909,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and exists (select * from \"categories\" where \"products\".\"category_id\" = \"categories\".\"id\" and \"slug\" = $4)",
      "kind": "execute"
     },
     {
-     "ms": 9.043,
-     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and exists (select * from \"categories\" where \"products\".\"category_id\" = \"categories\".\"id\" and \"slug\" = $4) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "ms": 3.887,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.9139999999999997,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 3.4919999999999995,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and exists (select * from \"categories\" where \"products\".\"category_id\" = \"categories\".\"id\" and \"slug\" = $4) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     }
    ],
@@ -239,12 +239,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 85.7,
-   "p95_ms": 102.2,
-   "p99_ms": 108.5,
-   "max_ms": 110.4,
-   "mean_ms": 84.9,
-   "stdev_ms": 10.6,
+   "p50_ms": 70.2,
+   "p95_ms": 81.8,
+   "p99_ms": 91.7,
+   "max_ms": 94.9,
+   "mean_ms": 70.9,
+   "stdev_ms": 7.2,
    "bytes_gzip": 17390
   },
   {
@@ -254,21 +254,21 @@
    "status": 200,
    "queries": 11,
    "round_trips": 12,
-   "query_ms": 34.3,
+   "query_ms": 30.9,
    "slowest": [
     {
-     "ms": 16.49,
+     "ms": 15.326999999999998,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and ((\"currency\" = $4 and \"price_minor\" >= $5 and \"price_minor\" <= $6) or (\"currency\" = $7 and \"price_minor\" >= $8 and \"price_minor\" <= $9))",
      "kind": "execute"
     },
     {
-     "ms": 5.951,
-     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and ((\"currency\" = $4 and \"price_minor\" >= $5 and \"price_minor\" <= $6) or (\"currency\" = $7 and \"price_minor\" >= $8 and \"price_minor\" <= $9)) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "ms": 3.3890000000000002,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.87,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 3.378,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and ((\"currency\" = $4 and \"price_minor\" >= $5 and \"price_minor\" <= $6) or (\"currency\" = $7 and \"price_minor\" >= $8 and \"price_minor\" <= $9)) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     }
    ],
@@ -286,12 +286,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 78.1,
-   "p95_ms": 96.8,
-   "p99_ms": 102.1,
-   "max_ms": 102.2,
-   "mean_ms": 79.7,
-   "stdev_ms": 9.3,
+   "p50_ms": 85.6,
+   "p95_ms": 105.0,
+   "p99_ms": 108.1,
+   "max_ms": 109.0,
+   "mean_ms": 87.4,
+   "stdev_ms": 9.6,
    "bytes_gzip": 19064
   },
   {
@@ -301,21 +301,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 16.9,
+   "query_ms": 22.6,
    "slowest": [
     {
-     "ms": 5.123,
+     "ms": 6.101,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"seller_id\" = $4",
      "kind": "execute"
     },
     {
-     "ms": 4.384,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 4.452999999999999,
+     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"seller_id\" = $4 order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     },
     {
-     "ms": 2.362,
-     "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"seller_id\" = $4 order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
+     "ms": 4.095,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
    ],
@@ -332,12 +332,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 65.9,
-   "p95_ms": 86.0,
-   "p99_ms": 88.8,
-   "max_ms": 89.2,
-   "mean_ms": 67.2,
-   "stdev_ms": 9.5,
+   "p50_ms": 66.4,
+   "p95_ms": 78.2,
+   "p99_ms": 84.7,
+   "max_ms": 87.2,
+   "mean_ms": 67.6,
+   "stdev_ms": 7.5,
    "bytes_gzip": 17674
   },
   {
@@ -347,20 +347,20 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 24.3,
+   "query_ms": 32.2,
    "slowest": [
     {
-     "ms": 10.266,
+     "ms": 13.432,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5)",
      "kind": "execute"
     },
     {
-     "ms": 5.266,
+     "ms": 6.161999999999999,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5) order by \"created_at\" desc, \"id\" desc limit 12 offset 0",
      "kind": "execute"
     },
     {
-     "ms": 3.2849999999999997,
+     "ms": 5.087,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
@@ -378,12 +378,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 67.4,
-   "p95_ms": 77.8,
-   "p99_ms": 79.5,
-   "max_ms": 79.8,
-   "mean_ms": 66.9,
-   "stdev_ms": 7.0,
+   "p50_ms": 70.5,
+   "p95_ms": 80.4,
+   "p99_ms": 87.4,
+   "max_ms": 90.2,
+   "mean_ms": 70.2,
+   "stdev_ms": 7.8,
    "bytes_gzip": 18042
   },
   {
@@ -391,29 +391,30 @@
    "who": "anonymous",
    "path": "/products?q=zzzqx",
    "status": 200,
-   "queries": 7,
-   "round_trips": 8,
-   "query_ms": 12.9,
+   "queries": 8,
+   "round_trips": 9,
+   "query_ms": 18.7,
    "slowest": [
     {
-     "ms": 6.922,
+     "ms": 10.222,
      "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5)",
      "kind": "execute"
     },
     {
-     "ms": 2.911,
+     "ms": 4.019,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.195,
-     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "ms": 1.316,
+     "sql": "select * from \"categories\" order by \"name\" asc",
      "kind": "execute"
     }
    ],
    "statements": [
     "select * from \"cache\" where \"key\" in ($1)",
     "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "delete from \"sessions\" where \"last_activity\" <= $1",
     "select * from \"cache\" where \"key\" in ($1)",
     "select count(*) as \"aggregate\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and ",
     "select * from \"categories\" order by \"name\" asc",
@@ -421,12 +422,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 52.3,
-   "p95_ms": 66.8,
-   "p99_ms": 71.3,
-   "max_ms": 72.8,
-   "mean_ms": 53.7,
-   "stdev_ms": 6.9,
+   "p50_ms": 53.9,
+   "p95_ms": 67.8,
+   "p99_ms": 69.8,
+   "max_ms": 70.2,
+   "mean_ms": 54.4,
+   "stdev_ms": 6.4,
    "bytes_gzip": 9962
   },
   {
@@ -436,21 +437,21 @@
    "status": 200,
    "queries": 12,
    "round_trips": 13,
-   "query_ms": 19.1,
+   "query_ms": 23.2,
    "slowest": [
     {
-     "ms": 10.602,
+     "ms": 11.077,
      "sql": "select \"id\", \"slug\", \"title\" from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and (\"title\"::text ILIKE $4 or \"description\"::text ILIKE $5) order by \"title\" asc limit 8",
      "kind": "execute"
     },
     {
-     "ms": 4.087000000000001,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 4.149,
+     "sql": "select * from \"cache\" where \"key\" = $1 limit 1 for update",
      "kind": "execute"
     },
     {
-     "ms": 1.435,
-     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "ms": 2.863,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
    ],
@@ -469,12 +470,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 53.9,
-   "p95_ms": 68.9,
-   "p99_ms": 72.9,
-   "max_ms": 73.9,
-   "mean_ms": 55.0,
-   "stdev_ms": 6.8,
+   "p50_ms": 52.7,
+   "p95_ms": 65.1,
+   "p99_ms": 68.8,
+   "max_ms": 69.6,
+   "mean_ms": 54.5,
+   "stdev_ms": 5.6,
    "bytes_gzip": 859
   },
   {
@@ -482,29 +483,30 @@
    "who": "anonymous",
    "path": "/products/perf-product-13000",
    "status": 200,
-   "queries": 17,
-   "round_trips": 18,
-   "query_ms": 20.9,
+   "queries": 18,
+   "round_trips": 19,
+   "query_ms": 29.1,
    "slowest": [
     {
-     "ms": 5.054,
+     "ms": 8.227,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"slug\" = $4 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 2.834,
+     "ms": 3.376,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.658,
-     "sql": "select * from \"product_images\" where \"product_images\".\"product_id\" in (201) order by \"position\" asc",
+     "ms": 2.121,
+     "sql": "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"status\" = $2 order by \"id\" desc limit 20",
      "kind": "execute"
     }
    ],
    "statements": [
     "select * from \"cache\" where \"key\" in ($1)",
     "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "delete from \"sessions\" where \"last_activity\" <= $1",
     "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 ",
     "select * from \"categories\" where \"categories\".\"id\" in (1)",
     "select * from \"users\" where \"users\".\"id\" in (6)",
@@ -522,12 +524,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 63.3,
-   "p95_ms": 85.5,
-   "p99_ms": 96.2,
-   "max_ms": 100.3,
-   "mean_ms": 67.4,
-   "stdev_ms": 10.7,
+   "p50_ms": 75.5,
+   "p95_ms": 87.6,
+   "p99_ms": 93.2,
+   "max_ms": 94.8,
+   "mean_ms": 76.4,
+   "stdev_ms": 7.4,
    "bytes_gzip": 9578
   },
   {
@@ -537,20 +539,20 @@
    "status": 200,
    "queries": 2,
    "round_trips": 3,
-   "query_ms": 5.2,
+   "query_ms": 6.0,
    "slowest": [
     {
-     "ms": 3.5629999999999997,
+     "ms": 3.3369999999999997,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.686,
+     "ms": 2.616,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 0.133,
+     "ms": 0.154,
      "sql": "set search_path to \"public\"",
      "kind": "execute"
     }
@@ -560,13 +562,13 @@
     "select * from \"cache\" where \"key\" in ($1)"
    ],
    "runs": 30,
-   "p50_ms": 36.9,
-   "p95_ms": 44.3,
-   "p99_ms": 53.2,
-   "max_ms": 55.4,
-   "mean_ms": 36.6,
-   "stdev_ms": 5.2,
-   "bytes_gzip": 154228
+   "p50_ms": 36.5,
+   "p95_ms": 42.4,
+   "p99_ms": 43.1,
+   "max_ms": 43.3,
+   "mean_ms": 36.2,
+   "stdev_ms": 3.9,
+   "bytes_gzip": 154262
   },
   {
    "name": "buyer orders",
@@ -575,21 +577,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 20.6,
+   "query_ms": 22.2,
    "slowest": [
     {
-     "ms": 5.840999999999999,
+     "ms": 4.648,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 4.061,
-     "sql": "select \"orders\".*, (select count(*) from \"order_items\" where \"orders\".\"id\" = \"order_items\".\"order_id\") as \"items_count\" from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null order by \"id\" desc limit 15 offset 0",
+     "ms": 3.9850000000000003,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
      "kind": "execute"
     },
     {
-     "ms": 2.896,
-     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
+     "ms": 3.798,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -606,12 +608,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 63.8,
-   "p95_ms": 77.2,
-   "p99_ms": 83.5,
-   "max_ms": 85.8,
-   "mean_ms": 65.1,
-   "stdev_ms": 6.9,
+   "p50_ms": 62.5,
+   "p95_ms": 82.6,
+   "p99_ms": 86.7,
+   "max_ms": 87.3,
+   "mean_ms": 64.6,
+   "stdev_ms": 8.5,
    "bytes_gzip": 16297
   },
   {
@@ -621,21 +623,21 @@
    "status": 200,
    "queries": 17,
    "round_trips": 18,
-   "query_ms": 25.2,
+   "query_ms": 25.5,
    "slowest": [
     {
-     "ms": 3.735,
+     "ms": 3.743,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.731,
+     "ms": 2.7289999999999996,
      "sql": "select * from \"products\" where \"products\".\"id\" in (17848, 17855)",
      "kind": "execute"
     },
     {
-     "ms": 2.535,
-     "sql": "select * from \"disputes\" where \"order_id\" = $1",
+     "ms": 2.523,
+     "sql": "select * from \"orders\" where \"public_id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -659,12 +661,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 77.2,
-   "p95_ms": 91.2,
-   "p99_ms": 99.4,
-   "max_ms": 102.5,
-   "mean_ms": 77.0,
-   "stdev_ms": 9.0,
+   "p50_ms": 81.9,
+   "p95_ms": 109.1,
+   "p99_ms": 117.8,
+   "max_ms": 118.3,
+   "mean_ms": 86.2,
+   "stdev_ms": 12.0,
    "bytes_gzip": 8086
   },
   {
@@ -674,21 +676,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 13.6,
+   "query_ms": 13.2,
    "slowest": [
     {
-     "ms": 4.246,
+     "ms": 3.342,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.9629999999999996,
+     "ms": 2.692,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 1.756,
-     "sql": "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1",
+     "ms": 1.544,
+     "sql": "select * from \"user_notifications\" where \"user_id\" = $1 order by \"id\" desc limit 20 offset 0",
      "kind": "execute"
     }
    ],
@@ -705,12 +707,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 54.3,
-   "p95_ms": 66.9,
-   "p99_ms": 71.3,
-   "max_ms": 72.3,
-   "mean_ms": 55.7,
-   "stdev_ms": 6.3,
+   "p50_ms": 62.9,
+   "p95_ms": 77.7,
+   "p99_ms": 79.5,
+   "max_ms": 80.1,
+   "mean_ms": 64.1,
+   "stdev_ms": 7.9,
    "bytes_gzip": 17045
   },
   {
@@ -723,17 +725,17 @@
    "query_ms": 17.2,
    "slowest": [
     {
-     "ms": 4.369,
+     "ms": 4.503,
      "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\" where \"buyer_id\" = $1 and \"buyer_id\" = $2",
      "kind": "execute"
     },
     {
-     "ms": 3.15,
+     "ms": 3.7,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.401,
+     "ms": 2.208,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -757,12 +759,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 54.0,
-   "p95_ms": 68.7,
-   "p99_ms": 77.3,
-   "max_ms": 79.3,
-   "mean_ms": 55.1,
-   "stdev_ms": 7.6,
+   "p50_ms": 68.0,
+   "p95_ms": 75.6,
+   "p99_ms": 116.5,
+   "max_ms": 133.1,
+   "mean_ms": 68.5,
+   "stdev_ms": 13.8,
    "bytes_gzip": 892
   },
   {
@@ -772,21 +774,21 @@
    "status": 200,
    "queries": 8,
    "round_trips": 9,
-   "query_ms": 8.3,
+   "query_ms": 10.7,
    "slowest": [
     {
-     "ms": 2.578,
+     "ms": 2.932,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.8409999999999997,
+     "ms": 1.996,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 0.872,
-     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "ms": 1.656,
+     "sql": "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
      "kind": "execute"
     }
    ],
@@ -801,12 +803,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 51.9,
-   "p95_ms": 65.0,
-   "p99_ms": 67.6,
-   "max_ms": 67.8,
-   "mean_ms": 53.3,
-   "stdev_ms": 6.2,
+   "p50_ms": 58.0,
+   "p95_ms": 67.0,
+   "p99_ms": 72.8,
+   "max_ms": 75.1,
+   "mean_ms": 57.3,
+   "stdev_ms": 6.9,
    "bytes_gzip": 6141
   },
   {
@@ -816,21 +818,21 @@
    "status": 200,
    "queries": 22,
    "round_trips": 23,
-   "query_ms": 25.2,
+   "query_ms": 28.9,
    "slowest": [
     {
-     "ms": 3.738,
+     "ms": 4.166,
+     "sql": "select * from \"product_reviews\" where \"product_reviews\".\"product_id\" = $1 and \"product_reviews\".\"product_id\" is not null and \"status\" = $2 order by \"id\" desc limit 20",
+     "kind": "execute"
+    },
+    {
+     "ms": 4.048,
      "sql": "select * from \"order_items\" where \"product_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"buyer_id\" = $2 and \"status\" in ($3, $4, $5)) order by \"id\" desc",
      "kind": "execute"
     },
     {
-     "ms": 3.623,
+     "ms": 3.741,
      "sql": "select * from \"products\" where \"products\".\"status\" = $1 and exists (select * from \"users\" where \"users\".\"id\" = \"products\".\"seller_id\" and \"users\".\"status\" = $2 and \"users\".\"role\" != $3) and \"slug\" = $4 limit 1",
-     "kind": "execute"
-    },
-    {
-     "ms": 3.041,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
    ],
@@ -859,12 +861,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 98.7,
-   "p95_ms": 111.4,
-   "p99_ms": 125.8,
-   "max_ms": 131.3,
-   "mean_ms": 99.1,
-   "stdev_ms": 9.8,
+   "p50_ms": 95.8,
+   "p95_ms": 116.0,
+   "p99_ms": 117.7,
+   "max_ms": 118.4,
+   "mean_ms": 93.8,
+   "stdev_ms": 13.0,
    "bytes_gzip": 11405
   },
   {
@@ -874,20 +876,20 @@
    "status": 200,
    "queries": 17,
    "round_trips": 18,
-   "query_ms": 47.1,
+   "query_ms": 57.9,
    "slowest": [
     {
-     "ms": 20.643,
+     "ms": 24.778000000000002,
      "sql": "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"order_items\".\"seller_id\" = $1 and \"order_items\".\"seller_earning_minor\" > $2 and \"orders\".\"status\" in ($3, $4, $5) and not exists (select 1 from \"disputes\" where \"disputes\".\"order_item_id\" = \"order_items\".\"id\" and \"disputes\".\"st",
      "kind": "execute"
     },
     {
-     "ms": 5.977,
+     "ms": 8.683,
      "sql": "select * from \"order_items\" where \"seller_id\" = $1 and \"delivered_at\" is null and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"status\" in ($2)) and exists (select * from \"products\" where \"order_items\".\"product_id\" = \"products\".\"id\" and \"delivery_type\" = $3) order by \"id\" asc limit 20",
      "kind": "execute"
     },
     {
-     "ms": 3.761,
+     "ms": 6.621,
      "sql": "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
      "kind": "execute"
     }
@@ -912,12 +914,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 107.6,
-   "p95_ms": 125.3,
-   "p99_ms": 129.6,
-   "max_ms": 131.1,
-   "mean_ms": 108.7,
-   "stdev_ms": 10.0,
+   "p50_ms": 101.8,
+   "p95_ms": 119.5,
+   "p99_ms": 128.3,
+   "max_ms": 131.7,
+   "mean_ms": 102.8,
+   "stdev_ms": 11.1,
    "bytes_gzip": 11282
   },
   {
@@ -925,23 +927,23 @@
    "who": "seller01@sim.test",
    "path": "/seller/sales",
    "status": 200,
-   "queries": 14,
-   "round_trips": 15,
-   "query_ms": 47.0,
+   "queries": 17,
+   "round_trips": 18,
+   "query_ms": 55.5,
    "slowest": [
     {
-     "ms": 28.259,
+     "ms": 27.918999999999997,
      "sql": "select count(*) as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and exists (select * from \"orders\" where \"order_items\".\"order_id\" = \"orders\".\"id\" and \"status\" in ($2, $3, $4, $5))",
      "kind": "execute"
     },
     {
-     "ms": 2.993,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 4.901,
+     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
      "kind": "execute"
     },
     {
-     "ms": 2.499,
-     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+     "ms": 3.2140000000000004,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -954,6 +956,9 @@
     "select * from \"orders\" where \"orders\".\"id\" in (648, 17648, 34648, 51648, 59279, 61696, 68648, 76279, 78696, 85648, 93279, 95696, 102648, 110279, 119648, 136648,",
     "select * from \"products\" where \"products\".\"id\" in (599, 600)",
     "select * from \"cache\" where \"key\" in ($1)",
+    "delete from \"cache\" where \"key\" in ($1, $2) and \"expiration\" <= $3",
+    "select \"title\", \"body\" from \"announcements\" where \"active\" = $1 and (\"starts_at\" is null or \"starts_at\" <= $2) and (\"ends_at\" is null or \"ends_at\" > $3) order b",
+    "insert into \"cache\" (\"expiration\", \"key\", \"value\") values ($1, $2, $3) on conflict (\"key\") do update set \"expiration\" = \"excluded\".\"expiration\", \"key\" = \"exclud",
     "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
     "select max(\"id\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
     "select max(\"delivered_at\") as \"aggregate\" from \"order_items\" where \"seller_id\" = $1 and \"seller_id\" = $2",
@@ -962,12 +967,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 100.2,
-   "p95_ms": 122.8,
-   "p99_ms": 126.6,
-   "max_ms": 127.2,
-   "mean_ms": 103.1,
-   "stdev_ms": 11.2,
+   "p50_ms": 100.1,
+   "p95_ms": 119.8,
+   "p99_ms": 120.6,
+   "max_ms": 121.0,
+   "mean_ms": 99.3,
+   "stdev_ms": 11.9,
    "bytes_gzip": 22408
   },
   {
@@ -977,21 +982,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 31.9,
+   "query_ms": 24.5,
    "slowest": [
     {
-     "ms": 14.754000000000001,
+     "ms": 12.488,
      "sql": "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"product_license_keys\" where \"products\".\"id\" = \"product_license_keys\".\"product_id\") as \"license_keys_count\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null order by \"id\" desc limit 20 offset 0",
      "kind": "execute"
     },
     {
-     "ms": 3.5769999999999995,
+     "ms": 2.9859999999999998,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.364,
-     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "ms": 2.0349999999999997,
+     "sql": "select count(*) as \"aggregate\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null",
      "kind": "execute"
     }
    ],
@@ -1008,12 +1013,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 88.1,
-   "p95_ms": 116.0,
-   "p99_ms": 124.8,
-   "max_ms": 126.8,
-   "mean_ms": 90.2,
-   "stdev_ms": 13.2,
+   "p50_ms": 78.1,
+   "p95_ms": 92.0,
+   "p99_ms": 109.5,
+   "max_ms": 116.3,
+   "mean_ms": 79.4,
+   "stdev_ms": 9.9,
    "bytes_gzip": 19533
   },
   {
@@ -1023,20 +1028,20 @@
    "status": 200,
    "queries": 12,
    "round_trips": 13,
-   "query_ms": 22.4,
+   "query_ms": 14.9,
    "slowest": [
     {
-     "ms": 4.212000000000001,
+     "ms": 3.0919999999999996,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.152,
+     "ms": 2.307,
      "sql": "select * from \"products\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 2.533,
+     "ms": 1.8279999999999998,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -1056,12 +1061,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 68.0,
-   "p95_ms": 84.5,
-   "p99_ms": 85.7,
-   "max_ms": 85.9,
-   "mean_ms": 69.7,
-   "stdev_ms": 7.1,
+   "p50_ms": 63.2,
+   "p95_ms": 77.0,
+   "p99_ms": 80.2,
+   "max_ms": 81.2,
+   "mean_ms": 64.0,
+   "stdev_ms": 7.2,
    "bytes_gzip": 13654
   },
   {
@@ -1071,21 +1076,21 @@
    "status": 200,
    "queries": 13,
    "round_trips": 14,
-   "query_ms": 56.8,
+   "query_ms": 43.6,
    "slowest": [
     {
-     "ms": 33.333,
+     "ms": 24.659,
      "sql": "select orders.currency AS currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"order_items\".\"seller_id\" = $1 and \"order_items\".\"seller_earning_minor\" > $2 and \"orders\".\"status\" in ($3, $4, $5) and not exists (select 1 from \"disputes\" where \"disputes\".\"order_item_id\" = \"order_items\".\"id\" and \"disputes\".\"st",
      "kind": "execute"
     },
     {
-     "ms": 7.162000000000001,
+     "ms": 4.7509999999999994,
      "sql": "select currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"seller_id\" = $1 group by \"currency\"",
      "kind": "execute"
     },
     {
-     "ms": 3.51,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 2.988,
+     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
      "kind": "execute"
     }
    ],
@@ -1105,12 +1110,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 104.5,
-   "p95_ms": 126.0,
-   "p99_ms": 131.3,
-   "max_ms": 131.3,
-   "mean_ms": 106.1,
-   "stdev_ms": 10.9,
+   "p50_ms": 93.6,
+   "p95_ms": 112.7,
+   "p99_ms": 113.9,
+   "max_ms": 114.2,
+   "mean_ms": 96.3,
+   "stdev_ms": 9.0,
    "bytes_gzip": 7489
   },
   {
@@ -1120,21 +1125,21 @@
    "status": 200,
    "queries": 18,
    "round_trips": 19,
-   "query_ms": 23.8,
+   "query_ms": 17.7,
    "slowest": [
     {
-     "ms": 5.5809999999999995,
-     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
-     "kind": "execute"
-    },
-    {
-     "ms": 3.1229999999999998,
+     "ms": 3.513,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.6289999999999996,
-     "sql": "select max(\"updated_at\") as \"aggregate\" from \"disputes\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+     "ms": 3.424,
+     "sql": "select max(\"id\") as \"aggregate\" from \"seller_ledger_entries\" where \"seller_id\" = $1 and \"seller_id\" = $2",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.5410000000000004,
+     "sql": "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
      "kind": "execute"
     }
    ],
@@ -1160,11 +1165,11 @@
    ],
    "runs": 30,
    "p50_ms": 60.8,
-   "p95_ms": 73.5,
-   "p99_ms": 79.3,
-   "max_ms": 81.4,
-   "mean_ms": 61.4,
-   "stdev_ms": 8.0,
+   "p95_ms": 69.0,
+   "p99_ms": 82.6,
+   "max_ms": 88.0,
+   "mean_ms": 59.0,
+   "stdev_ms": 9.0,
    "bytes_gzip": 892
   },
   {
@@ -1172,22 +1177,22 @@
    "who": "seller01@sim.test",
    "path": "/seller/reviews",
    "status": 200,
-   "queries": 11,
-   "round_trips": 12,
-   "query_ms": 24.4,
+   "queries": 12,
+   "round_trips": 13,
+   "query_ms": 22.5,
    "slowest": [
     {
-     "ms": 5.9479999999999995,
+     "ms": 6.156,
      "sql": "select count(*) as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null)",
      "kind": "execute"
     },
     {
-     "ms": 4.313,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 3.1879999999999997,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"seller_id\" = $1) and \"product_id\" in (select \"id\" from \"products\" where \"seller_id\" = $2)",
      "kind": "execute"
     },
     {
-     "ms": 4.279,
+     "ms": 3.117,
      "sql": "select * from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null) order by seller_replied_at IS NOT NULL, \"id\" desc limit 20 offset 0",
      "kind": "execute"
     }
@@ -1195,6 +1200,7 @@
    "statements": [
     "select * from \"cache\" where \"key\" in ($1)",
     "select * from \"sessions\" where \"id\" = $1 limit 1",
+    "delete from \"sessions\" where \"last_activity\" <= $1",
     "select * from \"users\" where \"id\" = $1 limit 1",
     "select count(*) as \"aggregate\" from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"selle",
     "select * from \"product_reviews\" where \"product_id\" in (select \"id\" from \"products\" where \"products\".\"seller_id\" = $1 and \"products\".\"seller_id\" is not null) ord",
@@ -1206,12 +1212,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 77.1,
-   "p95_ms": 92.6,
-   "p99_ms": 100.9,
-   "max_ms": 104.1,
-   "mean_ms": 78.1,
-   "stdev_ms": 9.0,
+   "p50_ms": 74.2,
+   "p95_ms": 91.2,
+   "p99_ms": 98.7,
+   "max_ms": 101.2,
+   "mean_ms": 75.8,
+   "stdev_ms": 9.3,
    "bytes_gzip": 31935
   },
   {
@@ -1219,22 +1225,22 @@
    "who": "superadmin@sim.test",
    "path": "/admin",
    "status": 200,
-   "queries": 50,
-   "round_trips": 51,
-   "query_ms": 542.1,
+   "queries": 43,
+   "round_trips": 44,
+   "query_ms": 505.9,
    "slowest": [
     {
-     "ms": 72.74900000000001,
+     "ms": 68.60499999999999,
      "sql": "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net, SUM(order_items.seller_earning_minor) AS earnings from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" inner join \"users",
      "kind": "execute"
     },
     {
-     "ms": 66.393,
+     "ms": 62.845,
      "sql": "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" between $5 and $6 and \"or",
      "kind": "execute"
     },
     {
-     "ms": 58.578,
+     "ms": 47.888,
      "sql": "select sum(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor - order_items.seller_earning_minor) as \"aggregate\" from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" >= $5 and \"orders\".\"currency\" = $6",
      "kind": "execute"
     }
@@ -1281,24 +1287,17 @@
     "select count(*) as \"aggregate\" from \"payments\" where \"provider\" = $1 and \"status\" = $2 and \"created_at\" >= $3",
     "select * from \"cache\" where \"key\" in ($1)",
     "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
-    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"disputes\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"payouts\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"tickets\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"products\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"seller_profiles\"",
-    "select count(*) as \"aggregate\" from \"failed_jobs\"",
-    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "SELECT (SELECT max(updated_at) FROM orders) AS orders, (SELECT max(updated_at) FROM disputes) AS disputes,",
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 618.1,
-   "p95_ms": 720.6,
-   "p99_ms": 752.4,
-   "max_ms": 756.9,
-   "mean_ms": 622.1,
-   "stdev_ms": 57.0,
-   "bytes_gzip": 51462
+   "p50_ms": 640.4,
+   "p95_ms": 721.1,
+   "p99_ms": 733.2,
+   "max_ms": 737.9,
+   "mean_ms": 639.7,
+   "stdev_ms": 51.1,
+   "bytes_gzip": 51463
   },
   {
    "name": "admin reports",
@@ -1307,20 +1306,20 @@
    "status": 200,
    "queries": 12,
    "round_trips": 13,
-   "query_ms": 209.6,
+   "query_ms": 189.7,
    "slowest": [
     {
-     "ms": 72.317,
+     "ms": 63.827000000000005,
      "sql": "select order_items.seller_id, users.email, seller_profiles.display_name, orders.currency, COUNT(DISTINCT orders.id) AS orders, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net, SUM(order_items.seller_earning_minor) AS earnings from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" inner join \"users",
      "kind": "execute"
     },
     {
-     "ms": 69.301,
+     "ms": 57.422,
      "sql": "select order_items.product_id, order_items.title, orders.currency, SUM(order_items.quantity) AS units, SUM(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) AS net from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) and \"orders\".\"paid_at\" between $5 and $6 group b",
      "kind": "execute"
     },
     {
-     "ms": 27.547,
+     "ms": 32.672,
      "sql": "select currency, DATE(paid_at) AS day, SUM(total_minor - refunded_minor) AS net from \"orders\" where \"status\" in ($1, $2, $3, $4) and \"paid_at\" between $5 and $6 group by \"currency\", DATE(paid_at)",
      "kind": "execute"
     }
@@ -1340,12 +1339,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 272.3,
-   "p95_ms": 321.1,
-   "p99_ms": 334.3,
-   "max_ms": 338.3,
-   "mean_ms": 275.4,
-   "stdev_ms": 27.2,
+   "p50_ms": 290.5,
+   "p95_ms": 347.5,
+   "p99_ms": 358.2,
+   "max_ms": 361.5,
+   "mean_ms": 297.0,
+   "stdev_ms": 25.4,
    "bytes_gzip": 30673
   },
   {
@@ -1355,20 +1354,20 @@
    "status": 200,
    "queries": 12,
    "round_trips": 13,
-   "query_ms": 47.0,
+   "query_ms": 43.5,
    "slowest": [
     {
-     "ms": 28.737,
+     "ms": 27.702,
      "sql": "select count(*) as \"aggregate\" from \"orders\"",
      "kind": "execute"
     },
     {
-     "ms": 4.6259999999999994,
+     "ms": 4.237,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.6980000000000004,
+     "ms": 2.42,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -1388,12 +1387,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 100.1,
-   "p95_ms": 120.2,
-   "p99_ms": 122.5,
-   "max_ms": 123.2,
-   "mean_ms": 102.4,
-   "stdev_ms": 10.2,
+   "p50_ms": 121.9,
+   "p95_ms": 143.1,
+   "p99_ms": 157.2,
+   "max_ms": 162.0,
+   "mean_ms": 121.5,
+   "stdev_ms": 13.8,
    "bytes_gzip": 67305
   },
   {
@@ -1403,21 +1402,21 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 72.1,
+   "query_ms": 73.9,
    "slowest": [
     {
-     "ms": 56.471000000000004,
+     "ms": 59.488,
      "sql": "select count(*) as \"aggregate\" from \"orders\" where CAST(public_id AS TEXT) LIKE $1",
      "kind": "execute"
     },
     {
-     "ms": 6.0440000000000005,
+     "ms": 3.774,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.723,
-     "sql": "select \"display_name\", \"user_id\" from \"seller_profiles\" order by \"display_name\" asc",
+     "ms": 2.469,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -1434,12 +1433,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 103.6,
-   "p95_ms": 123.4,
-   "p99_ms": 125.1,
-   "max_ms": 125.7,
-   "mean_ms": 104.7,
-   "stdev_ms": 10.7,
+   "p50_ms": 112.8,
+   "p95_ms": 140.7,
+   "p99_ms": 142.5,
+   "max_ms": 143.0,
+   "mean_ms": 114.0,
+   "stdev_ms": 12.7,
    "bytes_gzip": 45101
   },
   {
@@ -1449,21 +1448,21 @@
    "status": 200,
    "queries": 17,
    "round_trips": 18,
-   "query_ms": 24.6,
+   "query_ms": 19.7,
    "slowest": [
     {
-     "ms": 4.408,
+     "ms": 3.3299999999999996,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.821,
-     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "ms": 3.136,
+     "sql": "select * from \"order_items\" where \"order_items\".\"order_id\" in (200000)",
      "kind": "execute"
     },
     {
-     "ms": 2.7279999999999998,
-     "sql": "select * from \"order_items\" where \"order_items\".\"order_id\" in (200000)",
+     "ms": 2.011,
+     "sql": "select * from \"orders\" where \"public_id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -1487,12 +1486,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 74.6,
-   "p95_ms": 94.9,
-   "p99_ms": 96.9,
-   "max_ms": 97.6,
-   "mean_ms": 76.6,
-   "stdev_ms": 9.0,
+   "p50_ms": 81.5,
+   "p95_ms": 99.6,
+   "p99_ms": 186.8,
+   "max_ms": 221.2,
+   "mean_ms": 86.0,
+   "stdev_ms": 26.5,
    "bytes_gzip": 15194
   },
   {
@@ -1502,20 +1501,20 @@
    "status": 200,
    "queries": 11,
    "round_trips": 12,
-   "query_ms": 18.1,
+   "query_ms": 22.9,
    "slowest": [
     {
-     "ms": 3.9419999999999997,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
-     "kind": "execute"
-    },
-    {
-     "ms": 3.607,
+     "ms": 5.3309999999999995,
      "sql": "select count(*) as \"aggregate\" from \"products\"",
      "kind": "execute"
     },
     {
-     "ms": 3.181,
+     "ms": 4.6579999999999995,
+     "sql": "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.49,
      "sql": "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"product_license_keys\" where \"products\".\"id\" = \"product_license_keys\".\"product_id\") as \"license_keys_count\" from \"products\" order by \"updated_at\" desc limit 30 offset 0",
      "kind": "execute"
     }
@@ -1526,7 +1525,7 @@
     "select * from \"users\" where \"id\" = $1 limit 1",
     "select count(*) as \"aggregate\" from \"products\"",
     "select \"products\".*, (select count(*) from \"product_files\" where \"products\".\"id\" = \"product_files\".\"product_id\") as \"files_count\", (select count(*) from \"produc",
-    "select * from \"users\" where \"users\".\"id\" in (96, 101, 121, 126, 146, 151, 201, 206, 226, 231, 251, 286, 306, 311, 331, 336, 356, 361, 386, 391, 411, 416, 436, 4",
+    "select * from \"users\" where \"users\".\"id\" in (96, 101, 121, 146, 151, 201, 206, 226, 231, 251, 256, 286, 306, 311, 331, 336, 356, 361, 386, 391, 411, 416, 436, 4",
     "select * from \"categories\" where \"categories\".\"id\" in (1, 2, 3, 4, 5, 6, 7, 8)",
     "select * from \"cache\" where \"key\" in ($1)",
     "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
@@ -1534,13 +1533,13 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 80.4,
-   "p95_ms": 93.8,
-   "p99_ms": 105.8,
-   "max_ms": 110.3,
-   "mean_ms": 81.7,
-   "stdev_ms": 8.3,
-   "bytes_gzip": 59722
+   "p50_ms": 89.8,
+   "p95_ms": 105.1,
+   "p99_ms": 112.2,
+   "max_ms": 112.9,
+   "mean_ms": 88.1,
+   "stdev_ms": 10.2,
+   "bytes_gzip": 59737
   },
   {
    "name": "admin users",
@@ -1549,21 +1548,21 @@
    "status": 200,
    "queries": 8,
    "round_trips": 9,
-   "query_ms": 17.4,
+   "query_ms": 17.0,
    "slowest": [
     {
-     "ms": 6.708,
+     "ms": 5.164,
+     "sql": "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.2800000000000002,
      "sql": "select count(*) as \"aggregate\" from \"users\"",
      "kind": "execute"
     },
     {
-     "ms": 3.097,
+     "ms": 2.865,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
-     "kind": "execute"
-    },
-    {
-     "ms": 2.5940000000000003,
-     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -1578,12 +1577,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 68.7,
-   "p95_ms": 84.0,
-   "p99_ms": 86.4,
-   "max_ms": 87.2,
-   "mean_ms": 70.6,
-   "stdev_ms": 7.9,
+   "p50_ms": 71.1,
+   "p95_ms": 90.6,
+   "p99_ms": 96.1,
+   "max_ms": 97.7,
+   "mean_ms": 72.6,
+   "stdev_ms": 10.0,
    "bytes_gzip": 31504
   },
   {
@@ -1593,20 +1592,20 @@
    "status": 200,
    "queries": 8,
    "round_trips": 9,
-   "query_ms": 130.2,
+   "query_ms": 159.6,
    "slowest": [
     {
-     "ms": 66.296,
+     "ms": 90.597,
      "sql": "select count(*) as \"aggregate\" from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2)",
      "kind": "execute"
     },
     {
-     "ms": 55.753,
+     "ms": 59.428999999999995,
      "sql": "select * from \"users\" where (\"email\"::text ILIKE $1 or \"name\"::text ILIKE $2) order by \"id\" desc limit 30 offset 0",
      "kind": "execute"
     },
     {
-     "ms": 2.854,
+     "ms": 3.893,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
@@ -1622,12 +1621,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 202.5,
-   "p95_ms": 295.4,
-   "p99_ms": 327.7,
-   "max_ms": 340.7,
-   "mean_ms": 221.6,
-   "stdev_ms": 41.4,
+   "p50_ms": 193.7,
+   "p95_ms": 261.4,
+   "p99_ms": 280.7,
+   "max_ms": 283.8,
+   "mean_ms": 201.9,
+   "stdev_ms": 31.4,
    "bytes_gzip": 17351
   },
   {
@@ -1637,20 +1636,20 @@
    "status": 200,
    "queries": 11,
    "round_trips": 12,
-   "query_ms": 18.6,
+   "query_ms": 16.3,
    "slowest": [
     {
-     "ms": 4.334999999999999,
+     "ms": 3.854,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.579,
+     "ms": 2.75,
      "sql": "select * from \"orders\" where \"orders\".\"buyer_id\" = $1 and \"orders\".\"buyer_id\" is not null order by \"id\" desc limit 20",
      "kind": "execute"
     },
     {
-     "ms": 2.696,
+     "ms": 2.5909999999999997,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -1669,12 +1668,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 74.1,
-   "p95_ms": 87.9,
-   "p99_ms": 90.0,
-   "max_ms": 90.0,
-   "mean_ms": 73.6,
-   "stdev_ms": 9.0,
+   "p50_ms": 75.2,
+   "p95_ms": 95.2,
+   "p99_ms": 97.9,
+   "max_ms": 98.7,
+   "mean_ms": 76.6,
+   "stdev_ms": 11.1,
    "bytes_gzip": 22086
   },
   {
@@ -1684,21 +1683,21 @@
    "status": 200,
    "queries": 9,
    "round_trips": 10,
-   "query_ms": 48.5,
+   "query_ms": 49.6,
    "slowest": [
     {
-     "ms": 37.285000000000004,
+     "ms": 35.919,
      "sql": "select count(*) as \"aggregate\" from \"audit_log\"",
      "kind": "execute"
     },
     {
-     "ms": 3.601,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 3.972,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 2.295,
-     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "ms": 2.91,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     }
    ],
@@ -1714,12 +1713,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 96.4,
-   "p95_ms": 106.5,
-   "p99_ms": 114.7,
-   "max_ms": 117.3,
-   "mean_ms": 95.6,
-   "stdev_ms": 7.8,
+   "p50_ms": 95.9,
+   "p95_ms": 107.0,
+   "p99_ms": 119.8,
+   "max_ms": 124.2,
+   "mean_ms": 94.4,
+   "stdev_ms": 10.0,
    "bytes_gzip": 31631
   },
   {
@@ -1729,21 +1728,21 @@
    "status": 200,
    "queries": 9,
    "round_trips": 10,
-   "query_ms": 31.9,
+   "query_ms": 25.7,
    "slowest": [
     {
-     "ms": 18.526,
+     "ms": 11.103000000000002,
      "sql": "select count(*) as \"aggregate\" from \"payments\"",
      "kind": "execute"
     },
     {
-     "ms": 3.1929999999999996,
-     "sql": "select * from \"orders\" where \"orders\".\"id\" in (570, 790, 3510, 5000, 19812, 26263, 34396, 45860, 53347, 57800, 63775, 66480, 68453, 71772, 73486, 78448, 81454, 86036, 88067, 90142, 92970, 95318, 102171, 106095, 115894, 120435, 122862, 145808, 146533, 147443, 155703, 158829, 163544, 163773, 167276, 178096, 178195, 180850, 183585, 184032)",
+     "ms": 4.311,
+     "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.939,
-     "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "ms": 3.041,
+     "sql": "select * from \"orders\" where \"orders\".\"id\" in (570, 790, 3510, 5000, 19812, 26263, 34396, 45860, 53347, 57800, 63775, 66480, 68453, 71772, 73486, 78448, 81454, 86036, 88067, 90142, 92970, 95318, 102171, 106095, 115894, 120435, 122862, 145808, 146533, 147443, 155703, 158829, 163544, 163773, 167276, 178096, 178195, 180850, 183585, 184032)",
      "kind": "execute"
     }
    ],
@@ -1759,12 +1758,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 81.1,
-   "p95_ms": 110.7,
-   "p99_ms": 119.0,
-   "max_ms": 120.5,
-   "mean_ms": 85.3,
-   "stdev_ms": 12.9,
+   "p50_ms": 73.2,
+   "p95_ms": 84.2,
+   "p99_ms": 102.9,
+   "max_ms": 110.5,
+   "mean_ms": 75.9,
+   "stdev_ms": 8.5,
    "bytes_gzip": 37824
   },
   {
@@ -1774,20 +1773,20 @@
    "status": 200,
    "queries": 8,
    "round_trips": 9,
-   "query_ms": 10.1,
+   "query_ms": 12.2,
    "slowest": [
     {
-     "ms": 3.339,
+     "ms": 3.107,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.0890000000000004,
+     "ms": 2.778,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 1.3739999999999999,
+     "ms": 2.593,
      "sql": "select count(*) as \"aggregate\" from \"payouts\"",
      "kind": "execute"
     }
@@ -1803,12 +1802,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 59.2,
-   "p95_ms": 70.8,
-   "p99_ms": 76.4,
-   "max_ms": 78.4,
-   "mean_ms": 59.5,
-   "stdev_ms": 7.0,
+   "p50_ms": 52.3,
+   "p95_ms": 61.3,
+   "p99_ms": 62.2,
+   "max_ms": 62.5,
+   "mean_ms": 53.6,
+   "stdev_ms": 5.0,
    "bytes_gzip": 8637
   },
   {
@@ -1818,21 +1817,21 @@
    "status": 200,
    "queries": 12,
    "round_trips": 13,
-   "query_ms": 13.6,
+   "query_ms": 15.3,
    "slowest": [
     {
-     "ms": 4.287,
+     "ms": 3.4619999999999993,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 3.028,
-     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "ms": 3.248,
+     "sql": "select count(*) as \"aggregate\" from \"gateway_logs\"",
      "kind": "execute"
     },
     {
-     "ms": 1.175,
-     "sql": "select * from \"sessions\" where \"id\" = $1 limit 1",
+     "ms": 2.384,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -1851,13 +1850,13 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 59.0,
-   "p95_ms": 76.7,
-   "p99_ms": 80.1,
-   "max_ms": 80.5,
-   "mean_ms": 61.5,
-   "stdev_ms": 8.4,
-   "bytes_gzip": 14809
+   "p50_ms": 63.0,
+   "p95_ms": 79.0,
+   "p99_ms": 82.0,
+   "max_ms": 83.2,
+   "mean_ms": 64.9,
+   "stdev_ms": 8.1,
+   "bytes_gzip": 41549
   },
   {
    "name": "admin health",
@@ -1866,21 +1865,21 @@
    "status": 200,
    "queries": 21,
    "round_trips": 22,
-   "query_ms": 52.8,
+   "query_ms": 48.7,
    "slowest": [
     {
-     "ms": 33.236000000000004,
+     "ms": 28.499,
      "sql": "select max(\"processed_at\") as \"aggregate\" from \"webhook_events\" where \"provider\" = $1 and \"status\" = $2",
      "kind": "execute"
     },
     {
-     "ms": 3.4850000000000003,
+     "ms": 3.258,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.067,
-     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
+     "ms": 2.855,
+     "sql": "select \"migration\" from \"migrations\" order by \"batch\" asc, \"migration\" asc",
      "kind": "execute"
     }
    ],
@@ -1908,13 +1907,13 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 107.7,
-   "p95_ms": 122.3,
-   "p99_ms": 128.9,
-   "max_ms": 131.5,
-   "mean_ms": 108.2,
-   "stdev_ms": 9.2,
-   "bytes_gzip": 14267
+   "p50_ms": 99.4,
+   "p95_ms": 117.7,
+   "p99_ms": 127.1,
+   "max_ms": 130.6,
+   "mean_ms": 102.0,
+   "stdev_ms": 9.8,
+   "bytes_gzip": 14253
   },
   {
    "name": "admin reviews",
@@ -1923,21 +1922,21 @@
    "status": 200,
    "queries": 11,
    "round_trips": 12,
-   "query_ms": 21.7,
+   "query_ms": 18.5,
    "slowest": [
     {
-     "ms": 5.343999999999999,
-     "sql": "select * from \"products\" where \"products\".\"id\" in (19815, 19816, 19817, 19818, 19819, 19820, 19821, 19822, 19823, 19824, 19825, 19826)",
-     "kind": "execute"
-    },
-    {
-     "ms": 4.045,
+     "ms": 4.375,
      "sql": "select count(*) as \"aggregate\" from \"product_reviews\"",
      "kind": "execute"
     },
     {
-     "ms": 2.909,
+     "ms": 3.6519999999999997,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
+     "kind": "execute"
+    },
+    {
+     "ms": 2.5359999999999996,
+     "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
    ],
@@ -1955,12 +1954,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 89.6,
-   "p95_ms": 110.3,
-   "p99_ms": 146.7,
-   "max_ms": 161.2,
-   "mean_ms": 91.8,
-   "stdev_ms": 15.8,
+   "p50_ms": 73.3,
+   "p95_ms": 97.7,
+   "p99_ms": 109.1,
+   "max_ms": 113.0,
+   "mean_ms": 75.3,
+   "stdev_ms": 11.5,
    "bytes_gzip": 43778
   },
   {
@@ -1970,20 +1969,20 @@
    "status": 200,
    "queries": 10,
    "round_trips": 11,
-   "query_ms": 13.7,
+   "query_ms": 12.8,
    "slowest": [
     {
-     "ms": 2.889,
+     "ms": 2.922,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.106,
+     "ms": 2.4570000000000003,
      "sql": "select * from \"seller_profiles\" order by CASE status WHEN 'pending' THEN 0 ELSE 1 END, \"id\" desc limit 30 offset 0",
      "kind": "execute"
     },
     {
-     "ms": 1.943,
+     "ms": 1.927,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -2001,12 +2000,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 68.8,
-   "p95_ms": 83.7,
-   "p99_ms": 94.1,
-   "max_ms": 97.6,
-   "mean_ms": 69.4,
-   "stdev_ms": 9.4,
+   "p50_ms": 62.1,
+   "p95_ms": 82.9,
+   "p99_ms": 85.2,
+   "max_ms": 86.0,
+   "mean_ms": 65.2,
+   "stdev_ms": 8.4,
    "bytes_gzip": 23442
   },
   {
@@ -2016,20 +2015,20 @@
    "status": 200,
    "queries": 9,
    "round_trips": 10,
-   "query_ms": 12.9,
+   "query_ms": 14.2,
    "slowest": [
     {
-     "ms": 3.2070000000000003,
+     "ms": 3.1239999999999997,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.6069999999999998,
+     "ms": 2.9619999999999997,
      "sql": "select count(*) as \"aggregate\" from \"disputes\" where \"status\" in ($1, $2)",
      "kind": "execute"
     },
     {
-     "ms": 2.059,
+     "ms": 2.797,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     }
@@ -2046,12 +2045,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 58.4,
-   "p95_ms": 72.7,
-   "p99_ms": 72.8,
-   "max_ms": 72.8,
-   "mean_ms": 58.4,
-   "stdev_ms": 7.2,
+   "p50_ms": 55.4,
+   "p95_ms": 62.9,
+   "p99_ms": 64.3,
+   "max_ms": 64.5,
+   "mean_ms": 55.1,
+   "stdev_ms": 4.9,
    "bytes_gzip": 8816
   },
   {
@@ -2061,21 +2060,21 @@
    "status": 200,
    "queries": 11,
    "round_trips": 12,
-   "query_ms": 369.2,
+   "query_ms": 314.2,
    "slowest": [
     {
-     "ms": 140.191,
+     "ms": 130.727,
      "sql": "select order_items.seller_id, orders.currency, SUM(order_items.seller_earning_minor) AS total from \"order_items\" inner join \"orders\" on \"orders\".\"id\" = \"order_items\".\"order_id\" where \"orders\".\"status\" in ($1, $2, $3, $4) group by \"order_items\".\"seller_id\", \"orders\".\"currency\"",
      "kind": "execute"
     },
     {
-     "ms": 98.49100000000001,
-     "sql": "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
+     "ms": 83.98599999999999,
+     "sql": "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) - ((order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) * order_items.commission_bps + 5000) / 10000 AS expected fro",
      "kind": "execute"
     },
     {
-     "ms": 95.869,
-     "sql": "select \"order_items\".\"id\", \"order_items\".\"seller_id\", \"orders\".\"currency\", \"order_items\".\"seller_earning_minor\", (order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) - ((order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor) * order_items.commission_bps + 5000) / 10000 AS expected fro",
+     "ms": 59.603,
+     "sql": "select seller_id, currency, SUM(amount_minor) AS total from \"seller_ledger_entries\" where \"type\" in ($1, $2, $3) group by \"seller_id\", \"currency\"",
      "kind": "execute"
     }
    ],
@@ -2093,12 +2092,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 399.1,
-   "p95_ms": 445.3,
-   "p99_ms": 460.5,
-   "max_ms": 466.4,
-   "mean_ms": 398.8,
-   "stdev_ms": 32.0,
+   "p50_ms": 385.5,
+   "p95_ms": 435.4,
+   "p99_ms": 467.4,
+   "max_ms": 474.8,
+   "mean_ms": 384.4,
+   "stdev_ms": 32.8,
    "bytes_gzip": 8463
   },
   {
@@ -2106,23 +2105,23 @@
    "who": "superadmin@sim.test",
    "path": "/live?path=/admin",
    "status": 200,
-   "queries": 22,
-   "round_trips": 23,
-   "query_ms": 19.9,
+   "queries": 15,
+   "round_trips": 16,
+   "query_ms": 21.6,
    "slowest": [
     {
-     "ms": 3.173,
+     "ms": 10.685,
+     "sql": "SELECT (SELECT max(updated_at) FROM orders) AS orders, (SELECT max(updated_at) FROM disputes) AS disputes,",
+     "kind": "execute"
+    },
+    {
+     "ms": 3.219,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 2.134,
+     "ms": 2.031,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
-     "kind": "execute"
-    },
-    {
-     "ms": 1.72,
-     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
      "kind": "execute"
     }
    ],
@@ -2139,24 +2138,17 @@
     "COMMIT",
     "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
     "select count(*) as \"aggregate\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null",
-    "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"disputes\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"payouts\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"tickets\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"products\"",
-    "select max(\"updated_at\") as \"aggregate\" from \"seller_profiles\"",
-    "select count(*) as \"aggregate\" from \"failed_jobs\"",
-    "select count(*) as \"aggregate\" from \"webhook_events\" where \"status\" in ($1, $2)",
+    "SELECT (SELECT max(updated_at) FROM orders) AS orders, (SELECT max(updated_at) FROM disputes) AS disputes,",
     "select * from \"cache\" where \"key\" in ($1)",
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 65.9,
-   "p95_ms": 81.0,
-   "p99_ms": 82.2,
-   "max_ms": 82.7,
+   "p50_ms": 65.8,
+   "p95_ms": 78.7,
+   "p99_ms": 90.4,
+   "max_ms": 94.5,
    "mean_ms": 65.5,
-   "stdev_ms": 9.5,
+   "stdev_ms": 9.8,
    "bytes_gzip": 892
   },
   {
@@ -2166,21 +2158,21 @@
    "status": 200,
    "queries": 16,
    "round_trips": 17,
-   "query_ms": 14.8,
+   "query_ms": 16.1,
    "slowest": [
     {
-     "ms": 4.418000000000001,
+     "ms": 3.2769999999999997,
      "sql": "select * from \"cache\" where \"key\" in ($1)",
      "kind": "execute"
     },
     {
-     "ms": 1.9889999999999999,
+     "ms": 2.201,
      "sql": "select * from \"users\" where \"id\" = $1 limit 1",
      "kind": "execute"
     },
     {
-     "ms": 1.6660000000000001,
-     "sql": "select \"id\", \"title\" from \"user_notifications\" where \"user_id\" = $1 and \"read_at\" is null order by \"id\" desc limit 1",
+     "ms": 1.975,
+     "sql": "select max(\"updated_at\") as \"aggregate\" from \"orders\"",
      "kind": "execute"
     }
    ],
@@ -2203,12 +2195,12 @@
     "update \"sessions\" set \"payload\" = $1, \"last_activity\" = $2, \"user_id\" = $3, \"ip_address\" = $4, \"user_agent\" = $5 where \"id\" = $6"
    ],
    "runs": 30,
-   "p50_ms": 45.8,
-   "p95_ms": 52.1,
-   "p99_ms": 53.0,
-   "max_ms": 53.1,
-   "mean_ms": 46.0,
-   "stdev_ms": 3.7,
+   "p50_ms": 46.6,
+   "p95_ms": 59.3,
+   "p99_ms": 60.2,
+   "max_ms": 60.5,
+   "mean_ms": 47.7,
+   "stdev_ms": 6.5,
    "bytes_gzip": 892
   }
  ]

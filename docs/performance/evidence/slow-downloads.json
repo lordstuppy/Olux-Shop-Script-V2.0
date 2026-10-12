@@ -1,0 +1,167 @@
+{
+ "file_bytes": 20971520,
+ "concurrency": 25,
+ "rate_bytes_per_s": 50000,
+ "hold_s": 45,
+ "fpm_max_children": 20,
+ "catalog_ms_before": [
+  63,
+  55,
+  54,
+  56,
+  51
+ ],
+ "catalog_ms_during": [
+  57,
+  59,
+  64,
+  61,
+  59,
+  67,
+  57,
+  80,
+  63,
+  56,
+  70,
+  62,
+  71,
+  66,
+  61,
+  87,
+  74,
+  68,
+  70,
+  67,
+  90,
+  64,
+  66,
+  58,
+  69,
+  70,
+  144,
+  58,
+  76,
+  83
+ ],
+ "catalog_ms_after": [
+  76,
+  66,
+  67,
+  73,
+  69
+ ],
+ "catalog_p50_during": 67,
+ "catalog_max_during": 144,
+ "downloads": [
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 429",
+   "bytes_read": 313
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1015808
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1015808
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1032192
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1032192
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1032192
+  },
+  {
+   "status_line": "HTTP/1.1 200",
+   "bytes_read": 1032192
+  }
+ ],
+ "fpm_workers_during": [
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www",
+  "S    php-fpm: pool www"
+ ]
+}

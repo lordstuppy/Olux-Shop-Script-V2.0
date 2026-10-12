@@ -46,6 +46,11 @@ map $client_proto $fastcgi_https {
     default "";
 }
 
+# Downloads: nginx buffers each one (in /tmp, a tmpfs in docker-compose.yml)
+# so PHP is free again at once while nginx feeds a slow client; this caps how
+# many one client address can hold open (memory: up to 50 MB each).
+limit_conn_zone $binary_remote_addr zone=downloads_per_client:10m;
+
 server {
     listen 8080;
     server_name _;
@@ -77,6 +82,14 @@ server {
     }
 
     location / {
+        try_files $uri /index.php?$query_string;
+    }
+
+    # Purchased file downloads (DownloadController); the limit holds for the
+    # whole request, also after the internal redirect to index.php.
+    location ~ ^/orders/[^/]+/items/[0-9]+/files/[0-9]+$ {
+        limit_conn downloads_per_client 6;
+        limit_conn_status 429;
         try_files $uri /index.php?$query_string;
     }
 
