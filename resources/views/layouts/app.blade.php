@@ -22,6 +22,7 @@
         data-label-live-lost="{{ __('Connection lost. Trying again...') }}" data-label-live-back="{{ __('Connection restored.') }}"
         data-label-live-updated="{{ __('This page was updated.') }}" data-label-live-pending="{{ __('This page has new information.') }}"
         data-label-live-show="{{ __('Show it') }}" data-label-live-new="{{ __('New notification:') }}" data-label-close="{{ __('Close') }}"
+        data-session-lifetime="{{ (int) config('session.lifetime') }}" data-label-live-expiring="{{ __('You will be signed out in 2 minutes because nothing happened for a while.') }}" data-label-live-stay="{{ __('Stay signed in') }}"
         data-login="{{ route('login') }}" data-label-live-signed-out="{{ __('You are signed out. Sign in again in another tab to keep what you typed here.') }}"
         data-label-live-sign-in="{{ __('Sign in again') }}" data-label-live-signed-in="{{ __('You are signed in again. You can send the form now.') }}"
     @endauth

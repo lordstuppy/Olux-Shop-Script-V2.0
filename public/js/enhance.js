@@ -25,6 +25,8 @@
  *     gets a "Show it" button instead. When the session ends (expiry, sign-out
  *     elsewhere) it says so, offers a sign-in in another tab and afterwards
  *     renews the page's form tokens, so typed input can still be sent.
+ *     Two minutes before an idle session would end, it offers to stay
+ *     signed in (WCAG 2.2.1).
  *     Without scripts pages show current data whenever they are loaded.
  */
 (function () {
@@ -536,6 +538,21 @@
         // Session ended: say so once and keep checking; after a sign-in in
         // another tab, the forms here get the new session's token.
         var signedOut = false;
+        // The server forgets an idle session after data-session-lifetime
+        // minutes; every successful poll counts as activity there.
+        var lifetimeMs = parseInt(body.getAttribute('data-session-lifetime') || '0', 10) * 60000;
+        var expiryTimer = null;
+        var expiryWarning = function () {
+            clearTimeout(expiryTimer);
+            drop('expiry');
+            if (lifetimeMs > 180000) {
+                expiryTimer = setTimeout(function () {
+                    say(label('live-expiring', 'You will be signed out in 2 minutes because nothing happened for a while.'), {
+                        id: 'expiry', warning: true, action: { text: label('live-stay', 'Stay signed in'), run: function () { lastActivity = Date.now(); poll(); } }
+                    });
+                }, lifetimeMs - 120000);
+            }
+        };
         var signedIn = function () {
             fetch(window.location.href, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'text/html' } }).then(function (response) {
                 return response.ok && !response.redirected ? response.text() : null;
@@ -584,11 +601,15 @@
                 if (response.status === 401 || response.redirected) {
                     throw new Error('signed-out');
                 }
+                if (response.status === 429) {
+                    throw new Error('slow-down');
+                }
                 if (!response.ok || type.indexOf('json') === -1) {
                     throw new Error('http ' + response.status);
                 }
                 return response.json();
             }).then(function (data) {
+                expiryWarning();
                 if (signedOut) {
                     signedOut = false;
                     signedIn();
@@ -610,7 +631,15 @@
                 }
                 schedule();
             }).catch(function (error) {
+                // Many open windows share one rate limit: wait longer, nothing is wrong.
+                if (error && error.message === 'slow-down') {
+                    clearTimeout(timer);
+                    timer = setTimeout(poll, 60000);
+                    return;
+                }
                 if (error && error.message === 'signed-out') {
+                    clearTimeout(expiryTimer);
+                    drop('expiry');
                     if (!signedOut) {
                         signedOut = true;
                         say(label('live-signed-out', 'You are signed out. Sign in again in another tab to keep what you typed here.'), {
@@ -632,6 +661,7 @@
                 poll();
             }
         });
+        expiryWarning();
         schedule();
     }
 })();

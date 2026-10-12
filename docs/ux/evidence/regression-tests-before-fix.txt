@@ -1,0 +1,25 @@
+UX regression tests run against the code BEFORE the fixes, 2026-10-12 (Playwright 1.56, Chromium, local
+shop seeded by tests/browser/run.sh). Each test was run on its own (the spec runs in serial mode).
+
+1) tests/browser/ux.spec.js, first eight tests, against 17a3380 (before any UX change):
+
+staff approval reaches the seller's product list ... : FAILED  status still "Pending review" after 25 s (expected "Active")          UX-04
+when the session ends the page says so ...          : FAILED  live region never said "You are signed out"                         UX-03
+search suggestions can be used with the keyboard     : FAILED  first version asserted aria-expanded; with the final assertions the   UX-05
+                                                               arrow key did not move focus into the list (no handler existed)
+a form sent twice in quick succession is sent once   : FAILED  expected 1 POST, received 2                                            UX-06
+the error summary takes the focus ...                : FAILED  .flash-error not focused                                               UX-07
+an irreversible action asks first ...                : FAILED  no confirmation panel; the category was deleted on the first click   UX-02
+the colour scheme setting applies ...                : FAILED  test bug (checked <body> background, which is transparent by design);
+                                                               fixed in the test, not the app; passes on the old code too
+a deep link survives the sign-in                     : passed  (guard: worked before)
+
+2) Against c827db2 (after the first fixes), for the two later findings:
+
+two minutes before an idle session ends ...          : FAILED  no warning after 118 idle minutes (fake clock)                        UX-22
+a rate-limited poll slows down ...                   : FAILED  2 polls in 40 s and "Connection lost" logic triggered (expected 1)    UX-23
+
+3) Static and server-side checks before the fixes (audit crawl, evidence/crawl-baseline.json):
+axe scrollable-region-focusable: 26 page views at 375 px (13 light, 13 dark)                                       UX-01
+
+All of the above pass on the candidate (ux-regression-report.md).

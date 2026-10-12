@@ -158,6 +158,32 @@ test('a purchase can be completed on a phone', async ({ browser }) => {
     await context.close();
 });
 
+test('two minutes before an idle session ends, the page offers to stay signed in', async ({ page }) => {
+    await login(page, 'seller');
+    await page.clock.install();
+    await page.goto('/seller');
+    const lifetime = Number(await page.locator('body').getAttribute('data-session-lifetime'));
+    expect(lifetime).toBeGreaterThan(3);
+    await page.clock.fastForward((lifetime - 2) * 60000 + 1000); // idle: polling has stopped after 20 minutes
+    await expect(page.locator('.live-region')).toContainText('You will be signed out in 2 minutes');
+    const poll = page.waitForResponse((r) => r.url().includes('/live?'));
+    await page.getByRole('button', { name: 'Stay signed in' }).click();
+    expect((await poll).status()).toBe(200);
+    await expect(page.locator('.live-region')).not.toContainText('You will be signed out');
+});
+
+test('a rate-limited poll slows down without claiming the connection is lost', async ({ page }) => {
+    test.setTimeout(90000);
+    await login(page, 'seller');
+    let polls = 0;
+    await page.route('**/live?**', (route) => { polls++; return route.fulfill({ status: 429, contentType: 'application/json', body: '{}' }); });
+    await page.goto('/seller');
+    // Before: two failures (10 s and 30 s) showed "Connection lost". Now the second poll waits 60 s.
+    await page.waitForTimeout(40000);
+    expect(polls).toBe(1);
+    await expect(page.locator('.live-region')).not.toContainText('Connection lost');
+});
+
 test('search suggestions can be used with the keyboard', async ({ page }) => {
     await page.goto('/');
     const input = page.locator('#site-search');
