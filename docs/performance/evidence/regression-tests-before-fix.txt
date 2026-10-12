@@ -15,7 +15,7 @@ Failures before the fixes:
 - test_perf18_admin_dashboard_version_is_one_query_and_still_tracks_changes: Failed asserting that actual size 6 matches expected size 1.
 - test_perf02_sales_ranking_counts_paid_units_only: The command "shop:refresh-sales-ranking" does not exist.
 - test_perf05_seller_filter_lists_the_top_sellers_and_the_selected_one: Undefined constant App\Services\CatalogService::FILTER_SELLERS
-- test_perf03_earning_sql_matches_earning_for: Call to undefined method App\Services\PayoutService::earningSql()
+- test_perf03_earning_sql_matches_earning_for: Undefined constant App\Services\PayoutService::EARNING_SQL
 - test_perf11_several_pending_refunds_are_polled_in_one_run: Attempted to lazy load [order] on model [App\Models\Payment] but lazy loading is disabled.
 - test_perf14_payment_polling_stops_after_failures_in_a_row: Undefined constant App\Services\PaymentService::POLL_FAILURES_BEFORE_STOP
 - test_perf14_transfer_polling_stops_after_failures_in_a_row: Attempted to lazy load [order] on model [App\Models\Payment] but lazy loading is disabled.
@@ -23,4 +23,5 @@ Failures before the fixes:
 - test_perf11_several_overdue_disputes_escalate_in_one_sweep: Attempted to lazy load [buyer] on model [App\Models\Dispute] but lazy loading is disabled.
 - test_images_are_reencoded_and_served: Unknown named parameter $preview
 
-On the candidate (de3000b and later) all pass; full suite 313/313 (performance-remediation-log.md).
+Rerun with the test files of 69801fc: same result, 19 tests, 4 passed, 15 failed.
+On the candidate (69801fc) all pass; full suite 314/314 (performance-remediation-log.md).

@@ -37,7 +37,7 @@ Machine-readable: [performance-gates.json](performance-gates.json).
 | Gate | Status | Basis |
 |---|---|---|
 | P1 Architecture and code quality | PASS | High-impact defects fixed; PHPStan level 5 from 392 findings to 0 |
-| P2 Algorithmic and runtime | PASS | Reconciliation 18.6 s -> 0.4 s, best selling 859 -> 91 ms, sitemap 891 -> 37 ms; 0 pages over budget |
+| P2 Algorithmic and runtime | PASS | Reconciliation 18.6 s -> 0.4 s, best selling 859 -> 84 ms, sitemap 891 -> 36 ms; 0 pages over budget |
 | P3 Database | PASS | 46 pages' SQL and 30 query plans on representative data; 6 indexes, each justified by a plan, 1 rejected after measurement |
 | P4 Caching | PASS | Only public, non-financial data cached, with TTLs; expired entries pruned; no cookies on public images and the sitemap |
 | P5 Compression and transfer | PASS | Static assets gzip; sitemap 2.07 MB -> 154 KB; catalogue HTML 42 -> 19 KB; about 3x fewer database round trips |
@@ -48,7 +48,7 @@ Machine-readable: [performance-gates.json](performance-gates.json).
 | P10 Resources and concurrency | NOT VERIFIED | Sandbox: 20 req/s at p95 123 ms (before: 6.9 s), saturation at 60 req/s, clean recovery; slow downloads hold no PHP worker |
 | P11 Reliability | PASS | Polling stop, sweep fixes, bounded queue retries; simulation recovery scenarios pass |
 | P12 Build and deployment | PASS | Image 1.01 GB -> 330 MB; migrations under 3 s on the full dataset, indexes built concurrently |
-| P13 Maintainability and tests | PASS | 313/313 tests; 19 performance regression tests (15 failed before the fixes) |
+| P13 Maintainability and tests | PASS | 314/314 tests; 19 performance regression tests (15 failed before the fixes) |
 | P14 Benchmarks and budgets | BLOCKED | All provisional budgets met in two runs; budgets need approval, and production-like hardware is needed |
 
 ## Findings
@@ -86,14 +86,14 @@ p50 of 30 sequential requests, run 1 / run 2. Full tables: [performance-baseline
 
 | Page | Before | After |
 |---|---|---|
-| Catalogue, best selling | 859 ms | 91 / 72 ms |
-| Search | 207 ms | 67 / 67 ms |
-| Product page | 210 ms | 63 / 61 ms |
-| Sitemap | 891 ms, 2.07 MB | 37 / 30 ms, 154 KB |
-| Seller dashboard | 203 ms | 108 / 92 ms |
-| Seller live poll | 103 ms | 61 / 54 ms |
-| Admin dashboard | 844 ms | 618 / 569 ms |
-| Admin reconciliation | 18,585 ms | 399 / 382 ms |
+| Catalogue, best selling | 859 ms | 84 / 85 ms |
+| Search | 207 ms | 70 / 79 ms |
+| Product page | 210 ms | 76 / 71 ms |
+| Sitemap | 891 ms, 2.07 MB | 36 / 39 ms, 154 KB |
+| Seller dashboard | 203 ms | 102 / 108 ms |
+| Seller live poll | 103 ms | 61 / 60 ms |
+| Admin dashboard | 844 ms | 640 / 635 ms |
+| Admin reconciliation | 18,585 ms | 386 / 382 ms |
 | Pages without a code change | - | Within noise (up to 18-25% between runs) |
 
 **Load** (staged k6, abort on p95 above 5 s; k6 on the same 4 cores):
@@ -161,7 +161,7 @@ Details: [integration-best-practices.md](integration-best-practices.md).
 
 | Check | Result |
 |---|---|
-| PHPUnit | 313 / 313 (4,098 assertions) |
+| PHPUnit | 314 / 314 (4,103 assertions) |
 | Pint | Clean |
 | PHPStan level 5 | 0 errors |
 | ASCII check | Clean |

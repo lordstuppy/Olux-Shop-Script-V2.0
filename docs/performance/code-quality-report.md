@@ -20,7 +20,7 @@
    - Pint (code style);
    - `scripts/check-ascii.sh`.
 3. **Tests:**
-   - PHPUnit, 313 tests and 4,098 assertions at the candidate;
+   - PHPUnit, 314 tests and 4,103 assertions at the candidate;
    - the browser tests (unchanged);
    - the 101-scenario simulation on the production image.
 
@@ -131,7 +131,7 @@ Recorded, not changed: they behave correctly today and no test fails.
 
 | Suite | Result at the candidate |
 |---|---|
-| PHPUnit | 313 / 313, 4,098 assertions |
+| PHPUnit | 314 / 314, 4,103 assertions |
 | Performance regression tests (`tests/Feature/PerformanceAuditTest.php` plus one dispute test and one image test) | 19 tests, including query-count guards for 18 pages |
 | Simulation, 101 scenarios on the production image | Recorded in the summary |
 

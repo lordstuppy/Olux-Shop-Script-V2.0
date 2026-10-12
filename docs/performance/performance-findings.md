@@ -59,7 +59,7 @@
 
 **Fix:** The check is computed in SQL and returns only mismatching lines. `PayoutService::EARNING_SQL` is the PostgreSQL form of `earningFor()`: the commission is rounded half up as `(n * bps + 5000) / 10000` on non-negative integers.
 
-**After:** 11 queries; 399 / 382 ms (run 1 / run 2); 1 query of 53-85 ms (`explain-*.txt` Q24).
+**After:** 11 queries; 386 / 382 ms (run 1 / run 2); 1 query of 53-85 ms (`explain-*.txt` Q24).
 
 **Tests:**
 
@@ -86,9 +86,9 @@ The URL is public and unauthenticated, so each request bought a second of databa
 | | Before | After |
 |---|---|---|
 | Query, best selling | 986 ms | 0.3 ms (Q03) |
-| `/products?sort=best` | 859 ms | 91 / 72 ms |
+| `/products?sort=best` | 859 ms | 84 / 85 ms |
 | Related products query | 101 ms | 0.22 ms (Q04) |
-| Product page | 210 ms | 63 / 61 ms |
+| Product page | 210 ms | 76 / 71 ms |
 
 **Test:** `test_perf02_sales_ranking_counts_paid_units_only` (paid units only, idempotent refresh, and no aggregation of order lines in the catalogue query).
 
@@ -151,7 +151,7 @@ The PHP manual for `Pdo\Pgsql::ATTR_DISABLE_PREPARES`: "If the query is only goi
 - Served compressed when the client accepts it: the XML holds no secrets.
 - No session, and `Cache-Control: public, max-age=3600`.
 
-**After:** 37 / 30 ms and 154 KB.
+**After:** 36 / 39 ms and 154 KB.
 
 **Test:** `test_perf06_sitemap_is_cached_compressed_and_sessionless`.
 
@@ -197,8 +197,8 @@ Rejected after measurement: `orders (buyer_id, updated_at)`. With realistic data
 | Search (Q05) | 59 ms | 3.7 ms |
 | Search count (Q06) | 64 ms | 1.5 ms |
 | Suggestions (Q07) | 60 ms | 1.8 ms |
-| `/products?q=font` page | 207 ms | 67 / 67 ms |
-| `/search/suggest` page | 108 ms | 54 / 48 ms |
+| `/products?q=font` page | 207 ms | 70 / 79 ms |
+| `/search/suggest` page | 108 ms | 53 / 55 ms |
 
 **Side effect:** the setting alone made the newest-first catalogue query slower (34 -> 40 ms, other plan). The new catalogue index (PERF-08) removes that: 0.2 ms.
 
@@ -348,7 +348,7 @@ All are primary-key lookups (0.05-4 ms).
 
 ### PERF-24: Admin dashboard: 43 queries, 640 ms (Low, database; open, within budget)
 
-**Measured:** 618 / 569 ms after the indexes, against 844 ms before, which is under the provisional admin budget of 1 s.
+**Measured:** 640 / 635 ms in the final runs, against 844 ms before, which is under the provisional admin budget of 1 s.
 
 **Possible later:** cache the KPI block for 1-5 minutes, or merge the per-period figures into one `FILTER` query.
 

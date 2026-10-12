@@ -17,12 +17,12 @@ Conditions are in [performance-baselines.md](performance-baselines.md).
 | Finding | Commit | Files | Regression test | Before | After |
 |---|---|---|---|---|---|
 | PERF-03 round trips | ad68a6a | `config/database.php` | Full suite (behaviour unchanged); PostgreSQL log shows no `DEALLOCATE` or named statements | 36 round trips for 11 queries (catalogue) | 11 for 10 |
-| PERF-02 best selling | ad68a6a | migration `2026_10_16_000100`, `CatalogService`, `routes/console.php` (`shop:refresh-sales-ranking`, every 10 min) | `test_perf02_sales_ranking_counts_paid_units_only`; `test_best_seller_sort_and_related_products` updated (runs the refresh) | 859 ms (sort=best), 210 ms (product) | 91 / 72 ms, 63 / 61 ms |
-| PERF-01 reconciliation | ad68a6a | `PayoutService` | `test_perf03_earning_sql_matches_earning_for`, `test_perf03_reconciliation_reports_only_the_tampered_line`, existing `test_reconciliation_detects_tampering` | 18,585 ms, 821 queries | 399 / 382 ms, 11 queries |
+| PERF-02 best selling | ad68a6a | migration `2026_10_16_000100`, `CatalogService`, `routes/console.php` (`shop:refresh-sales-ranking`, every 10 min) | `test_perf02_sales_ranking_counts_paid_units_only`; `test_best_seller_sort_and_related_products` updated (runs the refresh) | 859 ms (sort=best), 210 ms (product) | 84 / 85 ms, 76 / 71 ms |
+| PERF-01 reconciliation | ad68a6a | `PayoutService` | `test_perf03_earning_sql_matches_earning_for`, `test_perf03_reconciliation_reports_only_the_tampered_line`, existing `test_reconciliation_detects_tampering` | 18,585 ms, 821 queries | 386 / 382 ms, 11 queries |
 | PERF-08 indexes | ad68a6a, dfcf4b9 | migrations `2026_10_16_000200` (4 indexes) and `000300` (catalogue order) | Plans in `explain-after.txt` | Q10 51 ms, Q12 56 ms, Q01 25-34 ms, Q17 27 ms, Q16 35 ms | 0.06, 0.2, 0.2, 0.13, 3 ms |
-| PERF-09 search planner | ad68a6a | `docker-compose.yml`, `docker-compose.test.yml` (`random_page_cost=1.1`), OPERATIONS.md | Plans Q05-Q07 | Search page 207 ms | 67 / 67 ms |
+| PERF-09 search planner | ad68a6a | `docker-compose.yml`, `docker-compose.test.yml` (`random_page_cost=1.1`), OPERATIONS.md | Plans Q05-Q07 | Search page 207 ms | 70 / 79 ms |
 | PERF-05 seller filter | ad68a6a, b8e72ce | `CatalogService::sellers()`, `ProductController` | `test_perf05_seller_filter_lists_the_top_sellers_and_the_selected_one`; existing seller filter test | 41,963 B catalogue HTML | 19,126 B |
-| PERF-06 sitemap | ad68a6a | `PageController`, `routes/web.php` | `test_perf06_sitemap_is_cached_compressed_and_sessionless`; existing sitemap tests | 891 ms, 2.07 MB | 37 / 30 ms, 154 KB |
+| PERF-06 sitemap | ad68a6a | `PageController`, `routes/web.php` | `test_perf06_sitemap_is_cached_compressed_and_sessionless`; existing sitemap tests | 891 ms, 2.07 MB | 36 / 39 ms, 154 KB |
 | PERF-07 images without session | ad68a6a | `ProductImageController`, `ProductImage::url()`, routes, two views | `test_images_are_reencoded_and_served` (updated: preview route, no cookies) | Session read and write plus `Set-Cookie` per image | None |
 | PERF-04 N+1 | ad68a6a | `Product::isPurchasable()`, `WishlistController`, `CartService`, `OrderController` (reorder), `CatalogService` | `test_perf04_*` (5 tests, 18 pages) | Wishlist 8 -> 14 queries, cart 3 -> 8 when data grew | Constant |
 | PERF-10 exports | ad68a6a | `ExportController`, `BulkController` | Existing export tests | Q22 OFFSET page 227-412 ms | Keyset Q23 21-36 ms |
@@ -43,7 +43,7 @@ Conditions are in [performance-baselines.md](performance-baselines.md).
 
 - **Before the fixes:** 15 of the 19 regression tests failed on the baseline code ([evidence/regression-tests-before-fix.txt](evidence/regression-tests-before-fix.txt)). The 4 that passed are guards for pages that had no N+1.
 - **After:**
-  - PHPUnit 313 / 313 (4,098 assertions);
+  - PHPUnit 314 / 314 (4,103 assertions);
   - Pint clean; PHPStan level 5 with 0 errors;
   - ASCII check clean;
   - all page and query budgets met in two benchmark runs;
@@ -66,3 +66,4 @@ These affected intermediate measurements, not the final evidence. They are liste
    - Counting unnamed statements' parse messages as extra round trips overstated the candidate; corrected before the final run.
 5. **Cold statistics.** The first after-measurement ran right after `pg_restore`, without statistics, and showed several plans as slower. Every measurement now runs after `VACUUM ANALYZE` and a warm-up pass.
 6. **Wrapped tool output.** The static-analysis output is shortened by a wrapper in this environment. The full list was read from PHPStan's own baseline file, written to a scratch directory and not committed.
+7. **Figures copied from an intermediate run.** The first version of these reports quoted page times for eight pages from a benchmark run before `577d35f` instead of the final evidence files (for example reconciliation 399 instead of 386 ms, admin dashboard 618 / 569 instead of 640 / 635 ms). A cross-check of every "run 1 / run 2" figure against `bench-after.json` and `bench-after-run2.json` found them; they were corrected. Budget results did not change: 0 pages over budget in both final runs.

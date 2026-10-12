@@ -38,7 +38,7 @@ Evidence files:
 
 **Compression stays off for HTML (PERF-22).** Pages carry the CSRF token next to reflected input, the BREACH setting. HTML responses are `Cache-Control: no-cache, private`; they hold per-user data and are never shared-cached.
 
-**Sitemap (PERF-06):** 2,073,357 B -> 154,228 B gzip, cached for an hour.
+**Sitemap (PERF-06):** 2,073,357 B -> 154,262 B gzip, cached for an hour.
 
 ## Product images
 

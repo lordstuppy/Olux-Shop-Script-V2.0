@@ -22,7 +22,7 @@
     {
       "id": "P2", "title": "Algorithmic and runtime performance", "status": "PASS",
       "criteria": "Critical paths meet the documented (provisional) targets; high-impact inefficiencies resolved.",
-      "evidence": ["evidence/bench-after.json", "evidence/bench-after-run2.json: 0 pages over budget in both runs", "PERF-01: 18.6 s -> 0.4 s; PERF-02: 859 -> 91 ms; PERF-06: 891 -> 37 ms"],
+      "evidence": ["evidence/bench-after.json", "evidence/bench-after-run2.json: 0 pages over budget in both runs", "PERF-01: 18.6 s -> 0.4 s; PERF-02: 859 -> 84 ms; PERF-06: 891 -> 36 ms"],
       "note": "Targets are provisional (see P14)."
     },
     {
@@ -81,7 +81,7 @@
     {
       "id": "P13", "title": "Maintainability, types, testing and standards", "status": "PASS",
       "criteria": "No high-impact correctness or maintainability defect; mandatory quality checks pass.",
-      "evidence": ["PHPUnit 313/313", "PHPStan level 5: 0 (from 392)", "Pint, ASCII check", "19 performance regression tests, 15 failed before the fixes"]
+      "evidence": ["PHPUnit 314/314", "PHPStan level 5: 0 (from 392)", "Pint, ASCII check", "19 performance regression tests, 15 failed before the fixes"]
     },
     {
       "id": "P14", "title": "Performance regression and benchmark verification", "status": "BLOCKED",
