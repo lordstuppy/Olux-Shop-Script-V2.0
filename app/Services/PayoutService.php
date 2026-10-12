@@ -42,12 +42,9 @@ class PayoutService
      * (Money::applyBps). Amounts are never negative, so adding 5000 before the
      * integer division by 10000 rounds half up.
      */
-    public static function earningSql(string $table): string
-    {
-        $net = "({$table}.unit_price_minor * {$table}.quantity - {$table}.discount_minor - {$table}.refunded_minor)";
-
-        return "{$net} - ({$net} * {$table}.commission_bps + 5000) / 10000";
-    }
+    public const EARNING_SQL = '(order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor)'
+        .' - ((order_items.unit_price_minor * order_items.quantity - order_items.discount_minor - order_items.refunded_minor)'
+        .' * order_items.commission_bps + 5000) / 10000';
 
     /** Called inside the transaction that marks the order paid. */
     public function recordSale(OrderItem $item, string $currency): void
@@ -191,12 +188,11 @@ class PayoutService
         // 1. Each item's stored earning must follow from its amounts. Computed in
         // SQL so only mismatching lines come back (walking every paid line in PHP
         // took 18 s at 250,000 lines).
-        $expected = self::earningSql('order_items');
         $rows = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('orders.status', $paidStates)
-            ->whereRaw("order_items.seller_earning_minor <> {$expected}")
+            ->whereRaw('order_items.seller_earning_minor <> '.self::EARNING_SQL)
             ->select('order_items.id', 'order_items.seller_id', 'orders.currency', 'order_items.seller_earning_minor')
-            ->selectRaw("{$expected} AS expected")->orderBy('order_items.id')->get();
+            ->selectRaw(self::EARNING_SQL.' AS expected')->orderBy('order_items.id')->get();
         foreach ($rows as $row) {
             $mismatches[] = ['seller_id' => (int) $row->seller_id, 'currency' => $row->currency, 'check' => "order_item {$row->id} earning",
                 'expected' => (int) $row->expected, 'actual' => (int) $row->seller_earning_minor];

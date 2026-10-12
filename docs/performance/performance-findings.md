@@ -57,7 +57,7 @@
 - 821 queries and 18.6 s per page view at 250,000 lines (`bench-baseline.json`).
 - The cost is linear in sales. At about 3x the volume it reaches nginx's 60 s FastCGI timeout.
 
-**Fix:** The check is computed in SQL and returns only mismatching lines. `PayoutService::earningSql()` is the PostgreSQL form of `earningFor()`: the commission is rounded half up as `(n * bps + 5000) / 10000` on non-negative integers.
+**Fix:** The check is computed in SQL and returns only mismatching lines. `PayoutService::EARNING_SQL` is the PostgreSQL form of `earningFor()`: the commission is rounded half up as `(n * bps + 5000) / 10000` on non-negative integers.
 
 **After:** 11 queries; 399 / 382 ms (run 1 / run 2); 1 query of 53-85 ms (`explain-*.txt` Q24).
 

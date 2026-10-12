@@ -222,7 +222,7 @@ class PerformanceAuditTest extends TestCase
         }
         // Column types as in order_items: bigint amounts, integer quantity and rate.
         $values = implode(',', array_map(fn ($r) => "({$r[0]}::bigint, {$r[1]}::integer, {$r[2]}::bigint, {$r[3]}::bigint, {$r[4]}::integer)", $rows));
-        $sql = 'SELECT '.PayoutService::earningSql('v').' AS earning FROM (VALUES '.$values.') AS v(unit_price_minor, quantity, discount_minor, refunded_minor, commission_bps)';
+        $sql = 'SELECT '.PayoutService::EARNING_SQL.' AS earning FROM (VALUES '.$values.') AS order_items(unit_price_minor, quantity, discount_minor, refunded_minor, commission_bps)';
         $fromSql = array_map(fn ($r) => (int) $r->earning, DB::select($sql));
         $fromPhp = array_map(fn ($r) => PayoutService::earningFor($r[0] * $r[1] - $r[2] - $r[3], $r[4]), $rows);
         $this->assertSame($fromPhp, $fromSql);

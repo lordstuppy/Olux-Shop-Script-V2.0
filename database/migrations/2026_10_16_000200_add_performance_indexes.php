@@ -20,24 +20,19 @@ return new class extends Migration
 {
     public $withinTransaction = false;
 
-    private const INDEXES = [
-        'orders_paid_at_index' => 'orders (paid_at)',
-        'orders_created_at_index' => 'orders (created_at)',
-        'order_items_seller_id_id_index' => 'order_items (seller_id, id)',
-        'order_items_delivered_at_index' => 'order_items (delivered_at)',
-    ];
-
     public function up(): void
     {
-        foreach (self::INDEXES as $name => $on) {
-            DB::statement("CREATE INDEX CONCURRENTLY IF NOT EXISTS {$name} ON {$on}");
-        }
+        DB::statement('CREATE INDEX CONCURRENTLY IF NOT EXISTS orders_paid_at_index ON orders (paid_at)');
+        DB::statement('CREATE INDEX CONCURRENTLY IF NOT EXISTS orders_created_at_index ON orders (created_at)');
+        DB::statement('CREATE INDEX CONCURRENTLY IF NOT EXISTS order_items_seller_id_id_index ON order_items (seller_id, id)');
+        DB::statement('CREATE INDEX CONCURRENTLY IF NOT EXISTS order_items_delivered_at_index ON order_items (delivered_at)');
     }
 
     public function down(): void
     {
-        foreach (array_keys(self::INDEXES) as $name) {
-            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS {$name}");
-        }
+        DB::statement('DROP INDEX CONCURRENTLY IF EXISTS orders_paid_at_index');
+        DB::statement('DROP INDEX CONCURRENTLY IF EXISTS orders_created_at_index');
+        DB::statement('DROP INDEX CONCURRENTLY IF EXISTS order_items_seller_id_id_index');
+        DB::statement('DROP INDEX CONCURRENTLY IF EXISTS order_items_delivered_at_index');
     }
 };

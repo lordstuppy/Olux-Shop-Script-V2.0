@@ -21,6 +21,10 @@ SEMGREP_VERSION=${SEMGREP_VERSION:-1.180.0}
 GITLEAKS_IMAGE=${GITLEAKS_IMAGE:-zricethezav/gitleaks:v8.21.2}
 TRIVY_IMAGE=${TRIVY_IMAGE:-aquasec/trivy:0.57.1}
 OSV_IMAGE=${OSV_IMAGE:-ghcr.io/google/osv-scanner:v1.9.1}
+# Trivy vulnerability database sources, in order. The upstream registry comes
+# first: a mirror serving a stale index fails with BLOB_UNKNOWN, which Trivy
+# does not treat as a reason to try the next source.
+TRIVY_DB_REPOSITORY=${TRIVY_DB_REPOSITORY:-ghcr.io/aquasecurity/trivy-db:2,mirror.gcr.io/aquasec/trivy-db:2}
 # Extra trust anchors for egress proxies (optional), mounted into the scanner containers.
 CA_BUNDLE=${GATE_CA_BUNDLE:-}
 
@@ -127,7 +131,7 @@ check_image() {
         echo "--- $image"
         # shellcheck disable=SC2046
         docker run --rm $(proxy_args) $(ca_args) -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$image" || rc=1
+            --db-repository "$TRIVY_DB_REPOSITORY" --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$image" || rc=1
     done
     return $rc
 }
