@@ -27,7 +27,7 @@
         @include('partials.column-chart', ['series' => $series, 'currency' => $currency, 'caption' => __('Net revenue per day in :currency, :from to :to', ['currency' => $currency, 'from' => $from->toDateString(), 'to' => $to->toDateString()])])
         <details>
             <summary>{{ __('Show the data as a table') }}</summary>
-            <div class="table-wrap">
+            <div class="table-wrap" tabindex="0">
                 <table>
                     <thead><tr><th scope="col">{{ __('Day') }}</th><th scope="col" class="num">{{ __('Net revenue') }}</th></tr></thead>
                     <tbody>
@@ -43,7 +43,7 @@
     @endforelse
 
     <h2>{{ __('Top products') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Units') }}</th><th scope="col" class="num">{{ __('Net revenue') }}</th></tr></thead>
             <tbody>
@@ -57,7 +57,7 @@
     </div>
 
     <h2>{{ __('Top sellers') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Seller') }}</th><th scope="col" class="num">{{ __('Orders') }}</th><th scope="col" class="num">{{ __('Net sales') }}</th><th scope="col" class="num">{{ __('Seller earnings') }}</th></tr></thead>
             <tbody>

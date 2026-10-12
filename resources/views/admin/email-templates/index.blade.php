@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Email templates') }}</h1>
     <p>{{ __('Change the subject and text of the emails the shop sends. Emails you have not changed use the built-in text. Edited texts are plain text and apply to every recipient of that email.') }}</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Email') }}</th><th scope="col">{{ __('Sent to') }}</th><th scope="col">{{ __('Text') }}</th></tr></thead>
             <tbody>

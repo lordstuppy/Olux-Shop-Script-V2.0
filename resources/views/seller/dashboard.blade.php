@@ -46,7 +46,7 @@
     @if ($recentSales->isEmpty())
         <p>{{ __('No sales yet.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Qty') }}</th><th scope="col" class="num">{{ __('Your earning') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>
                 <tbody>

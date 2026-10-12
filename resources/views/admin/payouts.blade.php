@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Payout requests') }}</h1>
     <p><a href="{{ route('admin.reconciliation') }}">{{ __('Run ledger reconciliation') }}</a> {{ __('before paying out.') }}</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">#</th><th scope="col">{{ __('Seller') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col">{{ __('Destination') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Actions') }}</th></tr></thead>
             <tbody>

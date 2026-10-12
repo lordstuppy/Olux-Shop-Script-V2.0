@@ -10,7 +10,7 @@
         <x-select name="status" :label="__('Status')" :options="collect(\App\Enums\PaymentStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])->all()" :value="$filters['status'] ?? ''" :placeholder="__('Any status')" />
         <button type="submit">{{ __('Filter') }}</button>
     </form>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">#</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Kind') }}</th><th scope="col">{{ __('Provider') }}</th><th scope="col">{{ __('Reference') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col" class="num">{{ __('Received') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Created') }}</th></tr></thead>
             <tbody>

@@ -22,7 +22,7 @@
         </form>
         <p class="hint">{{ __('Suspended users are signed out at once. Your own account and (unless you are a super admin) staff accounts are skipped.') }}</p>
     @endcan
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr>@can('users.manage')<th scope="col"><span class="visually-hidden">{{ __('Select') }}</span></th>@endcan<th scope="col">{{ __('Email') }}</th><th scope="col">{{ __('Name') }}</th><th scope="col">{{ __('Role') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col" class="num">{{ __('Balance') }}</th><th scope="col">{{ __('Registered') }}</th></tr></thead>
             <tbody>

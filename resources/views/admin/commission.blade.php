@@ -12,7 +12,7 @@
     <p class="hint">{{ __('Enter a percentage such as 12.5. Leave a field empty to remove that level so the next one applies.') }}</p>
 
     <h2>{{ __('Categories') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Category') }}</th><th scope="col">{{ __('Rate') }}</th></tr></thead>
             <tbody>
@@ -36,7 +36,7 @@
     </div>
 
     <h2>{{ __('Sellers') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Seller') }}</th><th scope="col">{{ __('Rate') }}</th></tr></thead>
             <tbody>
@@ -63,7 +63,7 @@
     @if ($products->isEmpty())
         <p>{{ __('No product has its own rate.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Rate') }}</th></tr></thead>
                 <tbody>

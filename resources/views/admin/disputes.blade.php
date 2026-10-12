@@ -14,7 +14,7 @@
     @if ($disputes->isEmpty())
         <p>{{ __('No disputes in this view.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">#</th><th scope="col">{{ __('Item') }}</th><th scope="col">{{ __('Buyer') }}</th><th scope="col">{{ __('Seller') }}</th><th scope="col">{{ __('Reason') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Seller deadline') }}</th></tr></thead>
                 <tbody>

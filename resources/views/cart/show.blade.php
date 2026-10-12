@@ -13,7 +13,7 @@
     @if ($totals['lines'] === [])
         <p>{{ __('Your cart is empty.') }} <a href="{{ route('products.index') }}">{{ __('Browse products') }}</a>.</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <caption>{{ __('Items, priced in :currency', ['currency' => $totals['currency']]) }}</caption>
                 <thead>

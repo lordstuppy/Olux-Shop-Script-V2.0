@@ -15,7 +15,7 @@
         <x-field name="to" :label="__('To')" type="date" :value="$filters['to'] ?? ''" />
         <button type="submit">{{ __('Filter') }}</button>
     </form>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Time (UTC)') }}</th><th scope="col">{{ __('Actor') }}</th><th scope="col">{{ __('Action') }}</th><th scope="col">{{ __('Target') }}</th><th scope="col">{{ __('Details') }}</th><th scope="col">{{ __('IP / request') }}</th></tr></thead>
             <tbody>

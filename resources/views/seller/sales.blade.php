@@ -9,7 +9,7 @@
     @if ($items->isEmpty())
         <p>{{ __('No sales yet. Sales appear here once a buyer has paid for one of your products.') }} <a href="{{ route('seller.products.index') }}">{{ __('Check your products') }}</a>.</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Date') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Qty') }}</th><th scope="col" class="num">{{ __('Charged') }}</th><th scope="col" class="num">{{ __('Refunded') }}</th><th scope="col" class="num">{{ __('Your earning') }}</th><th scope="col">{{ __('Delivery') }}</th></tr></thead>
                 <tbody>

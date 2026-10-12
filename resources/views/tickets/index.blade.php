@@ -9,7 +9,7 @@
     @if ($tickets->isEmpty())
         <p>{{ __('You have no tickets.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead>
                     <tr><th scope="col">{{ __('Ticket') }}</th><th scope="col">{{ __('Subject') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Updated') }}</th></tr>

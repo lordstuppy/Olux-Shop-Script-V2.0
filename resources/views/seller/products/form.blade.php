@@ -67,11 +67,8 @@
                         @if ($file->retired_at)
                             - {{ __('retired') }}
                         @else
-                            <form method="post" action="{{ route('seller.products.files.destroy', [$product->id, $file->id]) }}" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-link">{{ __('Stop delivering') }}<span class="visually-hidden"> {{ $file->original_name }}</span></button>
-                            </form>
+                            <x-confirm :action="route('seller.products.files.destroy', [$product->id, $file->id])" method="DELETE" summary-class="btn-link" :label="__('Stop delivering')" :context="$file->original_name"
+                                :message="__('New orders will not receive this file; buyers who already have it keep access. This cannot be undone: to deliver it again, upload it again.')" :confirm="__('Yes, stop delivering')" />
                         @endif
                     </li>
                 @endforeach
@@ -91,11 +88,8 @@
                 @foreach ($product->images as $image)
                     <li>
                         <img src="{{ $image->url('thumb', preview: true) }}" width="{{ $image->width }}" height="{{ $image->height }}" alt="{{ $image->alt_text ?? __('Product image') }}">
-                        <form method="post" action="{{ route('seller.products.images.destroy', [$product->id, $image->id]) }}">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-link">{{ __('Remove image') }}<span class="visually-hidden"> {{ $loop->iteration }}</span></button>
-                        </form>
+                        <x-confirm :action="route('seller.products.images.destroy', [$product->id, $image->id])" method="DELETE" summary-class="btn-link" :label="__('Remove image')" :context="(string) $loop->iteration"
+                            :message="__('The image is deleted. This cannot be undone.')" :confirm="__('Yes, remove image')" />
                     </li>
                 @endforeach
             </ul>

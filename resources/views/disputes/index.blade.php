@@ -16,7 +16,7 @@
             @if ($$var->isEmpty())
                 <p>{{ __('No disputes.') }}</p>
             @else
-                <div class="table-wrap">
+                <div class="table-wrap" tabindex="0">
                     <table>
                         <thead><tr><th scope="col">#</th><th scope="col">{{ __('Item') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Opened') }}</th></tr></thead>
                         <tbody>

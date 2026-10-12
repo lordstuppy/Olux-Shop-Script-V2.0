@@ -63,7 +63,7 @@
     @if ($sessions->isEmpty())
         <p>{{ __('Session details are not available.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Browser') }}</th><th scope="col">{{ __('IP address') }}</th><th scope="col">{{ __('Last active') }}</th><th scope="col"><span class="visually-hidden">{{ __('Action') }}</span></th></tr></thead>
                 <tbody>

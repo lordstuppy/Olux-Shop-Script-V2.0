@@ -16,10 +16,8 @@
     <div class="actions">
         @can('orders.manage')
             @if ($order->status === \App\Enums\OrderStatus::Pending)
-                <form method="post" action="{{ route('admin.orders.cancel', $order) }}">
-                    @csrf
-                    <button type="submit" class="btn-danger">{{ __('Cancel order') }}</button>
-                </form>
+                <x-confirm :action="route('admin.orders.cancel', $order)" :label="__('Cancel order')"
+                    :message="__('The unpaid order is cancelled; reserved stock and the coupon are released. This cannot be undone.')" :confirm="__('Yes, cancel order')" />
             @endif
             @if ($order->status->isPaidState())
                 <form method="post" action="{{ route('admin.orders.invoice', $order) }}">
@@ -39,7 +37,7 @@
     </div>
 
     <h2>{{ __('Items') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col">{{ __('Seller') }}</th><th scope="col" class="num">{{ __('Unit') }}</th><th scope="col" class="num">{{ __('Qty') }}</th><th scope="col" class="num">{{ __('Discount') }}</th><th scope="col" class="num">{{ __('Refunded') }}</th><th scope="col" class="num">{{ __('Seller earning') }}</th><th scope="col">{{ __('FX') }}</th><th scope="col">{{ __('Delivered') }}</th></tr></thead>
             <tbody>
@@ -82,7 +80,7 @@
     </div>
 
     <h2>{{ __('Payments') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">#</th><th scope="col">{{ __('Kind') }}</th><th scope="col">{{ __('Provider') }}</th><th scope="col">{{ __('Reference') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col" class="num">{{ __('Received') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Confirmed') }}</th></tr></thead>
             <tbody>

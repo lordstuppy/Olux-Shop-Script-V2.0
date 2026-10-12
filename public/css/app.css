@@ -300,3 +300,30 @@ summary { cursor: pointer; color: var(--brand); }
 .live-message .live-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; line-height: 1; padding: .25rem .4rem; }
 @media print { .live-region { display: none !important; } }
 .seller-reply { margin: .5rem 0 0 1rem; padding: .4rem .8rem; border-left: 3px solid var(--brand); background: var(--bg-muted); border-radius: 0 var(--radius) var(--radius) 0; }
+
+/* Confirmation step for irreversible actions (components/confirm): works without scripts. */
+details.confirm { display: inline-block; margin: 0; vertical-align: top; max-width: 100%; }
+details.confirm.mt { display: block; margin-top: 1.25rem; }
+details.confirm > summary { list-style: none; display: inline-block; }
+details.confirm > summary::-webkit-details-marker { display: none; }
+details.confirm > summary.btn-link { color: var(--brand); text-decoration: underline; }
+details.confirm > summary.btn-danger, details.confirm > summary.btn-secondary { padding: .5rem 1rem; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--danger); color: var(--on-brand); }
+details.confirm > summary.btn-secondary { border-color: var(--brand); background: var(--surface); color: var(--brand); }
+@media (pointer: coarse) { details.confirm > summary.btn-danger, details.confirm > summary.btn-secondary { min-height: 2.75rem; } }
+details.confirm[open] > summary { outline: 2px solid var(--border); outline-offset: 2px; }
+.confirm-panel { margin-top: .5rem; padding: .6rem .8rem; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--danger-bg); color: var(--text); max-width: 34rem; }
+.confirm-panel p { margin: 0 0 .5rem; }
+/* Wide tables scroll sideways inside their box; the box takes keyboard focus so arrow keys can scroll it. */
+.table-wrap:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Product cards: the whole card opens the product (larger touch target); the title link stays the accessible name. */
+.product-card { position: relative; }
+.product-card .card-title a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
+.product-card:hover { border-color: var(--brand); }
+/* Narrow screens: catalogue filters in two columns, so the first products are reached sooner. */
+@media (max-width: 48rem) {
+    .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filters .field { min-width: 0; }
+    .filters .field:first-child { grid-column: 1 / -1; }
+}
+@media (pointer: coarse) { .brand { display: inline-flex; align-items: center; min-height: 2.75rem; } }

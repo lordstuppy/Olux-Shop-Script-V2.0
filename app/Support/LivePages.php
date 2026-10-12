@@ -58,6 +58,12 @@ final class LivePages
             ] : null,
             'seller.payouts' => $user->isSeller() ? [$max('payouts', 'updated_at', fn ($q) => $q->where('seller_id', $user->id)),
                 $max('seller_ledger_entries', 'id', fn ($q) => $q->where('seller_id', $user->id))] : null,
+            // Staff decisions (approval, rejection, disabling) and stock changes from key imports.
+            'seller.products.index' => $user->isSeller() ? [$max('products', 'updated_at', fn ($q) => $q->where('seller_id', $user->id)),
+                DB::table('products')->where('seller_id', $user->id)->count()] : null,
+            'seller.products.edit' => $user->isSeller() ? self::sellerProduct($user, (int) ($p['product'] ?? 0)) : null,
+            // The application page promises to show the decision.
+            'seller.apply' => [$user->role->value, $max('seller_profiles', 'updated_at', fn ($q) => $q->where('user_id', $user->id))],
             'seller.reviews' => $user->isSeller() ? [$max('product_reviews', 'updated_at', fn ($q) => $q->whereIn('product_id',
                 DB::table('products')->select('id')->where('seller_id', $user->id)))] : null,
             // One statement for the eight figures (polled every 10 s per open dashboard).
@@ -94,6 +100,18 @@ final class LivePages
             (string) DB::table('payments')->where('order_id', $order->id)->max('updated_at'),
             (string) DB::table('disputes')->where('order_id', $order->id)->max('updated_at'),
         ];
+    }
+
+    private static function sellerProduct(User $user, int $id): ?array
+    {
+        $product = DB::table('products')->where('id', $id)->where('seller_id', $user->id)->first(['status', 'updated_at']);
+        if ($product === null) {
+            return null;
+        }
+
+        return [$product->status, (string) $product->updated_at,
+            DB::table('product_files')->where('product_id', $id)->max('id'),
+            DB::table('product_images')->where('product_id', $id)->max('id')];
     }
 
     private static function ticket(User $user, int $id): ?array

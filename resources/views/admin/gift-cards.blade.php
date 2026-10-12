@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Gift cards') }}</h1>
     <p>{{ __('Codes are stored only as a keyed hash. The full code is shown once, right after creation.') }}</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">#</th><th scope="col">{{ __('Code ends') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col">{{ __('Created') }}</th><th scope="col">{{ __('Expires') }}</th><th scope="col">{{ __('Redeemed') }}</th></tr></thead>
             <tbody>

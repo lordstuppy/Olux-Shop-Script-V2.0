@@ -36,7 +36,7 @@
                     <button type="submit">{{ __('Retry all failed jobs') }}</button>
                 </form>
             @endcan
-            <div class="table-wrap mt">
+            <div class="table-wrap mt" tabindex="0">
                 <table>
                     <thead><tr><th scope="col">{{ __('Job') }}</th><th scope="col">{{ __('Failed at (UTC)') }}</th><th scope="col">{{ __('Error') }}</th>@can('jobs.manage')<th scope="col">{{ __('Actions') }}</th>@endcan</tr></thead>
                     <tbody>
@@ -51,11 +51,8 @@
                                             @csrf
                                             <button type="submit" class="btn-secondary">{{ __('Retry') }}</button>
                                         </form>
-                                        <form method="post" action="{{ route('admin.health.jobs.forget', $job['uuid']) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn-danger">{{ __('Delete') }}</button>
-                                        </form>
+                                        <x-confirm :action="route('admin.health.jobs.forget', $job['uuid'])" method="DELETE" :label="__('Delete')" :context="$job['uuid']"
+                                            :message="__('The job is discarded and never retried. This cannot be undone.')" :confirm="__('Yes, delete job')" />
                                     </td>
                                 @endcan
                             </tr>

@@ -58,10 +58,8 @@
             <button type="submit">{{ __('Send') }}</button>
         </form>
         @if ($role === 'buyer')
-            <form method="post" action="{{ route('disputes.withdraw', $dispute) }}" class="mt">
-                @csrf
-                <button type="submit" class="btn-secondary">{{ __('Withdraw dispute (problem solved)') }}</button>
-            </form>
+            <x-confirm class="mt" :action="route('disputes.withdraw', $dispute)" summary-class="btn-secondary" :label="__('Withdraw dispute (problem solved)')"
+                :message="__('The dispute is closed as solved and cannot be reopened. This cannot be undone.')" :confirm="__('Yes, withdraw dispute')" />
         @endif
 
         @if ($staff)

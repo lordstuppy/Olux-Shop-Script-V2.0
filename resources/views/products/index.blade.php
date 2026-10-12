@@ -17,7 +17,12 @@
         <button type="submit">{{ __('Apply filters') }}</button>
     </form>
 
-    <p class="muted" role="status">{{ trans_choice('{1} :count product found.|[0,*] :count products found.', $products->total()) }}</p>
+    @php $filtered = collect(['q', 'category', 'seller', 'price_min', 'price_max', 'currency'])->contains(fn ($key) => filled($filters[$key] ?? null)); @endphp
+    <p class="muted" role="status">{{ trans_choice('{1} :count product found.|[0,*] :count products found.', $products->total()) }}
+        @if ($filtered && $products->isNotEmpty())
+            <a href="{{ route('products.index') }}">{{ __('Clear filters') }}</a>
+        @endif
+    </p>
 
     @if ($products->isEmpty())
         <p>{{ __('No products match these filters.') }} <a href="{{ route('products.index') }}">{{ __('Clear filters') }}</a>.</p>

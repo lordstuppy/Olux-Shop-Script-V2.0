@@ -37,7 +37,7 @@
     @if ($product->files->isEmpty())
         <p>{{ __('No files.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('File') }}</th><th scope="col" class="num">{{ __('Size') }}</th><th scope="col">{{ __('SHA-256') }}</th><th scope="col">{{ __('Virus scan') }}</th><th scope="col">{{ __('State') }}</th><th scope="col">{{ __('Inspect') }}</th></tr></thead>
                 <tbody>

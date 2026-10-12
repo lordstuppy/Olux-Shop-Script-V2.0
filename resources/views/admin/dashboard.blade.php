@@ -47,7 +47,7 @@
                 @include('partials.column-chart', ['series' => $revenueSeries, 'currency' => $currency, 'chartId' => 'dash-revenue', 'caption' => __('Net revenue per day in :currency, last :days days', ['currency' => $currency, 'days' => $days])])
                 <details>
                     <summary>{{ __('Revenue table') }}</summary>
-                    <div class="table-wrap"><table><thead><tr><th scope="col">{{ __('Day') }}</th><th scope="col" class="num">{{ __('Net revenue') }}</th></tr></thead>
+                    <div class="table-wrap" tabindex="0"><table><thead><tr><th scope="col">{{ __('Day') }}</th><th scope="col" class="num">{{ __('Net revenue') }}</th></tr></thead>
                         <tbody>@foreach ($revenueSeries as $p)<tr><td>{{ $p['date'] }}</td><td class="num">{{ money($p['minor'], $currency) }}</td></tr>@endforeach</tbody></table></div>
                 </details>
             </section>
@@ -56,7 +56,7 @@
                 @include('partials.column-chart', ['series' => $orderSeries, 'currency' => $currency, 'kind' => 'count', 'chartId' => 'dash-orders', 'caption' => __('Paid orders per day, all currencies, last :days days', ['days' => $days])])
                 <details>
                     <summary>{{ __('Order table') }}</summary>
-                    <div class="table-wrap"><table><thead><tr><th scope="col">{{ __('Day') }}</th><th scope="col" class="num">{{ __('Paid orders') }}</th></tr></thead>
+                    <div class="table-wrap" tabindex="0"><table><thead><tr><th scope="col">{{ __('Day') }}</th><th scope="col" class="num">{{ __('Paid orders') }}</th></tr></thead>
                         <tbody>@foreach ($orderSeries as $p)<tr><td>{{ $p['date'] }}</td><td class="num">{{ $p['minor'] }}</td></tr>@endforeach</tbody></table></div>
                 </details>
             </section>
@@ -68,7 +68,7 @@
                 @if ($topProducts->isEmpty())
                     <p>{{ __('No sales in this period.') }}</p>
                 @else
-                    <div class="table-wrap"><table>
+                    <div class="table-wrap" tabindex="0"><table>
                         <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Units') }}</th><th scope="col" class="num">{{ __('Net') }}</th></tr></thead>
                         <tbody>@foreach ($topProducts as $row)<tr><td>{{ $row->title }}</td><td class="num">{{ $row->units }}</td><td class="num">{{ money((int) $row->net, $currency) }}</td></tr>@endforeach</tbody>
                     </table></div>
@@ -79,7 +79,7 @@
                 @if ($topSellers->isEmpty())
                     <p>{{ __('No sales in this period.') }}</p>
                 @else
-                    <div class="table-wrap"><table>
+                    <div class="table-wrap" tabindex="0"><table>
                         <thead><tr><th scope="col">{{ __('Seller') }}</th><th scope="col" class="num">{{ __('Orders') }}</th><th scope="col" class="num">{{ __('Net') }}</th></tr></thead>
                         <tbody>@foreach ($topSellers as $row)<tr><td>{{ $row->display_name ?? $row->email }}</td><td class="num">{{ $row->orders }}</td><td class="num">{{ money((int) $row->net, $currency) }}</td></tr>@endforeach</tbody>
                     </table></div>

@@ -1,9 +1,11 @@
 /*
  * Optional progressive enhancement. The shop is fully usable without this
  * file: every feature here has a server-rendered equivalent.
- *  1. Live search suggestions under the header search box.
- *  2. Prevents accidental double submission of forms marked data-once
- *     (the server also enforces idempotency keys).
+ *  1. Live search suggestions under the header search box (arrow keys move
+ *     into the list, Escape closes it; screen readers hear how many there are).
+ *  2. Prevents accidental double submission: a second submit of the same POST
+ *     form while the first is on its way is dropped, and forms marked
+ *     data-once also disable their buttons (payments use idempotency keys too).
  *  3. Show/hide button (eye) on password fields. Without scripts the fields
  *     simply stay masked: a server-side toggle would have to send the
  *     password back in a page, which is worse than no toggle.
@@ -11,13 +13,17 @@
  *  5. Busy indicator on the button that submitted a form, shown when the
  *     next page takes longer than 200 ms (without scripts the browser's own
  *     loading indicator does this job).
- *  6. Live updates for signed-in users: polls /live every 10 s while the tab
+ *  6. After a failed submission the error summary takes the focus, and table
+ *     boxes that scroll sideways can be scrolled with the keyboard.
+ *  7. Live updates for signed-in users: polls /live every 10 s while the tab
  *     is visible and someone used it in the last 20 minutes. Updates the
  *     unread badge and wallet balance (in every tab of this browser), shows
  *     new notifications with an optional sound, and re-fetches the page
  *     content when it changed - unless the person is filling in a form, who
- *     gets a "Show it" button instead. Without scripts pages show current
- *     data whenever they are loaded.
+ *     gets a "Show it" button instead. When the session ends (expiry, sign-out
+ *     elsewhere) it says so, offers a sign-in in another tab and afterwards
+ *     renews the page's form tokens, so typed input can still be sent.
+ *     Without scripts pages show current data whenever they are loaded.
  */
 (function () {
     'use strict';
@@ -29,8 +35,14 @@
         list.id = 'search-suggestions';
         list.hidden = true;
         input.parentNode.appendChild(list);
+        var announcer = document.createElement('span');
+        announcer.className = 'visually-hidden';
+        announcer.id = 'search-suggestions-status';
+        announcer.setAttribute('role', 'status');
+        input.parentNode.appendChild(announcer);
         input.setAttribute('aria-controls', list.id);
         input.setAttribute('autocomplete', 'off');
+        var countLabel = document.body.getAttribute('data-label-suggestions') || ':count suggestions. Use the down arrow key to choose one.';
 
         var timer = null;
         var lastQuery = '';
@@ -46,7 +58,35 @@
                 list.appendChild(li);
             });
             list.hidden = results.length === 0;
+            announcer.textContent = results.length ? countLabel.replace(':count', String(results.length)) : '';
         };
+        var links = function () {
+            return Array.prototype.slice.call(list.querySelectorAll('a'));
+        };
+        var close = function () {
+            var inside = list.contains(document.activeElement);
+            render([]);
+            if (inside) {
+                input.focus();
+            }
+        };
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowDown' && !list.hidden && links().length) {
+                event.preventDefault();
+                links()[0].focus();
+            }
+        });
+        list.addEventListener('keydown', function (event) {
+            var all = links();
+            var at = all.indexOf(document.activeElement);
+            if (event.key === 'ArrowDown' && at < all.length - 1) {
+                event.preventDefault();
+                all[at + 1].focus();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                (at > 0 ? all[at - 1] : input).focus();
+            }
+        });
 
         input.addEventListener('input', function () {
             var q = input.value.trim();
@@ -74,7 +114,7 @@
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
-                render([]);
+                close();
             }
         });
         document.addEventListener('click', function (event) {
@@ -150,6 +190,51 @@
     };
     enhance(document);
 
+    // After a failed submission, start where the problems are listed.
+    var problems = document.querySelector('.flash-error');
+    if (problems && !document.querySelector('[autofocus]')) {
+        problems.setAttribute('tabindex', '-1');
+        problems.focus();
+    }
+
+    // Table boxes are focusable in the markup (so keyboards can scroll them
+    // without scripts); here only the ones that really scroll stay in the tab
+    // order, as a named region.
+    var tableName = function (box) {
+        var caption = box.querySelector('caption');
+        if (caption && caption.textContent.trim()) {
+            return caption.textContent.trim();
+        }
+        for (var el = box; el && el !== document.body; el = el.parentElement) {
+            for (var prev = el.previousElementSibling; prev; prev = prev.previousElementSibling) {
+                var heading = /^H[1-6]$/.test(prev.tagName) ? prev : prev.querySelector('h1, h2, h3, h4, h5, h6');
+                if (heading && heading.textContent.trim()) {
+                    return heading.textContent.trim();
+                }
+            }
+        }
+        return body.getAttribute('data-label-table') || 'Table';
+    };
+    var tables = function () {
+        Array.prototype.forEach.call(document.querySelectorAll('.table-wrap'), function (box) {
+            if (box.scrollWidth > box.clientWidth + 1) {
+                box.setAttribute('tabindex', '0');
+                box.setAttribute('role', 'region');
+                box.setAttribute('aria-label', tableName(box));
+            } else {
+                box.removeAttribute('tabindex');
+                box.removeAttribute('role');
+                box.removeAttribute('aria-label');
+            }
+        });
+    };
+    tables();
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(tables, 200);
+    });
+
     // Section menus scroll sideways on narrow screens: show the current entry.
     var current = document.querySelector('.subnav [aria-current="page"]');
     var menu = current && current.closest('.nav');
@@ -165,11 +250,25 @@
             el.classList.remove('is-busy');
             el.removeAttribute('aria-busy');
         });
+        Array.prototype.forEach.call(document.querySelectorAll('form[data-sending]'), function (form) {
+            form.removeAttribute('data-sending');
+        });
     };
     document.addEventListener('submit', function (event) {
         var form = event.target;
         if (event.defaultPrevented || form.hasAttribute('data-download')) {
             return;
+        }
+        // A double click or a second Enter must not send the same change twice.
+        if ((form.getAttribute('method') || '').toLowerCase() === 'post') {
+            if (form.hasAttribute('data-sending')) {
+                event.preventDefault();
+                return;
+            }
+            form.setAttribute('data-sending', '');
+            busyTimers.push(setTimeout(function () {
+                form.removeAttribute('data-sending');
+            }, 10000));
         }
         var button = event.submitter || form.querySelector('button[type=submit], button:not([type])');
         if (!button) {
@@ -219,6 +318,14 @@
                 textNode.href = options.href;
             }
             box.appendChild(textNode);
+            if (options.link) {
+                var link = document.createElement('a');
+                link.href = options.link.href;
+                link.textContent = options.link.text;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                box.appendChild(link);
+            }
             if (options.action) {
                 var act = document.createElement('button');
                 act.type = 'button';
@@ -376,6 +483,7 @@
                 document.title = doc.title;
                 dirty = false;
                 enhance(content);
+                tables();
                 drop('pending');
                 say(label('live-updated', 'This page was updated.'), { id: 'updated', timeout: 4000 });
             }).catch(function () {
@@ -405,6 +513,24 @@
 
         var version = body.getAttribute('data-live-version') || null;
         var failures = 0;
+        // Session ended: say so once and keep checking; after a sign-in in
+        // another tab, the forms here get the new session's token.
+        var signedOut = false;
+        var signedIn = function () {
+            fetch(window.location.href, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'text/html' } }).then(function (response) {
+                return response.ok && !response.redirected ? response.text() : null;
+            }).then(function (html) {
+                var token = html && new DOMParser().parseFromString(html, 'text/html').querySelector('input[name="_token"]');
+                if (token) {
+                    Array.prototype.forEach.call(document.querySelectorAll('input[name="_token"]'), function (field) {
+                        field.value = token.value;
+                    });
+                }
+                say(label('live-signed-in', 'You are signed in again. You can send the form now.'), { id: 'session', timeout: 8000 });
+            }).catch(function () {
+                drop('session');
+            });
+        };
         var timer = null;
         // Stop polling after 20 idle minutes, so an open tab does not keep the
         // session alive forever; any interaction resumes it.
@@ -443,6 +569,10 @@
                 }
                 return response.json();
             }).then(function (data) {
+                if (signedOut) {
+                    signedOut = false;
+                    signedIn();
+                }
                 if (failures >= 2) {
                     say(label('live-back', 'Connection restored.'), { id: 'connection', timeout: 3000 });
                 }
@@ -461,6 +591,13 @@
                 schedule();
             }).catch(function (error) {
                 if (error && error.message === 'signed-out') {
+                    if (!signedOut) {
+                        signedOut = true;
+                        say(label('live-signed-out', 'You are signed out. Sign in again in another tab to keep what you typed here.'), {
+                            id: 'session', warning: true, link: { href: body.getAttribute('data-login') || '/login', text: label('live-sign-in', 'Sign in again') }
+                        });
+                    }
+                    schedule();
                     return;
                 }
                 failures++;

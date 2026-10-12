@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Webhook events') }}</h1>
     <p>{{ __('Failed events are retried automatically with exponential backoff (:backoff seconds). Events that exhaust all retries are marked dead.', ['backoff' => implode(', ', config('shop.webhook_retry_backoff'))]) }}</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">#</th><th scope="col">{{ __('Received') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col" class="num">{{ __('Attempts') }}</th><th scope="col">{{ __('Next attempt') }}</th><th scope="col">{{ __('Detail') }}</th><th scope="col">{{ __('Action') }}</th></tr></thead>
             <tbody>

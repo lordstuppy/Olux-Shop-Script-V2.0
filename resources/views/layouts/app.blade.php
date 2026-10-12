@@ -16,11 +16,14 @@
     <script src="{{ static_asset('js/enhance.js') }}" defer></script>
 </head>
 <body data-label-show-password="{{ __('Show password') }}" data-label-hide-password="{{ __('Hide password') }}"
+    data-label-suggestions="{{ __(':count suggestions. Use the down arrow key to choose one.') }}" data-label-table="{{ __('Table') }}"
     @auth
         data-live="{{ route('live') }}" data-live-version="{{ $liveVersion ?? '' }}" data-live-sound="{{ auth()->user()->notification_sound !== false ? '1' : '0' }}"
         data-label-live-lost="{{ __('Connection lost. Trying again...') }}" data-label-live-back="{{ __('Connection restored.') }}"
         data-label-live-updated="{{ __('This page was updated.') }}" data-label-live-pending="{{ __('This page has new information.') }}"
         data-label-live-show="{{ __('Show it') }}" data-label-live-new="{{ __('New notification:') }}" data-label-close="{{ __('Close') }}"
+        data-login="{{ route('login') }}" data-label-live-signed-out="{{ __('You are signed out. Sign in again in another tab to keep what you typed here.') }}"
+        data-label-live-sign-in="{{ __('Sign in again') }}" data-label-live-signed-in="{{ __('You are signed in again. You can send the form now.') }}"
     @endauth
 >
 <a class="skip-link" href="#main">{{ __('Skip to main content') }}</a>

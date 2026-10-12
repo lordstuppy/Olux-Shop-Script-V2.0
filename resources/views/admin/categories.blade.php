@@ -19,11 +19,8 @@
                 </div>
             </form>
             @if ($category->products_count === 0)
-                <form method="post" action="{{ route('admin.categories.destroy', $category->id) }}" class="mt">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn-danger">{{ __('Delete') }}<span class="visually-hidden"> {{ $category->name }}</span></button>
-                </form>
+                <x-confirm class="mt" :action="route('admin.categories.destroy', $category->id)" method="DELETE" :label="__('Delete')" :context="$category->name"
+                    :message="__('The category is removed from the shop. This cannot be undone.')" :confirm="__('Yes, delete category')" />
             @endif
         </section>
     @empty

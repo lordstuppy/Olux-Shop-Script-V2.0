@@ -10,7 +10,7 @@
     @if ($products->isEmpty())
         <p>{{ __('You have not created any products.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Title') }}</th><th scope="col" class="num">{{ __('Price') }}</th><th scope="col" class="num">{{ __('Stock') }}</th><th scope="col">{{ __('Files / keys') }}</th><th scope="col" class="num">{{ __('Platform commission') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>
                 <tbody>

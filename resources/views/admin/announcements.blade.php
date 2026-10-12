@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Announcements') }}</h1>
     <p>{{ __('Active announcements appear above every page (at most two, newest first).') }}</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Title') }}</th><th scope="col">{{ __('Window') }}</th><th scope="col">{{ __('Visible') }}</th><th scope="col">{{ __('Actions') }}</th></tr></thead>
             <tbody>
@@ -21,11 +21,8 @@
                                 @csrf
                                 <button type="submit" class="btn-secondary">{{ $a->active ? __('Hide') : __('Show') }}<span class="visually-hidden"> {{ $a->title }}</span></button>
                             </form>
-                            <form method="post" action="{{ route('admin.announcements.destroy', $a) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-danger">{{ __('Delete') }}<span class="visually-hidden"> {{ $a->title }}</span></button>
-                            </form>
+                            <x-confirm :action="route('admin.announcements.destroy', $a)" method="DELETE" :label="__('Delete')" :context="$a->title"
+                                :message="__('The announcement disappears for everyone. This cannot be undone.')" :confirm="__('Yes, delete announcement')" />
                         </td>
                     </tr>
                 @empty

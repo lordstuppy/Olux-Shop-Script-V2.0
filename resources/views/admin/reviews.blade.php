@@ -10,7 +10,7 @@
         <x-select name="status" :label="__('Status')" :options="['visible' => __('Visible'), 'hidden' => __('Hidden')]" :value="$filters['status'] ?? ''" :placeholder="__('Any status')" />
         <button type="submit">{{ __('Filter') }}</button>
     </form>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Product') }}</th><th scope="col">{{ __('Buyer') }}</th><th scope="col">{{ __('Rating') }}</th><th scope="col">{{ __('Review') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Action') }}</th></tr></thead>
             <tbody>
@@ -22,11 +22,8 @@
                         <td><strong>{{ $review->title }}</strong><br>{{ \Illuminate\Support\Str::limit($review->body, 200) }}
                             @if ($review->seller_reply)
                                 <div class="seller-reply"><span class="meta">{{ __('Seller reply:') }}</span> {{ \Illuminate\Support\Str::limit($review->seller_reply, 200) }}
-                                    <form method="post" action="{{ route('admin.reviews.reply.destroy', $review) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-link">{{ __('Remove reply') }}<span class="visually-hidden"> {{ __('to review :id', ['id' => $review->id]) }}</span></button>
-                                    </form>
+                                    <x-confirm :action="route('admin.reviews.reply.destroy', $review)" method="DELETE" summary-class="btn-link" :label="__('Remove reply')" :context="__('to review :id', ['id' => $review->id])"
+                                        :message="__('The seller\'s reply is deleted. This cannot be undone.')" :confirm="__('Yes, remove reply')" />
                                 </div>
                             @endif
                         </td>

@@ -6,7 +6,7 @@
 
 @section('content')
     <h1>{{ __('Coupons') }}</h1>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Code') }}</th><th scope="col">{{ __('Discount') }}</th><th scope="col">{{ __('Minimum') }}</th><th scope="col">{{ __('Used') }}</th><th scope="col">{{ __('Per buyer') }}</th><th scope="col">{{ __('Expires') }}</th><th scope="col">{{ __('Active') }}</th><th scope="col">{{ __('Action') }}</th></tr></thead>
             <tbody>

@@ -5,15 +5,13 @@
 
 @section('content')
     <h1>{{ __('Order') }} <span class="mono">{{ $order->shortId() }}</span></h1>
-    <p>{{ __('Status:') }} <x-status :value="$order->status" />. {{ __('Placed :time UTC.', ['time' => $order->created_at->format('Y-m-d H:i')]) }} {{ __('Full reference:') }} <span class="mono">{{ $order->public_id }}</span></p>
+    <p>{{ __('Status:') }} <x-status :value="$order->status" /> &middot; {{ __('Placed :time UTC.', ['time' => $order->created_at->format('Y-m-d H:i')]) }} {{ __('Full reference:') }} <span class="mono">{{ $order->public_id }}</span></p>
 
     @if ($order->status === \App\Enums\OrderStatus::Pending && auth()->id() === $order->buyer_id)
         <div class="actions">
             <a class="btn" href="{{ route('orders.pay', $order) }}">{{ __('Pay now') }}</a>
-            <form method="post" action="{{ route('orders.cancel', $order) }}">
-                @csrf
-                <button type="submit" class="btn-secondary">{{ __('Cancel order') }}</button>
-            </form>
+            <x-confirm :action="route('orders.cancel', $order)" summary-class="btn-secondary" :label="__('Cancel order')"
+                :message="__('The order can no longer be paid. This cannot be undone; you can order the items again.')" :confirm="__('Yes, cancel order')" />
         </div>
         @if ($order->expires_at)
             <p class="hint">{{ __('Unpaid orders expire at :time UTC.', ['time' => $order->expires_at->format('Y-m-d H:i')]) }}</p>
@@ -29,7 +27,7 @@
     @endif
 
     <h2>{{ __('Items') }}</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead>
                 <tr>

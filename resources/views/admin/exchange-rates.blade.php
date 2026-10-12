@@ -7,7 +7,7 @@
 @section('content')
     <h1>{{ __('Exchange rates') }}</h1>
     <p>{{ __('Rates are set per direction and are never inverted automatically. A product listed in one currency can only be bought in another when a rate for that direction exists. Orders keep the rate used at checkout.') }} {{ __('See') }} <span class="mono">docs/CURRENCY_POLICY.md</span>.</p>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Pair') }}</th><th scope="col">{{ __('Rate') }}</th><th scope="col">{{ __('Source') }}</th><th scope="col">{{ __('Updated') }}</th></tr></thead>
             <tbody>

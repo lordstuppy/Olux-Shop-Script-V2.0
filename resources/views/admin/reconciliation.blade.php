@@ -11,7 +11,7 @@
         <div class="flash flash-success" role="status">{{ __('No differences: the ledger matches completed orders and payouts.') }}</div>
     @else
         <div class="flash flash-error" role="alert">{{ __(':count differences found. Do not pay out affected sellers until they are explained.', ['count' => count($mismatches)]) }}</div>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Seller') }}</th><th scope="col">{{ __('Currency') }}</th><th scope="col">{{ __('Check') }}</th><th scope="col" class="num">{{ __('Expected') }}</th><th scope="col" class="num">{{ __('Ledger') }}</th></tr></thead>
                 <tbody>

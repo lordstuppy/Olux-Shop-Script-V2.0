@@ -11,7 +11,7 @@
         <x-select name="assigned" :label="__('Assigned')" :options="['any' => __('Anyone'), 'me' => __('Me'), 'none' => __('Nobody')]" :value="$filters['assigned'] ?? 'any'" />
         <button type="submit">{{ __('Filter') }}</button>
     </form>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col">{{ __('Ticket') }}</th><th scope="col">{{ __('Subject') }}</th><th scope="col">{{ __('Category') }}</th><th scope="col">{{ __('User') }}</th><th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Assigned') }}</th><th scope="col">{{ __('Updated') }}</th></tr></thead>
             <tbody>

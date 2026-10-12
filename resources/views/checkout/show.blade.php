@@ -16,7 +16,7 @@
     <div class="two-col">
         <section aria-labelledby="summary-heading">
             <h2 id="summary-heading">{{ __('Order summary') }}</h2>
-            <div class="table-wrap">
+            <div class="table-wrap" tabindex="0">
                 <table>
                     <thead>
                         <tr><th scope="col">{{ __('Product') }}</th><th scope="col" class="num">{{ __('Qty') }}</th><th scope="col" class="num">{{ __('Total') }}</th></tr>

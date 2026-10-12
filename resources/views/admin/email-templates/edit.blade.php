@@ -43,10 +43,7 @@
     @endif
 
     @if ($customised)
-        <form method="post" action="{{ route('admin.email-templates.reset', $key) }}" class="mt">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn-danger">{{ __('Reset to the built-in text') }}</button>
-        </form>
+        <x-confirm class="mt" :action="route('admin.email-templates.reset', $key)" method="DELETE" :label="__('Reset to the built-in text')"
+            :message="__('Your edited subject and text are replaced by the built-in text. This cannot be undone.')" :confirm="__('Yes, reset this template')" />
     @endif
 @endsection

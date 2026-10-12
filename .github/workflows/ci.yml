@@ -149,7 +149,16 @@ jobs:
           sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^DB_PASSWORD=.*/DB_PASSWORD=shop/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
           php artisan key:generate
       - run: cd tests/browser && npm install --no-fund && npm audit --audit-level=high && npx playwright install --with-deps chromium
+      # Also the UX regression gate (docs/ux): ux.spec.js, and the accessibility
+      # scan (WCAG 2.2 AA) in light, dark and on a phone viewport.
       - run: ./tests/browser/run.sh
+      - name: Keep screenshots and traces of failed browser checks
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-test-results
+          path: tests/browser/test-results
+          retention-days: 14
 
   # End-to-end run on a production-like stack (nginx TLS, queue worker,
   # scheduler, PostgreSQL 15, Shkeeper mock). Takes about 8 minutes because it

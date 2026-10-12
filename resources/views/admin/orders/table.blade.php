@@ -1,4 +1,4 @@
-<div class="table-wrap">
+<div class="table-wrap" tabindex="0">
     <table>
         @php $selectable ??= false; @endphp
         <thead><tr>@if ($selectable)<th scope="col"><span class="visually-hidden">{{ __('Select') }}</span></th>@endif<th scope="col">{{ __('Order') }}</th><th scope="col">{{ __('Buyer') }}</th><th scope="col">{{ __('Created') }}</th><th scope="col" class="num">{{ __('Total') }}</th><th scope="col">{{ __('Status') }}</th></tr></thead>

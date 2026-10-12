@@ -76,7 +76,7 @@
     @if ($logs->isEmpty())
         <p>{{ __('Nothing logged yet.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">{{ __('Time (UTC)') }}</th><th scope="col">{{ __('Channel') }}</th><th scope="col">{{ __('Outcome') }}</th><th scope="col">{{ __('Details') }}</th><th scope="col" class="num">{{ __('HTTP') }}</th><th scope="col" class="num">{{ __('ms') }}</th><th scope="col">{{ __('Source / request') }}</th></tr></thead>
                 <tbody>

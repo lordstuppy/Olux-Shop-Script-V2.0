@@ -9,7 +9,7 @@ test.use({ javaScriptEnabled: true });
 
 async function audit(page, path) {
     await page.goto(path);
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     const summary = results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
     expect(summary, `axe violations on ${path}`).toEqual([]);
 

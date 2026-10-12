@@ -8,7 +8,7 @@
     @if ($orders->isEmpty())
         <p>{{ __('You have not placed any orders yet.') }} <a href="{{ route('products.index') }}">{{ __('Browse products') }}</a>.</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <caption>{{ __('Most recent first') }}</caption>
                 <thead>

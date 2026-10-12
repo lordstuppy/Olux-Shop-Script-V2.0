@@ -17,7 +17,7 @@
         <x-select name="scope" id="bulk-scope" :label="__('Apply to')" :options="['selected' => __('Ticked products'), 'filtered' => __('All products matching the filter (:count)', ['count' => $products->total()])]" />
         <button type="submit" class="btn-secondary">{{ __('Apply') }}</button>
     </form>
-    <div class="table-wrap">
+    <div class="table-wrap" tabindex="0">
         <table>
             <thead><tr><th scope="col"><span class="visually-hidden">{{ __('Select') }}</span></th><th scope="col">{{ __('Product') }}</th><th scope="col">{{ __('Seller') }}</th><th scope="col" class="num">{{ __('Price') }}</th><th scope="col">{{ __('Delivery') }}</th><th scope="col">{{ __('Files / keys') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Action') }}</th></tr></thead>
             <tbody>

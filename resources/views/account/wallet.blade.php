@@ -19,7 +19,7 @@
     @if ($transactions->isEmpty())
         <p>{{ __('No balance activity yet.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead>
                     <tr><th scope="col">{{ __('Date') }}</th><th scope="col">{{ __('Type') }}</th><th scope="col">{{ __('Note') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col" class="num">{{ __('Balance after') }}</th></tr>

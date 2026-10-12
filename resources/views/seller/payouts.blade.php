@@ -30,7 +30,7 @@
     @if ($payouts->isEmpty())
         <p>{{ __('No payouts requested.') }}</p>
     @else
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0">
             <table>
                 <thead><tr><th scope="col">#</th><th scope="col">{{ __('Requested') }}</th><th scope="col" class="num">{{ __('Amount') }}</th><th scope="col">{{ __('Status') }}</th><th scope="col">{{ __('Reference') }}</th></tr></thead>
                 <tbody>
