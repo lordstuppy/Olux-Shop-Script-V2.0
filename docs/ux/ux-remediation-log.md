@@ -35,6 +35,7 @@ Each change, in the order it was made, with its regression test and the verifica
 | UX-25 search stopped live updates | 974e3f5 | `enhance.js` (`searchTimer`) | `ux.spec.js` "typing in the header search does not stop live updates" | No poll after typing | Polls continue |
 | JavaScript size | 974e3f5 | `enhance.js`: `fetchPage`, `swap` and `each` helpers, shorter header comment | Asset budget (performance gate) | 31.4 KB after UX-15, over the 30 KB budget | 29.1 KB, 7.4 KB gzip |
 | UX-16 | - | No change: the owner decided to keep UTC (2026-10-13) | - | - | - |
+| UX-09 standalone links on touch screens | 314d165 | `app.css` (coarse-pointer rule for standalone links, whole notifications and dashboard tiles, ids on one line), `helpers.js` (test sign-in waits out the per-email limit) | `ux.spec.js` "on a phone, every control outside running text is at least 44 px high" (13 pages) | 207 below 44 px | 0 |
 
 ## Verification after the changes
 

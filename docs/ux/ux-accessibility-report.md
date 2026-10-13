@@ -33,7 +33,7 @@
 | 2.4.3 Focus order | A | Follows the document; no positive `tabindex`. Focus moves only on a failed submission (to the error summary) and on Escape in the search. |
 | 2.4.7 Focus visible; 2.4.11 Focus not obscured | AA | A 3 px focus outline in both schemes. No sticky header. The live messages (bottom right, at most 24 rem) can overlap part of a focused element but never all of it. |
 | 2.5.7 Dragging movements | AA | No dragging anywhere. |
-| 2.5.8 Target size (minimum) | AA | axe `target-size`: 0 violations at 375 and 1280 px. On touch screens 44 px for buttons, fields, menus and cards (UX-09). |
+| 2.5.8 Target size (minimum) | AA | axe `target-size`: 0 violations at 375 and 1280 px. On touch screens every control outside running text is at least 44 px (UX-09: 0 below 44 px in the crawl, guarded by a browser test). |
 | 3.2.6 Consistent help | A | Support email in the footer of every page; support tickets in the main navigation when signed in. |
 | 3.3.1 Error identification; 3.3.3 Error suggestion | A, AA | Field-level messages naming the fix, an error summary, and `aria-invalid`. Input is kept after errors (passwords excepted). |
 | 3.3.2 Labels or instructions | A | Every field has a visible label; formats and rules are given before submission (hints such as the password rule). Required fields carry `required`; optional fields in staff and seller forms say "(optional)" in the label (UX-17). |

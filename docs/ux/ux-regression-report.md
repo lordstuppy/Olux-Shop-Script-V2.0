@@ -1,12 +1,12 @@
 # UX Regression Report
 
-**Final candidate:** `974e3f5` on branch `claude/zen-pasteur-vs99pr`, with the fixes for UX-15, UX-17, UX-18 and UX-25. Later commits add only reports and evidence. Runs from 2026-10-13; the first round of this audit ran on `66ce3a5` (2026-10-12) with the same results apart from the counts below.
+**Final candidate:** `314d165` on branch `claude/zen-pasteur-vs99pr`, with the fixes for UX-09, UX-15, UX-17, UX-18 and UX-25. `314d165` changed only the stylesheet and browser tests after `974e3f5`, where the simulation and the security gate ran. Later commits add only reports and evidence. Runs from 2026-10-13; the first round of this audit ran on `66ce3a5` (2026-10-12) with the same results apart from the counts below.
 
 ## Automated results on the candidate
 
 | Suite | What it covers | Result | Evidence |
 |---|---|---|---|
-| Browser suite (`tests/browser/run.sh`, fresh seed) | 39 tests: pages without JavaScript; live updates; 16 UX tests; accessibility (axe WCAG 2.2 AA, headings, labels, focus order) in light, dark and phone projects | **39 / 39 pass** (9.3 min) | [evidence/browser-suite-final.txt](evidence/browser-suite-final.txt) |
+| Browser suite (`tests/browser/run.sh`, fresh seed) | 40 tests: pages without JavaScript; live updates; 17 UX tests; accessibility (axe WCAG 2.2 AA, headings, labels, focus order) in light, dark and phone projects | **40 / 40 pass** (9.4 min) | [evidence/browser-suite-final.txt](evidence/browser-suite-final.txt) |
 | Audit crawl | 73 pages x 4 roles x 6 viewports, light and dark: 584 page views | 0 overflow, 0 axe violations, 0 console errors, 0 failed requests, 0 unnamed controls, text spacing 0 problems | [evidence/crawl-after.json](evidence/crawl-after.json) |
 | PHPUnit | 327 tests (13 new in `UxAuditTest`) | **327 / 327 pass** (4,190 assertions) | Local run |
 | Simulation, production stack (nginx TLS, PHP-FPM, queue, scheduler, PostgreSQL 15, Shkeeper mock) | 101 scenarios: purchases, payments, accounts, sellers, staff, recovery, live updates | **101 / 101 pass** on the image built from `974e3f5` (app `aa9c31e6d589`, web `8a5f73838e2d`); the gift-card and balance scenarios go through the new one-time key | [evidence/simulation-ux-candidate.md](evidence/simulation-ux-candidate.md) |
@@ -14,6 +14,7 @@
 | Static checks | Pint, PHPStan level 5, ASCII check, translation catalogue | Pass | Local run |
 | Performance gate (checks that run without the stack) | Style, types, performance tests, asset budgets | PASS. `enhance.js` 29,133 B / 7,450 B gzip, against budgets of 30,000 / 8,000 | `scripts/performance-gate.sh` |
 | Web Vitals A/B (old against new `enhance.js`, same server and pages) | LCP, CLS, TBT, INP (lab), transfer | No change beyond noise (LCP within 16 ms, CLS unchanged, TBT within 18 ms, the catalogue lower); +8.7 KB transfer uncompressed, about +2 KB with gzip | [evidence/webvitals-ab.json](evidence/webvitals-ab.json) |
+| Web Vitals A/B for the UX-09 stylesheet (same server and pages) | LCP, CLS, TBT, INP (lab) | Unchanged within noise; CLS 0 | [evidence/webvitals-ab-css.json](evidence/webvitals-ab-css.json) |
 
 **Revisions of the evidence:**
 
@@ -21,12 +22,12 @@
 
 ## Before and after
 
-| Measure | Before (`17a3380`) | After (`974e3f5`) |
+| Measure | Before (`17a3380`) | After (`314d165`) |
 |---|---|---|
-| UX regression tests | 6 of 8 initial tests fail, plus 4 later ones ([evidence/regression-tests-before-fix.txt](evidence/regression-tests-before-fix.txt)) | 16 / 16 pass |
+| UX regression tests | 6 of 8 initial tests fail, plus 5 later ones ([evidence/regression-tests-before-fix.txt](evidence/regression-tests-before-fix.txt)) | 17 / 17 pass |
 | axe WCAG 2.2 AA violations, crawl | 26 | 0 |
-| Browser suite size | 19 tests (axe without `wcag22aa`, no phone project) | 39 tests |
-| Touch targets below 44 px on touch viewports | 438 | 207 |
+| Browser suite size | 19 tests (axe without `wcag22aa`, no phone project) | 40 tests |
+| Touch targets below 44 px on touch viewports | 438 | 0 |
 | Catalogue, first product at 375 px | 837 px | 651 px |
 | Irreversible one-click actions | 10 | 0 |
 | Pages that need a reload to show staff decisions | 3, plus the menus after a role change | 0 |
@@ -58,7 +59,7 @@ No unintended visual change was seen in these. For all other pages, the after cr
 
 ## Remaining issues and untested behaviour
 
-- **Open findings:** only the remaining part of UX-09 (Low). UX-16 (UTC only) is accepted by the owner. See [ux-findings.md](ux-findings.md).
+- **Open findings:** none. UX-16 (UTC only) is accepted by the owner. See [ux-findings.md](ux-findings.md).
 - **Not tested:**
   - screen readers;
   - real users;

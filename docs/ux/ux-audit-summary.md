@@ -8,7 +8,7 @@ The shop's journeys work and are now covered by tests:
 - with and without JavaScript;
 - on a phone and by keyboard alone.
 
-All 3 High and 5 Medium findings are fixed, as are all Low findings except part of one, with regression tests that failed before the fixes. Every automated check passes on the candidate.
+All 3 High and 5 Medium findings are fixed, as are all Low findings, with regression tests that failed before the fixes. Every automated check passes on the candidate.
 
 The decision is BLOCKED because two mandatory gates need something this environment does not have:
 
@@ -22,8 +22,8 @@ The security audit's BLOCKED decision ([docs/security](../security/security-audi
 ## Tested revision
 
 - **Baseline:** `17a3380`.
-- **Candidate:** `974e3f5` on branch `claude/zen-pasteur-vs99pr`. Later commits add only reports and evidence.
-- **Simulation image:** app `aa9c31e6d589` and web `8a5f73838e2d`, built from `974e3f5`.
+- **Candidate:** `314d165` on branch `claude/zen-pasteur-vs99pr`. Later commits add only reports and evidence.
+- **Simulation image:** app `aa9c31e6d589` and web `8a5f73838e2d`, built from `974e3f5`. `314d165` changed only the stylesheet and browser tests after that.
 
 ## Gates
 
@@ -57,7 +57,7 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 |---|---|---|
 | High | 3 | Fixed |
 | Medium | 5 | Fixed (UX-22 needs JavaScript) |
-| Low | 14 | 12 fixed, 1 in part, 1 accepted by the owner (UX-16: times stay in UTC) |
+| Low | 14 | 13 fixed, 1 accepted by the owner (UX-16: times stay in UTC) |
 | Info | 3 | Decisions, or not verifiable here |
 
 **The ones that mattered most:**
@@ -77,7 +77,9 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 - UX-18: resent staff balance and gift-card forms are processed once and show the first result again.
 - UX-16: kept as is by the owner's decision.
 
-**Open:** only the remaining part of UX-09 (Low): links in table cells and notification lists below the 44 px goal, within WCAG AA.
+**Third round (2026-10-13), on request:** UX-09 completed. Every control outside running text is at least 44 px on touch screens; whole notifications and dashboard tiles are links.
+
+**Open:** none.
 
 ## Workflow coverage
 
@@ -110,7 +112,7 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 **On phones:**
 
 - the first product is 186 px higher on the catalogue;
-- touch targets below 44 px fell from 438 to 207;
+- touch targets below 44 px fell from 438 to 0;
 - the landscape admin menu no longer fills the screen.
 
 ## Synchronisation
@@ -129,7 +131,7 @@ Version checks follow the same access rules as the pages.
 
 | Check | Result |
 |---|---|
-| Browser suite | 39 / 39 (was 19 tests) |
+| Browser suite | 40 / 40 (was 19 tests) |
 | PHPUnit | 327 / 327 |
 | Simulation | 101 / 101 |
 | Security gate | 9 / 9 PASS |

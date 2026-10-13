@@ -3,7 +3,7 @@
   "generated": "2026-10-13",
   "tested_revision": {
     "baseline_code": "17a3380",
-    "candidate_code": "974e3f5 (later commits: reports and evidence only)",
+    "candidate_code": "314d165 (after 974e3f5 only the stylesheet and browser tests changed; later commits: reports and evidence only)",
     "browser": "Chromium (Playwright 1.56.1), axe-core 4.10.2",
     "simulation_image": "digital-goods-shop aa9c31e6d589, web 8a5f73838e2d (built from 974e3f5)"
   },
@@ -29,9 +29,7 @@
     "Medium": 5,
     "Low": 14,
     "Info": 3,
-    "open": [
-      "UX-09 remainder (Low): links in table cells and notification lists below the 44 px goal, within AA"
-    ],
+    "open": [],
     "accepted_by_owner": [
       "UX-16 times in UTC only (decision 2026-10-13)"
     ],
@@ -115,7 +113,8 @@
       "evidence": [
         "ux-responsive-audit.md: 6 viewports incl. landscape, both schemes; 0 overflow, 0 axe violations, text spacing pass",
         "Purchase completed on a 375 px touch viewport (ux.spec.js)",
-        "UX-08, 09, 10, 11 fixed"
+        "UX-08, 09, 10, 11 fixed",
+        "UX-09 completed: 0 controls outside running text below 44 px on touch viewports (was 438); browser test on 13 pages"
       ],
       "limits": [
         "Chromium device emulation only; no iOS Safari, Firefox or real devices"
@@ -144,7 +143,8 @@
       "evidence": [
         "axe WCAG 2.2 AA: 0 violations in CI (light, dark, phone) and in the crawl (was 26, UX-01)",
         "Keyboard-only purchase journey; focus management; search, confirmations and toggle by keyboard",
-        "UX-01, 05, 07, 22 fixed"
+        "UX-01, 05, 07, 22 fixed",
+        "2.5.8 target size: axe 0; on touch screens every control outside running text at least 44 px (UX-09)"
       ],
       "reason": "No screen reader (NVDA, JAWS, VoiceOver, TalkBack) is available in this environment, and automated scans alone do not establish conformance. The screen-reader script in ux-accessibility-report.md has to be run."
     },
@@ -236,11 +236,12 @@
       "status": "PASS",
       "criteria": "The candidate passes the mandatory UX regression suite without unacceptable regressions.",
       "evidence": [
-        "Browser suite 39/39 on 974e3f5 (evidence/browser-suite-final.txt)",
-        "Crawl 584 page views on 974e3f5: 0 overflow, 0 axe violations, 0 console errors (evidence/crawl-after.json)",
+        "Browser suite 40/40 on 314d165 (evidence/browser-suite-final.txt)",
+        "Crawl 584 page views on 314d165: 0 overflow, 0 axe violations, 0 console errors, 0 touch targets below 44 px (evidence/crawl-after.json)",
         "PHPUnit 327/327; Pint, PHPStan level 5, ASCII clean",
         "Simulation 101/101 on the image built from 974e3f5 (evidence/simulation-ux-candidate.md)",
         "Security gate 9/9 PASS (evidence/security-gate-ux-candidate.json)",
+        "UX-09 stylesheet: Web Vitals A/B unchanged, CLS 0 (evidence/webvitals-ab-css.json)",
         "Asset budgets met (enhance.js 29,133 B / 7,450 B gzip of 30,000 / 8,000); Web Vitals A/B unchanged within noise (evidence/webvitals-ab.json)",
         "Regressions found and fixed during the audit: UX-14; latent defect found by a new test: UX-25"
       ],

@@ -30,3 +30,7 @@ a role change shows up in the menus ...              : FAILED  no "Seller" link 
 typing in the header search does not stop live ...   : FAILED  no poll within 20 s after typing (enhance.js of 3a9f5c0)                UX-25
 UX-17 and UX-18 are server-side; their PHPUnit tests (UxAuditTest::test_ux17_*, test_ux18_*) test behaviour that did not exist before
 (no "(optional)" marker, no one-time key) and were written together with the fix.
+
+5) Third round (2026-10-13):
+
+on a phone, every control outside running text ...  : FAILED  /products: card titles 204-254 x 21 px (app.css of d5c25b4)            UX-09

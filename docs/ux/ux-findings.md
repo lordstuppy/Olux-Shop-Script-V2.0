@@ -30,7 +30,7 @@
 | UX-25 | Typing in the header search stopped live updates on that page | Medium | U4, U10 | Fixed |
 | UX-07 | After a failed submission the focus stays at the top of the page | Low | U3, U8 | Fixed |
 | UX-08 | Catalogue filters fill the first phone screen; no "Clear filters" once there are results | Low | U6, U9 | Fixed |
-| UX-09 | Touch targets below the project's 44 px goal (logo, product cards) | Low | U6, U8 | Fixed in part |
+| UX-09 | Touch targets below the project's 44 px goal | Low | U6, U8 | Fixed |
 | UX-10 | In landscape on a phone, header and section menu fill the whole first screen | Low | U6 | Fixed |
 | UX-11 | Fact lists overflow narrow sidebar cards at 769 to about 1000 px | Low | U6 | Fixed |
 | UX-12 | Leaving a page with half-written text loses it without a warning | Low | U3 | Fixed |
@@ -50,13 +50,10 @@
 
 - High 3 (all fixed);
 - Medium 5 (all fixed; UX-22 only with JavaScript);
-- Low 14 (12 fixed, 1 in part, 1 accepted by the owner: UX-16);
+- Low 14 (13 fixed, 1 accepted by the owner: UX-16);
 - Info 3.
 
-**Open:**
-
-- the remaining part of UX-09 (Low): links in table cells and notification lists below the 44 px goal, within AA;
-- none High or Medium.
+**Open:** none. UX-16 (times in UTC) is kept by the owner's decision.
 
 **Total:** 25 findings.
 
@@ -239,21 +236,39 @@ After an approval the seller got a notification toast, while the list on screen 
 
 - the site name in the header;
 - product card titles;
-- links in tables and lists.
+- links in tables and lists;
+- notification titles and the dashboard "Needs attention" tiles;
+- links standing in a paragraph or action row of their own.
 
-**Fix:**
+**Fix, first round:**
 
 - The whole product card is now the link (`::after` overlay); the title stays the link's accessible name.
 - The site name is 44 px high on touch screens.
 
-**Counted on touch viewports (320, 375 and 768 px):**
+**Fix, second round (2026-10-13):**
 
-- below 44 px: 438 -> 207 instances;
-- the site name is gone from the list.
+- **Standalone links on touch screens:** links that stand on their own are at least 44 px high and 44 px wide. That covers a table cell, a list item, a definition, a paragraph or action row of their own, and card and notification titles.
+- **Links in running text:** they keep the line height, as WCAG's inline exception intends.
+- **Whole-entry links:** whole notifications and whole dashboard tiles open their link.
+- **Short IDs:** in table links they stay on one line.
 
-The crawl measures the link element itself, so the card overlay is not counted (`ux.spec.js` taps the card body).
+**Counted on touch viewports:**
 
-**Remaining:** links in table cells and notification lists. Left as is: they meet AA, and enlarging them would make the dense admin tables longer.
+| Viewports | Before | After round 1 | After round 2 |
+|---|---|---|---|
+| 320, 375 and 768 px | 438 | 207 | 0 |
+| All touch viewports, including landscape | - | - | 0 |
+
+**What the count leaves out:** the crawl leaves out links inside running text, and form fields. Check boxes are 21.6 px, but their labels are 44 px high and are the target.
+
+**Tests:** `ux.spec.js` "on a phone, every control outside running text is at least 44 px high" checks 13 seller and staff pages at 375 px with touch.
+
+- It failed before the second round: the product card titles were 21 px high.
+
+**Effects:**
+
+- Lab Web Vitals unchanged; CLS 0 on the measured pages (`evidence/webvitals-ab-css.json`).
+- Tables on phones are taller: one link row is 44 px.
 
 ### UX-10: Phone in landscape (Low)
 

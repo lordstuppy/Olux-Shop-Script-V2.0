@@ -42,7 +42,7 @@
 | Page overflow or elements past the edge | 0 | 0 (after fixing UX-14, a regression of this audit, and UX-11) |
 | axe WCAG 2.2 AA violations | 26 (`scrollable-region-focusable` at 375 px, 13 per scheme) | 0 |
 | axe target-size (2.5.8) violations | 0 | 0 |
-| Touch targets below 44 px (320, 375 and 768 px) | 438 instances | 207 instances (the card overlay is not counted) |
+| Touch targets below 44 px (320, 375 and 768 px; links in running text and form fields excluded) | 438 instances | 0 (207 after the first round) |
 | Console errors or failed requests (excluding the deliberate 404 page) | 0 | 0 |
 | Unnamed controls | 0 | 0 |
 | Text spacing: overflow or cut-off text | not measured | 0 of 73 pages |
@@ -54,7 +54,7 @@
 |---|---|---|---|
 | UX-01 | 375 px and below, zoom | Wide tables scroll sideways inside a box that keyboard users could not reach | Focusable, named scroll regions |
 | UX-08 | Phones | Seven filter fields in one column pushed every product below the first screen | Two columns on narrow screens; "Clear filters" |
-| UX-09 | Touch | Site name 30 px high; product card titles about 21 px high | Whole card is the link; site name 44 px |
+| UX-09 | Touch | Site name 30 px high; card titles, table and list links, notification titles and dashboard tiles about 20 px high | Whole cards, notifications and tiles are links; standalone links 44 px on touch screens; site name 44 px |
 | UX-10 | Phone in landscape | Header plus a four-row section menu filled the whole first screen | Section menus scroll sideways on low screens too |
 | UX-11 | 769 to about 1000 px | Fact lists in the narrow sidebar card overflowed (`/admin/gateway`) | Shrinkable label column |
 | UX-14 | 320 px | Audit regression: the first grid rule squeezed staff date filters | Grid limited to the catalogue |
@@ -67,7 +67,7 @@
 | Navigation on phones | Header links wrap (two to three rows on phones). Section menus become one sideways row that scrolls to the current entry. Every function stays available, nothing is hidden behind a menu button. |
 | Tables and long content | Tables scroll inside their box (now with the keyboard too). IDs, addresses and URLs wrap anywhere (`overflow-wrap: anywhere`, `.mono`). |
 | Dialogs and drop-downs | No modal dialogs. Confirmation panels are inline. Search suggestions sit under the field, within the header. |
-| Touch targets | AA met everywhere (axe). 44 px for buttons, fields, menus, pagination, check boxes and now cards and the site name. Links in tables and lists use the AA spacing exception (UX-09). |
+| Touch targets | AA met everywhere (axe). On touch screens every control outside running text is at least 44 px: buttons, fields, menus, pagination, check-box labels, cards, notifications, dashboard tiles and standalone links (UX-09). Links inside a sentence keep the line height. |
 | Mobile forms and keyboards | `type=email`, `inputmode=decimal` for amounts, `autocomplete=one-time-code` for 2FA (with `inputmode=numeric` where only digits are allowed; the sign-in challenge also accepts letter recovery codes), and correct `autocomplete` for passwords. Fields are 100 % wide. |
 | Sticky or floating parts | Only the live messages, bottom right, at most 24 rem wide and within the viewport. No fixed header. |
 | Images and charts | Images keep their aspect ratio (width and height set). Charts are SVG at 100 % width, with a table next to them. |
