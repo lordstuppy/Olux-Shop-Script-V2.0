@@ -232,6 +232,32 @@ test('a role change shows up in the menus of the signed-in user without a reload
     await staffContext.close();
 });
 
+test('on a phone, every control outside running text is at least 44 px high', async ({ browser }) => {
+    test.setTimeout(120000);
+    for (const [role, paths] of [
+        ['seller', ['/products', '/seller', '/seller/products', '/seller/sales', '/notifications', '/disputes', '/disputes/1', '/account']],
+        ['admin', ['/admin', '/admin/orders', '/admin/users', '/admin/email-templates', '/admin/products']],
+    ]) {
+    const context = await browser.newContext({ javaScriptEnabled: true, viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+    const page = await context.newPage();
+    await login(page, role);
+    for (const path of paths) {
+        await page.goto(path);
+        const small = await page.evaluate(() => Array.from(document.querySelectorAll('a[href], button, select, summary, [role=button]')).filter((el) => {
+            if (!el.checkVisibility() || el.closest('.visually-hidden, .skip-link, .hp')) return false;
+            const r = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            // WCAG 2.5.5 / 2.5.8 exception: a link inside a sentence or block of text.
+            const inText = el.tagName === 'A' && style.display === 'inline'
+                && Array.from(el.parentElement.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim() !== '');
+            return !inText && (r.height < 44 || r.width < 24);
+        }).map((el) => `${el.tagName} "${el.textContent.trim().slice(0, 30)}" ${Math.round(el.getBoundingClientRect().width)}x${Math.round(el.getBoundingClientRect().height)}`));
+        expect(small, path).toEqual([]);
+    }
+    await context.close();
+    }
+});
+
 test('search suggestions can be used with the keyboard', async ({ page }) => {
     await page.goto('/');
     const input = page.locator('#site-search');

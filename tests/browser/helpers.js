@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { expect } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const pages = require('./pages');
 
 // Development-only TOTP secret of the seeded admin (DatabaseSeeder::ADMIN_TOTP_SECRET).
@@ -36,6 +36,14 @@ async function login(page, role) {
     await page.getByLabel('Email').fill(pages.accounts[role]);
     await page.getByLabel('Password', { exact: true }).fill(pages.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
+
+    // The shop allows 5 sign-ins per email and minute. When a fast run reaches
+    // that limit, wait it out (with more time for the test) instead of failing.
+    if (await page.getByText('Too many login attempts for this email').count()) {
+        test.info().setTimeout(test.info().timeout + 70000);
+        await page.waitForTimeout(61000);
+        return login(page, role);
+    }
 
     if (role === 'admin') {
         await expect(page.locator('h1')).toHaveText('Two-factor authentication');

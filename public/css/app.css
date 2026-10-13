@@ -328,3 +328,13 @@ details.confirm[open] > summary { outline: 2px solid var(--border); outline-offs
 }
 @media (pointer: coarse) { .brand { display: inline-flex; align-items: center; min-height: 2.75rem; } }
 .optional { font-weight: 400; color: var(--text-muted); }
+/* Notifications and dashboard tiles: the whole entry opens it (like product cards). */
+.notification, .stats li { position: relative; }
+.notification > a::after, .stats li a::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius); }
+/* Touch screens: links that stand on their own (a table cell, a list item, a paragraph or
+   definition of their own, card and notification titles) are at least 44 px. Links inside
+   running text keep the line height (the inline exception of WCAG 2.5.5 and 2.5.8). */
+@media (pointer: coarse) {
+    td > a, li > a, dd > a, p > a:only-child, .actions > a, .card-title a, .notification > a, .stats li a { display: inline-flex; align-items: center; min-height: 2.75rem; min-width: 2.75rem; }
+    td > a.mono { word-break: keep-all; } /* short ids stay on one line */
+}
