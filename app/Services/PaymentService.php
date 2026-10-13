@@ -42,6 +42,7 @@ class PaymentService
         private readonly BalanceService $balances,
         private readonly AuditLogger $audit,
         private readonly Notifier $notifier,
+        private readonly StaffAlerts $alerts,
     ) {}
 
     /**
@@ -170,6 +171,10 @@ class PaymentService
             }
             if ($locked->status !== OrderStatus::Pending) {
                 throw new UserFacingException(__('Order :order is :status; no payment is needed.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
+            }
+            if ($locked->hasIncomingPayment()) {
+                // Crypto has (partly) arrived; paying again from the balance would charge twice.
+                throw new UserFacingException(__('A crypto payment for order :order has already arrived in part. Finish paying it on the payment page, or open a support ticket.', ['order' => $locked->shortId()]));
             }
             if ($locked->total_minor > 0 && ! config('shop.payments_balance_enabled')) {
                 throw new UserFacingException(__('Paying with the shop balance is switched off right now. Choose another payment method.'));
@@ -400,12 +405,23 @@ class PaymentService
 
     private function reject(Order $order, Payment $payment, string $reason): array
     {
+        // The status poll re-reads refused invoices every few minutes: record and announce each refusal once.
+        $repeated = $payment->status === PaymentStatus::Rejected && $payment->failure_reason === $reason && ! $payment->isDirty('received_minor');
         $payment->status = PaymentStatus::Rejected;
         $payment->failure_reason = $reason;
         $payment->save();
+        if ($repeated) {
+            return ['status' => 'rejected', 'message' => $reason];
+        }
 
         Log::warning('Shkeeper notification rejected for order {public_id}: {reason}', ['public_id' => $order->public_id, 'reason' => $reason]);
         $this->audit->log('payment.rejected', $payment, ['order' => $order->public_id, 'reason' => $reason]);
+        // Money arrived but does not pay the order: the order is kept (never expired or
+        // cancelled, see Order::hasIncomingPayment) until staff settle it.
+        $this->alerts->send(__('Payment for order :order needs a decision', ['order' => $order->shortId()]), [
+            $reason,
+            __('The order stays open so the money is not lost. Ask the buyer to pay the rest, or refund the amount at the gateway and cancel the order.'),
+        ], route('admin.orders.show', $order), 'payment-rejected:'.$payment->id, 7 * 24 * 60);
 
         return ['status' => 'rejected', 'message' => $reason];
     }

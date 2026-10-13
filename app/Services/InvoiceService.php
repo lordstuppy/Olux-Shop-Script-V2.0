@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\Order;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -28,19 +29,26 @@ class InvoiceService
 
     public function issue(Order $order): Invoice
     {
-        $invoice = DB::transaction(function () use ($order) {
-            $existing = Invoice::query()->where('order_id', $order->id)->lockForUpdate()->first();
-            if ($existing !== null) {
-                return $existing;
-            }
+        try {
+            $invoice = DB::transaction(function () use ($order) {
+                // The order row, not the invoice row: locking a row that does not exist yet
+                // serialises nothing, and the queued job and a buyer's download can meet here.
+                Order::query()->whereKey($order->id)->lockForUpdate()->first();
+                $existing = Invoice::query()->where('order_id', $order->id)->first();
+                if ($existing !== null) {
+                    return $existing;
+                }
 
-            return Invoice::create([
-                'order_id' => $order->id,
-                // Order ids are unique, so the number is too; the year aids filing.
-                'number' => sprintf('INV-%s-%06d', ($order->paid_at ?? now())->format('Y'), $order->id),
-                'issued_at' => $order->paid_at ?? now(),
-            ]);
-        });
+                return Invoice::create([
+                    'order_id' => $order->id,
+                    // Order ids are unique, so the number is too; the year aids filing.
+                    'number' => sprintf('INV-%s-%06d', ($order->paid_at ?? now())->format('Y'), $order->id),
+                    'issued_at' => $order->paid_at ?? now(),
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            $invoice = Invoice::query()->where('order_id', $order->id)->firstOrFail();
+        }
 
         if ($invoice->storage_path === null || ! Storage::disk('invoices')->exists($invoice->storage_path)) {
             $path = $invoice->number.'.pdf';

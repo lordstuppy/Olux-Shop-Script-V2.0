@@ -8,6 +8,7 @@ use App\Services\DeliveryService;
 use App\Services\Notifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -21,7 +22,8 @@ class DeliverOrder implements ShouldQueue
 
     public int $tries = 5;
 
-    public function __construct(public int $orderId) {}
+    /** @param  bool  $resend  staff asked to deliver again: the buyer gets the email again too */
+    public function __construct(public int $orderId, public bool $resend = false) {}
 
     /** @return list<int> seconds between attempts */
     public function backoff(): array
@@ -33,7 +35,11 @@ class DeliverOrder implements ShouldQueue
     {
         $order = Order::query()->with('buyer')->findOrFail($this->orderId);
         $delivery->deliver($order);
-        app(Notifier::class)->send($order->buyer, new OrderPaidMail($order->fresh()));
+        // Once per order: shop:recover-stuck-orders can queue a second job while the
+        // queue lags, and the buyer must not get the email (and entry) twice.
+        if (Cache::add('order-paid-notice:'.$order->id, true, now()->addDays(30)) || $this->resend) {
+            app(Notifier::class)->send($order->buyer, new OrderPaidMail($order->fresh()));
+        }
     }
 
     public function failed(Throwable $e): void

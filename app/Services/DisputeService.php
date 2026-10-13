@@ -155,7 +155,8 @@ class DisputeService
         if ($dispute->buyer_id !== $buyer->id) {
             throw new UserFacingException(__('Only the buyer can withdraw a dispute.'));
         }
-        $this->close($dispute, $buyer, DisputeStatus::Withdrawn, DisputeResolution::Withdrawn, __('The buyer withdrew the dispute.'));
+        // Same lock as the staff decisions: a refund or replacement under way finishes first.
+        $this->exclusively($dispute, fn () => $this->close($dispute, $buyer, DisputeStatus::Withdrawn, DisputeResolution::Withdrawn, __('The buyer withdrew the dispute.')));
     }
 
     /** Cases whose seller did not answer in time go to staff. */

@@ -177,7 +177,7 @@ class PaymentAutomationTest extends TestCase
         $order = Order::firstOrFail();
 
         $this->actingAs(User::factory()->admin()->create())->confirmPassword();
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '30.00', 'method' => 'shkeeper', 'crypto' => 'BTC', 'destination' => 'bc1qbuyerrefund'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '30.00', 'method' => 'shkeeper', 'crypto' => 'BTC', 'destination' => 'bc1qbuyerrefund'])
             ->assertSessionHas('success');
 
         $refund = Payment::where('kind', PaymentKind::Refund->value)->firstOrFail();
@@ -186,7 +186,7 @@ class PaymentAutomationTest extends TestCase
         $this->assertSame(OrderStatus::Delivered, $order->fresh()->status);
 
         // The pending refund counts against what is refundable.
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '30.00', 'method' => 'balance'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '30.00', 'method' => 'balance'])
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'exceeds the refundable 20.00 USD') && str_contains($m, '30.00 USD is already being refunded'));
 
         $this->postPayoutCallback(['external_id' => 'refund-'.$refund->id, 'status' => 'SUCCESS', 'tx_hash' => 'refund-tx']);
@@ -249,10 +249,10 @@ class PaymentAutomationTest extends TestCase
         $this->assertSame('bc1qnewsellerwallet', $profile->payout_address);
 
         // Cool-down blocks payouts for 48 hours.
-        $this->postForm(route('seller.payouts.store'), ['amount' => '50.00', 'currency' => 'USD'])
+        $this->postForm(route('seller.payouts.store'), ['_once' => (string) Str::uuid(), 'amount' => '50.00', 'currency' => 'USD'])
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'payouts are possible again after'));
         $this->travel(49)->hours();
-        $this->postForm(route('seller.payouts.store'), ['amount' => '50.00', 'currency' => 'USD'])->assertSessionHas('success');
+        $this->postForm(route('seller.payouts.store'), ['_once' => (string) Str::uuid(), 'amount' => '50.00', 'currency' => 'USD'])->assertSessionHas('success');
         $this->assertSame('bc1qnewsellerwallet', Payout::firstOrFail()->destination);
         // The link works only once.
         $this->get($url)->assertStatus(422);

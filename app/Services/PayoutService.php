@@ -176,6 +176,27 @@ class PayoutService
     }
 
     /**
+     * Shkeeper sent a payout that staff had rejected (its transfer was recorded
+     * as failed). The rejection returned the amount to the seller; the money
+     * left anyway, so it is taken from the earnings again and the payout is paid.
+     */
+    public function bookSentAfterRejection(Payout $payout, ?string $reference): bool
+    {
+        return DB::transaction(function () use ($payout, $reference) {
+            $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status !== PayoutStatus::Rejected || $locked->provider !== 'shkeeper') {
+                return false;
+            }
+            $locked->forceFill(['status' => PayoutStatus::Paid, 'reference' => $reference, 'processed_at' => now()])->save();
+            $this->entry($locked->seller_id, 'payout', -$locked->amount_minor, $locked->currency, null, $locked->id);
+            $payout->setRawAttributes($locked->getAttributes(), true);
+            $this->audit->log('payout.paid_after_rejection', $locked, ['reference' => $reference]);
+
+            return true;
+        });
+    }
+
+    /**
      * Compares the ledger against completed orders and payouts.
      *
      * @return list<array{seller_id: int, currency: string, check: string, expected: int, actual: int}>

@@ -34,6 +34,8 @@
                             @if ($product->status !== \App\Enums\ProductStatus::Active)
                                 <form method="post" action="{{ route('admin.products.status', $product->id) }}" class="inline">
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $product->status->value }}">
+                                    <input type="hidden" name="version" value="{{ $product->reviewVersion() }}">
                                     <input type="hidden" name="status" value="active">
                                     <button type="submit">{{ __('Approve') }}<span class="visually-hidden"> {{ $product->title }}</span></button>
                                 </form>
@@ -41,6 +43,8 @@
                             @if ($product->status !== \App\Enums\ProductStatus::Disabled)
                                 <form method="post" action="{{ route('admin.products.status', $product->id) }}" class="inline">
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $product->status->value }}">
+                                    <input type="hidden" name="version" value="{{ $product->reviewVersion() }}">
                                     <input type="hidden" name="status" value="disabled">
                                     <button type="submit" class="btn-danger">{{ __('Disable') }}<span class="visually-hidden"> {{ $product->title }}</span></button>
                                 </form>

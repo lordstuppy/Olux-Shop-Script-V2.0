@@ -213,17 +213,17 @@ class AccountSecurityTest extends TestCase
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin);
         $this->get(route('admin.orders.show', $order));
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '1.00', 'method' => 'balance'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '1.00', 'method' => 'balance'])
             ->assertRedirect(route('password.confirm'));
         $this->assertSame(0, $order->fresh()->refunded_minor);
 
         $this->postForm(route('password.confirm'), ['password' => 'wrong'])->assertSessionHas('error');
         $this->postForm(route('password.confirm'), ['password' => 'correct-horse-battery-1'])->assertRedirect(route('admin.orders.show', $order));
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '1.00', 'method' => 'balance'])->assertSessionHas('success');
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '1.00', 'method' => 'balance'])->assertSessionHas('success');
         $this->assertSame(100, $order->fresh()->refunded_minor);
 
         $this->travel(16)->minutes();
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '1.00', 'method' => 'balance'])->assertRedirect(route('password.confirm'));
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '1.00', 'method' => 'balance'])->assertRedirect(route('password.confirm'));
     }
 
     public function test_password_confirmation_is_limited_per_account_not_per_address(): void

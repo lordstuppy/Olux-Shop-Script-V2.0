@@ -20,7 +20,7 @@ class ProductController extends Controller
     public function index(Request $request): View
     {
         $data = $request->validate(['status' => ['nullable', Rule::enum(ProductStatus::class)]]);
-        $query = Product::with(['seller', 'category'])->withCount(['files', 'licenseKeys'])->latest('updated_at');
+        $query = Product::with(['seller', 'category', 'currentFiles:id,product_id', 'images:id,product_id'])->withCount(['files', 'licenseKeys'])->latest('updated_at');
         if (! empty($data['status'])) {
             $query->where('status', $data['status']);
         }
@@ -31,7 +31,7 @@ class ProductController extends Controller
     /** Full review page: description, images, files with scan status and download links. */
     public function show(Product $product): View
     {
-        $product->load(['seller.sellerProfile', 'category', 'images', 'files']);
+        $product->load(['seller.sellerProfile', 'category', 'images', 'files', 'currentFiles:id,product_id']);
 
         return view('admin.product-show', [
             'product' => $product,
@@ -56,8 +56,11 @@ class ProductController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in([ProductStatus::Active->value, ProductStatus::Disabled->value, ProductStatus::PendingReview->value])],
             'note' => ['required_if:status,disabled', 'nullable', 'string', 'max:500'],
+            'seen_status' => ['nullable', 'string', 'max:32'],
+            'version' => ['nullable', 'string', 'max:64'],
         ], ['note.required_if' => __('Tell the seller why the product is not for sale.')]);
-        $moderation->setStatus($product, ProductStatus::from($data['status']), $request->user(), $data['note'] ?? null);
+        $moderation->setStatus($product, ProductStatus::from($data['status']), $request->user(), $data['note'] ?? null,
+            seenStatus: $data['seen_status'] ?? null, seenVersion: $data['version'] ?? null);
 
         return back()->with('success', __('":title" is now :status.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
     }

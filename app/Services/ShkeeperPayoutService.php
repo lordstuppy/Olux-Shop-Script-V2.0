@@ -312,6 +312,9 @@ class ShkeeperPayoutService
 
     private function payoutSucceeded(Payout $payout, ?string $txid): string
     {
+        if ($payout->status === PayoutStatus::Rejected) {
+            return $this->rejectedPayoutSucceeded($payout, $txid);
+        }
         $wasFailed = $payout->status === PayoutStatus::Failed;
         // Failed too: a failure the shop assumed (no answer) can turn out to be a sent transfer.
         $changed = $this->payouts->transitionAutomated($payout, PayoutStatus::Paid, [PayoutStatus::Processing, PayoutStatus::Failed], null, [
@@ -334,6 +337,27 @@ class ShkeeperPayoutService
         }
 
         return $changed ? 'processed' : 'ignored';
+    }
+
+    /**
+     * A payout staff rejected after its transfer was recorded as failed (no
+     * answer from Shkeeper), which Shkeeper now reports as sent. The rejection
+     * gave the amount back to the seller, who could ask for it again: book the
+     * transfer that really happened and tell staff.
+     */
+    private function rejectedPayoutSucceeded(Payout $payout, ?string $txid): string
+    {
+        if (! $this->payouts->bookSentAfterRejection($payout, $txid ?: $payout->provider_reference)) {
+            return 'ignored';
+        }
+        Log::error('Payout {payout_id} was rejected but Shkeeper reports it as sent; booked as paid', ['payout_id' => $payout->id]);
+        $this->alerts->send(__('Payout #:id was sent although it was rejected', ['id' => $payout->id]), [
+            __('Shkeeper reports the transfer as sent (transaction :txid) after the payout was rejected and the amount returned to the seller.', ['txid' => $txid ?? '-']),
+            __('It is now marked paid and :amount was taken from the seller\'s earnings again.', ['amount' => Money::format($payout->amount_minor, $payout->currency)]),
+            __('If the seller has been paid that amount again since, recover the second payment.'),
+        ], route('admin.payouts.index'), 'payout-after-rejection:'.$payout->id);
+
+        return 'processed';
     }
 
     private function payoutFailed(Payout $payout, string $reason): string

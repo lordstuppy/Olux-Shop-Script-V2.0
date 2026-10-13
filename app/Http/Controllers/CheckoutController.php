@@ -80,6 +80,7 @@ class CheckoutController extends Controller
             'payment_method' => ['required', Rule::in(array_keys(array_filter(['crypto' => (bool) config('shop.payments_crypto_enabled'), 'balance' => (bool) config('shop.payments_balance_enabled')])))],
             'crypto' => ['required_if:payment_method,crypto', 'nullable', 'string', 'max:32'],
             'accept_terms' => ['accepted'],
+            'expected_total' => ['nullable', 'integer', 'min:0'],
         ], [
             'accept_terms.accepted' => __('You must accept the terms of service to place an order.'),
             'crypto.required_if' => __('Choose the cryptocurrency you want to pay with.'),
@@ -93,6 +94,7 @@ class CheckoutController extends Controller
             $cart->currency(),
             $data['idempotency_key'],
             $request->session()->get(self::COUPON_KEY),
+            isset($data['expected_total']) ? (int) $data['expected_total'] : null,
         );
 
         if ($data['payment_method'] === 'balance') {

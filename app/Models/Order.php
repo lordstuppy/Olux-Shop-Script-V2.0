@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentKind;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -77,6 +78,18 @@ class Order extends Model
     public function charges(): HasMany
     {
         return $this->payments()->where('kind', PaymentKind::Charge->value);
+    }
+
+    /**
+     * Money for this order is on its way or has arrived at the gateway: a part
+     * payment, a confirmed charge, or a "paid" report the shop refused (wrong
+     * amount or currency), which still means the buyer sent money. Such an
+     * order is never expired, cancelled or paid a second way; staff decide
+     * what happens to the money.
+     */
+    public function hasIncomingPayment(): bool
+    {
+        return $this->charges()->whereIn('status', [PaymentStatus::Partial->value, PaymentStatus::Confirmed->value, PaymentStatus::Rejected->value])->exists();
     }
 
     /** @return HasMany<Payment, $this> */

@@ -107,6 +107,7 @@
         <p>{{ __('Refundable: :amount. Each refund is recorded as a separate payment and adjusts seller earnings.', ['amount' => money($order->refundableMinor(), $order->currency)]) }}</p>
         <form method="post" action="{{ route('admin.orders.refund', $order) }}" class="stack" data-once>
             @csrf
+            <x-once />
             <x-field name="amount" :label="__('Amount (:currency)', ['currency' => $order->currency])" :value="\App\Support\Money::toDecimal($order->refundableMinor(), $order->currency)" inputmode="decimal" required />
             <x-select name="method" :label="__('Method')" :options="array_merge(['balance' => __('Credit buyer balance'), 'manual' => __('Paid back outside the shop')], $shkeeperEnabled ? ['shkeeper' => __('Send crypto via Shkeeper')] : [])" />
             <x-field name="reference" :label="__('Outgoing transaction reference (manual only)')" maxlength="128" />

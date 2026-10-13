@@ -36,15 +36,15 @@ class RefundAndPayoutTest extends TestCase
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin)->confirmPassword();
 
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '20.00', 'method' => 'balance', 'reason' => 'Partly broken'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '20.00', 'method' => 'balance', 'reason' => 'Partly broken'])
             ->assertRedirect()->assertSessionHas('success', 'Refunded 20.00 USD on order '.$order->shortId().' via balance.');
         $this->assertSame(OrderStatus::PartiallyRefunded, $order->fresh()->status);
         $this->assertSame(2000, $order->buyer->fresh()->balance_minor);
 
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '40.00', 'method' => 'balance'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '40.00', 'method' => 'balance'])
             ->assertSessionHas('error', 'Refund amount 40.00 USD exceeds the refundable 30.00 USD for order '.$order->shortId().'.');
 
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '30.00', 'method' => 'manual', 'reference' => 'txid-123'])->assertSessionHas('success');
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '30.00', 'method' => 'manual', 'reference' => 'txid-123'])->assertSessionHas('success');
 
         $order->refresh();
         $this->assertSame(OrderStatus::Refunded, $order->status);
@@ -69,7 +69,7 @@ class RefundAndPayoutTest extends TestCase
         $this->actingAs($seller);
 
         // Earnings are on hold for the configured number of days.
-        $this->postForm(route('seller.payouts.store'), ['amount' => '50.00', 'currency' => 'USD'])
+        $this->postForm(route('seller.payouts.store'), ['_once' => (string) Str::uuid(), 'amount' => '50.00', 'currency' => 'USD'])
             ->assertSessionHas('error', 'Requested 50.00 USD but only 0.00 USD is available for payout.');
 
         // After the 7-day hold the buyer's 14-day dispute window is still open,
@@ -81,7 +81,7 @@ class RefundAndPayoutTest extends TestCase
         $balances = app(PayoutService::class)->balances($seller);
         $this->assertSame(9000, $balances['USD']['available']);
 
-        $this->postForm(route('seller.payouts.store'), ['amount' => '50.00', 'currency' => 'USD'])->assertSessionHas('success');
+        $this->postForm(route('seller.payouts.store'), ['_once' => (string) Str::uuid(), 'amount' => '50.00', 'currency' => 'USD'])->assertSessionHas('success');
         $this->assertSame(4000, app(PayoutService::class)->balances($seller)['USD']['available']);
 
         $payout = Payout::firstOrFail();

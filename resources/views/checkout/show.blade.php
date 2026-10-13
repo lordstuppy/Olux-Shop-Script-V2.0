@@ -61,6 +61,8 @@
             <form method="post" action="{{ route('checkout.store') }}" class="stack" data-once>
                 @csrf
                 <input type="hidden" name="idempotency_key" value="{{ $idempotencyKey }}">
+                {{-- The total the buyer saw; a price or rate change before submitting asks again. --}}
+                <input type="hidden" name="expected_total" value="{{ $totalMinor }}">
 
                 <fieldset>
                     <legend>{{ __('Payment method') }}</legend>

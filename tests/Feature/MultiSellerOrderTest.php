@@ -52,7 +52,7 @@ class MultiSellerOrderTest extends TestCase
         // An order-level refund is shared by both lines in proportion (30:20).
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin)->confirmPassword();
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '10.00', 'method' => 'balance'])->assertSessionHas('success');
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '10.00', 'method' => 'balance'])->assertSessionHas('success');
         $this->assertSame([600, 400], $order->items()->orderBy('id')->pluck('refunded_minor')->all());
         $this->assertSame([], $payouts->reconcile());
     }

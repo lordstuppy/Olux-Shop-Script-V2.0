@@ -20,6 +20,7 @@
         <h2>{{ __('Request a payout') }}</h2>
         <form method="post" action="{{ route('seller.payouts.store') }}" class="stack" data-once>
             @csrf
+            <x-once />
             <x-field name="amount" :label="__('Amount')" inputmode="decimal" :hint="__('Minimum :amount', ['amount' => \App\Support\Money::toDecimal((int) config('shop.min_payout_minor'), array_key_first($balances))])" required />
             <x-select name="currency" :label="__('Currency')" :options="array_combine(array_keys($balances), array_keys($balances))" />
             <button type="submit">{{ __('Request payout') }}</button>

@@ -195,7 +195,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales', [Seller\SalesController::class, 'index'])->name('sales');
         Route::post('/items/{item}/deliver', [Seller\SalesController::class, 'deliver'])->name('items.deliver');
         Route::get('/payouts', [Seller\PayoutController::class, 'index'])->name('payouts');
-        Route::post('/payouts', [Seller\PayoutController::class, 'store'])->middleware('throttle:forms')->name('payouts.store');
+        Route::post('/payouts', [Seller\PayoutController::class, 'store'])->middleware(['throttle:forms', 'submit.once'])->name('payouts.store');
         Route::get('/payout-settings', [Seller\PayoutSettingsController::class, 'show'])->name('payout-settings');
         Route::post('/payout-settings', [Seller\PayoutSettingsController::class, 'requestChange'])->middleware(['password.recent', 'throttle:forms'])->name('payout-settings.store');
         Route::get('/payout-address/confirm/{token}', [Seller\PayoutSettingsController::class, 'showConfirm'])->name('payout-address.confirm');
@@ -244,7 +244,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/orders/{order}/items/{item}/reset-downloads', [Admin\OrderController::class, 'resetDownloads'])->can('orders.manage')->name('orders.items.reset-downloads');
         Route::post('/orders/{order}/redeliver', [Admin\OrderController::class, 'retryDelivery'])->can('orders.resend')->name('orders.redeliver');
         Route::post('/orders/{order}/invoice', [Admin\OrderController::class, 'regenerateInvoice'])->can('orders.manage')->name('orders.invoice');
-        Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->can('orders.manage')->middleware('password.recent')->name('orders.refund');
+        Route::post('/orders/{order}/refunds', [Admin\OrderController::class, 'refund'])->can('orders.manage')->middleware(['password.recent', 'submit.once'])->name('orders.refund');
 
         Route::get('/gateway', [Admin\GatewayController::class, 'index'])->can('gateway.view')->name('gateway.index');
         Route::put('/gateway', [Admin\GatewayController::class, 'update'])->can('gateway.manage')->middleware('password.recent')->name('gateway.update');

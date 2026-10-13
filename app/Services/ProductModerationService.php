@@ -27,10 +27,18 @@ class ProductModerationService
      * Sets a staff status. $note explains a disable to the seller (stored and
      * emailed); approving clears it. Bulk actions pass no note.
      */
-    public function setStatus(Product $product, ProductStatus $status, User $actor, ?string $note = null): void
+    public function setStatus(Product $product, ProductStatus $status, User $actor, ?string $note = null, ?string $seenStatus = null, ?string $seenVersion = null): void
     {
         if (! in_array($status, self::STAFF_STATUSES, true)) {
             throw new UserFacingException(__('Products can be set to active, disabled or pending review.'));
+        }
+        // Forms say what the moderator was looking at; a decision on a page that is
+        // out of date (another decision, or the seller edited it) is refused.
+        if ($seenStatus !== null && $seenStatus !== $product->status->value) {
+            throw new UserFacingException(__('":title" is :status now; someone changed it after you opened the page. Reload it and decide again.', ['title' => $product->title, 'status' => mb_strtolower($product->status->label())]));
+        }
+        if ($status === ProductStatus::Active && $seenVersion !== null && ! hash_equals($product->reviewVersion(), $seenVersion)) {
+            throw new UserFacingException(__('The seller changed ":title" after you opened it. Review the changes, then approve again.', ['title' => $product->title]));
         }
         if ($status === ProductStatus::Active && $product->status === ProductStatus::Paused) {
             throw new UserFacingException(__('":title" was paused by the seller; only the seller can put it back on sale.', ['title' => $product->title]));

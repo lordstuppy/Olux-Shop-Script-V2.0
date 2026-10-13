@@ -81,13 +81,31 @@ class ProductController extends Controller
     {
         Gate::authorize('update', $product);
         $data = $this->validated($request);
-        $product->fill($data);
+        $needsReview = DB::transaction(function () use ($request, $product, $data) {
+            // Sales, key uploads and staff decisions change the row while the form is
+            // open; work on the current row, not on what the form was rendered from.
+            $locked = Product::query()->whereKey($product->id)->lockForUpdate()->firstOrFail();
+            if ($request->has('stock_seen') && (string) ($data['stock'] ?? '') === (string) $request->input('stock_seen')) {
+                // Stock field left as shown: keep what sales and key uploads made of it since.
+                unset($data['stock']);
+            }
+            $locked->fill($data);
+            if ($locked->isDirty('stock') && $locked->licenseKeys()->exists()) {
+                $unused = $locked->licenseKeys()->whereNull('order_item_id')->count();
+                if ($locked->stock === null || $locked->stock > $unused) {
+                    throw new UserFacingException(trans_choice('{1} ":title" sells one licence key per unit and has :count unused key, so its stock can be at most :count.|[0,*] ":title" sells one licence key per unit and has :count unused keys, so its stock can be at most :count.', $unused, ['title' => $locked->title]));
+                }
+            }
 
-        $needsReview = in_array($product->status, [ProductStatus::Active, ProductStatus::Paused], true) && $product->isDirty(self::REVIEWED_FIELDS);
-        if ($needsReview) {
-            $product->status = ProductStatus::PendingReview;
-        }
-        $product->save();
+            $needsReview = in_array($locked->status, [ProductStatus::Active, ProductStatus::Paused], true) && $locked->isDirty(self::REVIEWED_FIELDS);
+            if ($needsReview) {
+                $locked->status = ProductStatus::PendingReview;
+            }
+            $locked->save();
+            $product->setRawAttributes($locked->getAttributes(), true);
+
+            return $needsReview;
+        });
         $this->audit->log('product.updated', $product, ['needs_review' => $needsReview]);
 
         $message = $needsReview
@@ -335,9 +353,12 @@ class ProductController extends Controller
 
     private function markForReviewIfActive(Product $product): void
     {
-        if (in_array($product->status, [ProductStatus::Active, ProductStatus::Paused], true)) {
+        // Conditional: a staff decision made a moment ago (for example a disable) is kept.
+        $changed = Product::query()->whereKey($product->id)->whereIn('status', [ProductStatus::Active->value, ProductStatus::Paused->value])
+            ->update(['status' => ProductStatus::PendingReview->value, 'updated_at' => now()]);
+        if ($changed === 1) {
             $product->status = ProductStatus::PendingReview;
-            $product->save();
+            $product->syncOriginalAttribute('status');
         }
     }
 

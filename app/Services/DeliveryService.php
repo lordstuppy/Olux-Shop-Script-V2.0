@@ -70,8 +70,10 @@ class DeliveryService
             if (! $asStaff && $locked->seller_id !== $seller->id) {
                 throw new UserFacingException(__('You can only deliver items you sold.'));
             }
-            if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered], true)) {
-                throw new UserFacingException(__('Order :order is :status; it cannot be delivered.', ['order' => $order->shortId(), 'status' => mb_strtolower($order->status->label())]));
+            // Partly refunded orders still owe their other lines (a refund before delivery
+            // must not strand them); a line refunded in full is not delivered.
+            if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true) || $locked->isFullyRefunded()) {
+                throw new UserFacingException(__('Order :order is :status; it cannot be delivered.', ['order' => $order->shortId(), 'status' => mb_strtolower($locked->isFullyRefunded() ? OrderStatus::Refunded->label() : $order->status->label())]));
             }
             if ($locked->isDelivered()) {
                 throw new UserFacingException(__('":title" in order :order was already delivered.', ['title' => $locked->title, 'order' => $order->shortId()]));

@@ -65,6 +65,8 @@
         @if (! in_array($product->status, [\App\Enums\ProductStatus::Active, \App\Enums\ProductStatus::Paused], true))
             <form method="post" action="{{ route('admin.products.status', $product->id) }}">
                 @csrf
+                <input type="hidden" name="seen_status" value="{{ $product->status->value }}">
+                <input type="hidden" name="version" value="{{ $product->reviewVersion() }}">
                 <input type="hidden" name="status" value="active">
                 <button type="submit">{{ __('Approve and list') }}</button>
             </form>
@@ -72,6 +74,8 @@
         @if ($product->status !== \App\Enums\ProductStatus::Disabled)
             <form method="post" action="{{ route('admin.products.status', $product->id) }}" class="stack">
                 @csrf
+                <input type="hidden" name="seen_status" value="{{ $product->status->value }}">
+                <input type="hidden" name="version" value="{{ $product->reviewVersion() }}">
                 <input type="hidden" name="status" value="disabled">
                 <x-textarea name="note" :label="__('Reason for the seller')" maxlength="500" rows="3" :hint="__('Shown to the seller on the product page and sent by email.')" required />
                 <button type="submit" class="btn-danger">{{ $product->status === \App\Enums\ProductStatus::PendingReview ? __('Reject') : __('Disable') }}</button>

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
 use App\Enums\ProductStatus;
 use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\UserFacingException;
@@ -34,10 +33,11 @@ class OrderService
      * redemption are reserved under row locks in the same transaction.
      *
      * Submitting the same idempotency key twice returns the first order.
+     * $expectedTotal is the total the buyer was shown; any other total is refused.
      *
      * @param  array<int, int>  $items  product id => quantity
      */
-    public function createFromCart(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode = null): Order
+    public function createFromCart(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode = null, ?int $expectedTotal = null): Order
     {
         if (! preg_match('/^[A-Za-z0-9-]{16,64}$/', $idempotencyKey)) {
             throw new UserFacingException(__('The checkout form has expired. Reload the checkout page and submit it again.'));
@@ -55,7 +55,7 @@ class OrderService
         }
 
         try {
-            $order = DB::transaction(fn () => $this->createLocked($buyer, $items, $currency, $idempotencyKey, $couponCode));
+            $order = DB::transaction(fn () => $this->createLocked($buyer, $items, $currency, $idempotencyKey, $couponCode, $expectedTotal));
         } catch (UniqueConstraintViolationException $e) {
             // A concurrent request with the same key won the race.
             $existing = $this->findByIdempotencyKey($buyer, $idempotencyKey);
@@ -134,7 +134,8 @@ class OrderService
             if ($locked->status !== OrderStatus::Pending) {
                 throw new UserFacingException(__('Order :order is :status and can no longer be cancelled.', ['order' => $locked->shortId(), 'status' => mb_strtolower($locked->status->label())]));
             }
-            if ($this->hasIncomingPayment($locked)) {
+            // Staff may close it once they have dealt with the money at the gateway (the alert asks them to).
+            if ($locked->hasIncomingPayment() && ! ($actor->id !== $locked->buyer_id && $actor->can('orders.manage'))) {
                 throw new UserFacingException(__('Order :order has a payment in progress and cannot be cancelled. Open a support ticket if you need help.', ['order' => $locked->shortId()]));
             }
             $this->transition($locked, OrderStatus::Cancelled);
@@ -187,7 +188,7 @@ class OrderService
         foreach ($candidates as $orderId) {
             $expired += DB::transaction(function () use ($orderId) {
                 $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
-                if ($order === null || $order->status !== OrderStatus::Pending || $this->hasIncomingPayment($order)) {
+                if ($order === null || $order->status !== OrderStatus::Pending || $order->hasIncomingPayment()) {
                     return 0;
                 }
                 $this->transition($order, OrderStatus::Expired);
@@ -201,7 +202,7 @@ class OrderService
         return $expired;
     }
 
-    private function createLocked(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode): Order
+    private function createLocked(User $buyer, array $items, string $currency, string $idempotencyKey, ?string $couponCode, ?int $expectedTotal = null): Order
     {
         // Serialise checkouts per buyer, then cap unpaid orders so nobody can
         // hoard stock or coupon redemptions with orders they never pay.
@@ -261,6 +262,11 @@ class OrderService
             [$coupon, $discount] = $this->coupons->reserve($couponCode, $currency, $subtotal, $buyer);
         }
 
+        if ($expectedTotal !== null && $expectedTotal !== $subtotal - $discount) {
+            // A price, exchange rate or coupon changed after the checkout page was shown.
+            throw new UserFacingException(__('The total changed from :old to :new since you opened the checkout page. Check your order and place it again.', [
+                'old' => Money::format($expectedTotal, $currency), 'new' => Money::format($subtotal - $discount, $currency)]));
+        }
         $this->assertWithinOrderLimits($subtotal - $discount, $currency);
 
         $order = Order::create([
@@ -312,11 +318,6 @@ class OrderService
             Product::query()->whereKey($item->product_id)->whereNotNull('stock')->increment('stock', $item->quantity);
         }
         $this->coupons->release($order);
-    }
-
-    private function hasIncomingPayment(Order $order): bool
-    {
-        return $order->charges()->whereIn('status', [PaymentStatus::Partial->value, PaymentStatus::Confirmed->value])->exists();
     }
 
     private function findByIdempotencyKey(User $buyer, string $key): ?Order

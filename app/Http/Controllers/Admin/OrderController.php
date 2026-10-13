@@ -104,7 +104,7 @@ class OrderController extends Controller
     public function retryDelivery(Order $order): RedirectResponse
     {
         abort_unless(in_array($order->status, [OrderStatus::Paid, OrderStatus::Delivered, OrderStatus::PartiallyRefunded], true), 422, __('Only paid orders that were not refunded can be delivered.'));
-        DeliverOrder::dispatch($order->id);
+        DeliverOrder::dispatch($order->id, resend: true);
 
         return back()->with('success', __('Delivery of order :order queued again; delivered items are skipped and the buyer gets the delivery email.', ['order' => $order->shortId()]));
     }

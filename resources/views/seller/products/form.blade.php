@@ -20,7 +20,11 @@
 
     <form method="post" action="{{ $editing ? route('seller.products.update', $product->id) : route('seller.products.store') }}" class="stack">
         @csrf
-        @if ($editing) @method('PUT') @endif
+        @if ($editing)
+            @method('PUT')
+            {{-- Stock as shown: an untouched field keeps the stock that sales changed meanwhile. --}}
+            <input type="hidden" name="stock_seen" value="{{ $product->stock }}">
+        @endif
         <x-field name="title" :label="__('Title')" :value="$product->title" maxlength="160" required />
         <x-textarea name="description" :label="__('Description')" :value="$product->description" maxlength="20000" :hint="__('Plain text. Describe exactly what the buyer receives.')" required />
         <x-select name="category_id" :label="__('Category')" :options="$categories->pluck('name', 'id')->all()" :value="$product->category_id" :placeholder="__('No category')" />

@@ -17,7 +17,8 @@ class DashboardController extends Controller
         $seller = $request->user();
 
         $awaitingDelivery = OrderItem::query()->where('seller_id', $seller->id)->whereNull('delivered_at')
-            ->whereHas('order', fn ($q) => $q->whereIn('status', [OrderStatus::Paid->value]))
+            ->whereHas('order', fn ($q) => $q->whereIn('status', [OrderStatus::Paid->value, OrderStatus::PartiallyRefunded->value]))
+            ->whereRaw('refunded_minor < unit_price_minor * quantity - discount_minor')
             ->whereHas('product', fn ($q) => $q->where('delivery_type', DeliveryType::Manual->value))
             ->with('order')->orderBy('id')->limit(20)->get();
 

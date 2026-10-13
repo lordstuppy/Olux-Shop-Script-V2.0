@@ -571,7 +571,7 @@ class SecurityAuditTest extends TestCase
         $order = $this->pendingOrder($finance);
         app(PaymentService::class)->payWithBalance($order, $finance);
         $this->actingAs($finance)->confirmPassword();
-        $this->postForm(route('admin.orders.refund', $order), ['amount' => '50.00', 'method' => 'balance'])
+        $this->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '50.00', 'method' => 'balance'])
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'Another team member'));
         $this->assertSame(0, $order->fresh()->refunded_minor);
 

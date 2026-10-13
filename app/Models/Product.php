@@ -138,6 +138,22 @@ class Product extends Model
         return $this->seller()->where('status', UserStatus::Active->value)->where('role', '!=', UserRole::Buyer->value)->exists();
     }
 
+    /**
+     * Fingerprint of what staff review: the listing text and terms, the files
+     * and the images. Moderation forms carry it, so an approval refers to the
+     * content the moderator actually saw.
+     */
+    public function reviewVersion(): string
+    {
+        return hash('sha256', json_encode([
+            $this->title, $this->description, $this->price_minor, $this->currency, $this->delivery_type->value,
+            $this->category_id, $this->access_days, $this->download_limit,
+            // From eager-loaded relations when a list page loaded them (no query per row).
+            ($this->relationLoaded('currentFiles') ? $this->currentFiles->pluck('id') : $this->currentFiles()->pluck('id'))->sort()->values()->all(),
+            ($this->relationLoaded('images') ? $this->images->pluck('id') : $this->images()->pluck('id'))->sort()->values()->all(),
+        ]));
+    }
+
     public function isSoldOut(): bool
     {
         return $this->stock !== null && $this->stock <= 0;

@@ -46,6 +46,13 @@
  *          http500    - HTTP 500 with an HTML body
  *          error_json - HTTP 200 {"status":"error","message":"mock failure"}
  *          bad_json   - HTTP 200, Content-Type application/json, truncated non-JSON body
+ *          http429    - HTTP 429 with Retry-After: 1 (rate limited)
+ *          http503    - HTTP 503 with Retry-After: 1 (maintenance)
+ *          truncated  - HTTP 200 announcing a longer body than is sent, then the
+ *                       connection closes (a reset in the middle of the response)
+ *          lost_response - the request IS processed (an invoice or payout is created),
+ *                       then the answer is thrown away: sleep "seconds" (default 30)
+ *                       and HTTP 504. The provider accepted it; the shop cannot know.
  *        Stored in the state file under the reserved key "__config".
  *   POST /__mock/reset      Clears all invoices, payouts and the failure-mode config.
  *
@@ -62,7 +69,7 @@ $payoutPassword = getenv('MOCK_PAYOUT_PASSWORD') ?: 'payout-password';
 $stateFile = getenv('MOCK_STATE_FILE') ?: sys_get_temp_dir().'/shkeeper-mock-state.json';
 
 const CONFIG_KEY = '__config';
-const FAIL_MODES = ['timeout', 'http500', 'error_json', 'bad_json'];
+const FAIL_MODES = ['timeout', 'http500', 'error_json', 'bad_json', 'http429', 'http503', 'truncated', 'lost_response'];
 
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -265,6 +272,31 @@ if (str_starts_with($path, '/api/v1/')) {
                 echo '{"status": "success", "id": ';
 
                 return;
+            case 'http429':
+            case 'http503':
+                http_response_code($rule['mode'] === 'http429' ? 429 : 503);
+                header('Retry-After: 1');
+                respond($rule['mode'] === 'http429' ? 429 : 503, ['status' => 'error', 'message' => 'mock '.$rule['mode']]);
+
+                return;
+            case 'truncated':
+                http_response_code(200);
+                header('Content-Type: application/json');
+                header('Content-Length: 400');
+                echo '{"status": "success", "id": 12';
+                flush();
+
+                return;
+            case 'lost_response':
+                $lostSeconds = (int) ($rule['seconds'] ?? 30);
+                ob_start();
+                register_shutdown_function(function () use ($lostSeconds): void {
+                    ob_end_clean();
+                    sleep($lostSeconds);
+                    header_remove();
+                    http_response_code(504);
+                });
+                break; // processed normally below; the answer is discarded
         }
     }
 }
