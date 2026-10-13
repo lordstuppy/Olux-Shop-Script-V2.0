@@ -81,7 +81,7 @@
                             <x-select name="crypto" :id="'refund-crypto'" :label="__('Cryptocurrency (Shkeeper refunds)')" :options="collect($cryptos)->pluck('display_name', 'name')->all()" :placeholder="__('Choose')" />
                             <x-field name="destination" :id="'refund-destination'" :label="__('Buyer\'s address (Shkeeper refunds)')" maxlength="255" />
                         @endif
-                        <x-textarea name="note" :id="'refund-note'" :label="__('Note to both parties')" maxlength="5000" />
+                        <x-textarea optional name="note" :id="'refund-note'" :label="__('Note to both parties')" maxlength="5000" />
                         <button type="submit">{{ __('Refund and close') }}</button>
                     </form>
                     @endcannot
@@ -93,7 +93,7 @@
                         @csrf
                         <input type="hidden" name="action" value="replacement">
                         <x-textarea name="replacement_text" :id="'replacement-text'" :label="__('Replacement details shown to the buyer (stored encrypted)')" maxlength="10000" />
-                        <x-textarea name="note" :id="'replacement-note'" :label="__('Note to both parties')" maxlength="5000" />
+                        <x-textarea optional name="note" :id="'replacement-note'" :label="__('Note to both parties')" maxlength="5000" />
                         <button type="submit">{{ __('Deliver replacement and close') }}</button>
                     </form>
                     <h3 class="mt">{{ __('Reject') }}</h3>

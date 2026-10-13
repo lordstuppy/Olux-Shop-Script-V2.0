@@ -575,7 +575,7 @@ class SecurityAuditTest extends TestCase
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'Another team member'));
         $this->assertSame(0, $order->fresh()->refunded_minor);
 
-        $this->postForm(route('admin.users.balance', $finance), ['direction' => 'credit', 'amount' => '100.00', 'currency' => 'USD', 'reason' => 'x'])
+        $this->postForm(route('admin.users.balance', $finance), ['_once' => (string) Str::uuid(), 'direction' => 'credit', 'amount' => '100.00', 'currency' => 'USD', 'reason' => 'x'])
             ->assertSessionHas('error');
         $this->assertSame(0, $finance->fresh()->balance_minor);
 

@@ -38,8 +38,8 @@
         @csrf
         <x-field name="title" :label="__('Title')" maxlength="160" required />
         <x-textarea name="body" :label="__('Text')" maxlength="2000" required />
-        <x-field name="starts_at" :label="__('Show from')" type="datetime-local" />
-        <x-field name="ends_at" :label="__('Show until')" type="datetime-local" />
+        <x-field optional name="starts_at" :label="__('Show from')" type="datetime-local" />
+        <x-field optional name="ends_at" :label="__('Show until')" type="datetime-local" />
         <button type="submit">{{ __('Publish') }}</button>
     </form>
 @endsection

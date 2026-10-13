@@ -88,22 +88,22 @@ class AdminFeaturesTest extends TestCase
         $admin = $this->admin(UserRole::Finance);
         $user = User::factory()->create();
 
-        $this->postForm(route('admin.users.balance', $user), ['direction' => 'credit', 'amount' => '12.50', 'currency' => 'USD', 'reason' => 'Goodwill'])->assertSessionHas('success');
+        $this->postForm(route('admin.users.balance', $user), ['_once' => (string) Str::uuid(), 'direction' => 'credit', 'amount' => '12.50', 'currency' => 'USD', 'reason' => 'Goodwill'])->assertSessionHas('success');
         $this->assertSame(1250, $user->fresh()->balance_minor);
-        $this->postForm(route('admin.users.balance', $user), ['direction' => 'debit', 'amount' => '20.00', 'currency' => 'USD', 'reason' => 'x'])
+        $this->postForm(route('admin.users.balance', $user), ['_once' => (string) Str::uuid(), 'direction' => 'debit', 'amount' => '20.00', 'currency' => 'USD', 'reason' => 'x'])
             ->assertSessionHas('error', 'Insufficient balance. Order total 20.00 USD, available 12.50 USD.');
         $this->assertDatabaseHas('balance_transactions', ['user_id' => $user->id, 'type' => 'admin_adjustment', 'note' => 'Adjustment by staff: Goodwill']);
         $this->assertDatabaseHas('audit_log', ['action' => 'balance.adjusted', 'actor_id' => $admin->id]);
 
         $this->admin(UserRole::Support);
-        $this->postForm(route('admin.users.balance', $user), ['direction' => 'credit', 'amount' => '1', 'currency' => 'USD', 'reason' => 'x'])->assertForbidden();
+        $this->postForm(route('admin.users.balance', $user), ['_once' => (string) Str::uuid(), 'direction' => 'credit', 'amount' => '1', 'currency' => 'USD', 'reason' => 'x'])->assertForbidden();
     }
 
     public function test_csv_export_neutralises_formulas(): void
     {
         $this->admin(UserRole::Finance);
         $user = User::factory()->create();
-        $this->postForm(route('admin.users.balance', $user), ['direction' => 'credit', 'amount' => '5', 'currency' => 'USD', 'reason' => '=HYPERLINK("http://evil")']);
+        $this->postForm(route('admin.users.balance', $user), ['_once' => (string) Str::uuid(), 'direction' => 'credit', 'amount' => '5', 'currency' => 'USD', 'reason' => '=HYPERLINK("http://evil")']);
 
         $response = $this->get(route('admin.exports.download', ['type' => 'balances', 'from' => now()->subDay()->toDateString(), 'to' => now()->toDateString()]));
         $response->assertOk()->assertHeader('Content-Type', 'text/csv; charset=UTF-8');

@@ -327,3 +327,4 @@ details.confirm[open] > summary { outline: 2px solid var(--border); outline-offs
     .catalogue-filters .field:first-child { grid-column: 1 / -1; }
 }
 @media (pointer: coarse) { .brand { display: inline-flex; align-items: center; min-height: 2.75rem; } }
+.optional { font-weight: 400; color: var(--text-muted); }

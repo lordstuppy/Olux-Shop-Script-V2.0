@@ -211,7 +211,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}', [Admin\UserController::class, 'show'])->can('users.view')->name('users.show');
         Route::post('/users/{user}/role', [Admin\UserController::class, 'role'])->can('roles.manage')->middleware('password.recent')->name('users.role');
         Route::post('/users/{user}/status', [Admin\UserController::class, 'status'])->can('users.manage')->middleware('password.recent')->name('users.status');
-        Route::post('/users/{user}/balance', [Admin\UserController::class, 'adjustBalance'])->can('balances.adjust')->middleware('password.recent')->name('users.balance');
+        Route::post('/users/{user}/balance', [Admin\UserController::class, 'adjustBalance'])->can('balances.adjust')->middleware(['password.recent', 'submit.once'])->name('users.balance');
         Route::post('/users/{user}/sessions/revoke', [Admin\UserController::class, 'revokeSessions'])->can('sessions.revoke')->name('users.sessions.revoke');
 
         Route::get('/sellers', [Admin\SellerController::class, 'index'])->can('sellers.manage')->name('sellers.index');
@@ -264,7 +264,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/coupons', [Admin\CouponController::class, 'store'])->can('coupons.manage')->name('coupons.store');
         Route::post('/coupons/{coupon}/toggle', [Admin\CouponController::class, 'toggle'])->can('coupons.manage')->name('coupons.toggle');
         Route::get('/gift-cards', [Admin\GiftCardController::class, 'index'])->can('giftcards.manage')->name('gift-cards.index');
-        Route::post('/gift-cards', [Admin\GiftCardController::class, 'store'])->can('giftcards.manage')->middleware('password.recent')->name('gift-cards.store');
+        Route::post('/gift-cards', [Admin\GiftCardController::class, 'store'])->can('giftcards.manage')->middleware(['password.recent', 'submit.once'])->name('gift-cards.store');
         Route::get('/exchange-rates', [Admin\ExchangeRateController::class, 'index'])->can('rates.manage')->name('rates.index');
         Route::post('/exchange-rates', [Admin\ExchangeRateController::class, 'store'])->can('rates.manage')->middleware('password.recent')->name('rates.store');
 

@@ -21,7 +21,7 @@
                 <x-select name="payout_currency" :label="__('Payout currency')" :options="array_combine($currencies, $currencies)" :value="$profile?->payout_currency" />
                 <x-select name="payout_crypto" :label="__('Payout cryptocurrency')" :options="collect($cryptos)->pluck('display_name', 'name')->all()" :value="$profile?->payout_crypto" />
                 <x-field name="payout_address" :label="__('Payout address')" :value="$profile?->payout_address" :hint="__('The crypto wallet address where approved payouts are sent.')" maxlength="255" required />
-                <x-textarea name="about" :label="__('What will you sell?')" :value="$profile?->about" maxlength="2000" />
+                <x-textarea optional name="about" :label="__('What will you sell?')" :value="$profile?->about" maxlength="2000" />
                 <label class="check">
                     <input type="checkbox" name="accept_seller_terms" value="1" required>
                     <span>{{ __('I accept the') }} <a href="{{ route('pages.terms') }}#sellers">{{ __('seller terms') }}</a>. {{ __('I will not list stolen accounts or credentials, hacking or phishing tools, malware, personal data, or anything I do not have the right to sell.') }}</span>

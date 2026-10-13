@@ -35,8 +35,8 @@
                     </fieldset>
                     <input type="hidden" name="payments_balance_enabled" value="0">
                     <label class="check"><input type="checkbox" name="payments_balance_enabled" value="1" @checked(config('shop.payments_balance_enabled'))> {{ __('Accept payment from the shop balance') }}</label>
-                    <x-field name="order_min" :label="__('Minimum order (:currency)', ['currency' => $base])" :value="$min" inputmode="decimal" maxlength="12" :hint="__('0 means no minimum. Orders in other currencies are converted with the exchange rate.')" />
-                    <x-field name="order_max" :label="__('Maximum order (:currency)', ['currency' => $base])" :value="$max" inputmode="decimal" maxlength="12" :hint="__('0 means no maximum.')" />
+                    <x-field optional name="order_min" :label="__('Minimum order (:currency)', ['currency' => $base])" :value="$min" inputmode="decimal" maxlength="12" :hint="__('0 means no minimum. Orders in other currencies are converted with the exchange rate.')" />
+                    <x-field optional name="order_max" :label="__('Maximum order (:currency)', ['currency' => $base])" :value="$max" inputmode="decimal" maxlength="12" :hint="__('0 means no maximum.')" />
                     <button type="submit">{{ __('Save gateway settings') }}</button>
                 </form>
             @else

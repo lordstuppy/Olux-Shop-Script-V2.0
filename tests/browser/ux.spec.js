@@ -184,6 +184,54 @@ test('a rate-limited poll slows down without claiming the connection is lost', a
     await expect(page.locator('.live-region')).not.toContainText('Connection lost');
 });
 
+test('typing in the header search does not stop live updates', async ({ page }) => {
+    await login(page, 'seller');
+    await page.goto('/seller');
+    await nextPoll(page);
+    await page.getByLabel('Search products').fill('pho'); // its suggestion timer once shared a variable with the poll timer
+    await nextPoll(page);
+});
+
+test('a role change shows up in the menus of the signed-in user without a reload', async ({ browser }) => {
+    test.setTimeout(150000);
+    const customerContext = await browser.newContext({ javaScriptEnabled: true });
+    const customer = await customerContext.newPage();
+    await login(customer, 'customer');
+    await customer.goto('/orders');
+    const sellerLink = customer.locator('.site-header nav').getByRole('link', { name: 'Seller', exact: true });
+    await expect(sellerLink).toHaveCount(0);
+    await nextPoll(customer);
+    await customer.getByLabel('Search products').fill('typed before'); // header input outside the swapped menus
+    await customer.evaluate(() => { window.__sameDocument = true; });
+
+    const staffContext = await browser.newContext({ javaScriptEnabled: true });
+    const staff = await staffContext.newPage();
+    await login(staff, 'admin');
+    const setRole = async (role) => {
+        await staff.goto('/admin/users?q=customer%40example.test');
+        await staff.locator('#live-content a[href*="/admin/users/"]').first().click();
+        await staff.getByLabel('Role').selectOption(role);
+        await staff.getByRole('button', { name: 'Change role' }).click();
+        if (staff.url().includes('/confirm-password')) {
+            await staff.getByLabel('Password', { exact: true }).fill('correct-horse-battery-1');
+            await staff.locator('main form button[type=submit]').click();
+            await staff.getByLabel('Role').selectOption(role);
+            await staff.getByRole('button', { name: 'Change role' }).click();
+        }
+        await expect(staff.locator('.flash-success')).toContainText('is now');
+    };
+
+    await setRole('seller');
+    await expect(sellerLink).toHaveCount(1, { timeout: 25000 });
+    expect(await customer.evaluate(() => window.__sameDocument)).toBe(true);
+    await expect(customer.getByLabel('Search products')).toHaveValue('typed before');
+
+    await setRole('buyer'); // back as seeded, for the other tests
+    await expect(sellerLink).toHaveCount(0, { timeout: 25000 });
+    await customerContext.close();
+    await staffContext.close();
+});
+
 test('search suggestions can be used with the keyboard', async ({ page }) => {
     await page.goto('/');
     const input = page.locator('#site-search');

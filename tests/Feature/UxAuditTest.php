@@ -6,11 +6,14 @@ use App\Enums\ProductStatus;
 use App\Enums\SellerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Category;
+use App\Models\GiftCard;
 use App\Models\Product;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\OrderService;
 use App\Support\LivePages;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -69,6 +72,74 @@ class UxAuditTest extends TestCase
         $response->assertRedirect('/admin/sellers')->assertSessionHas('error');
         $this->assertSame(SellerProfileStatus::Approved, $profile->fresh()->status);
         $this->assertSame(UserRole::Seller, $applicant->fresh()->role);
+    }
+
+    public function test_ux15_the_live_response_carries_the_role_that_decides_the_menus(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        $this->getJson('/live?path=/orders')->assertOk()->assertJson(['nav' => 'buyer']);
+        $this->get('/orders')->assertSee('data-live-nav="buyer"', false);
+
+        $user->forceFill(['role' => UserRole::Seller])->save();
+        $this->getJson('/live?path=/orders')->assertJson(['nav' => 'seller']);
+    }
+
+    public function test_ux17_optional_fields_say_so(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $html = $this->actingAs($admin)->get('/admin/categories')->assertOk()->getContent();
+
+        $this->assertStringContainsString('<label for="new-description">Description <span class="optional">(optional)</span></label>', $html);
+        $this->assertStringContainsString('<label for="new-name">Name</label>', $html); // required fields stay unmarked
+    }
+
+    public function test_ux18_a_resent_balance_adjustment_is_applied_once(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = User::factory()->create(['currency' => 'USD']);
+        $this->actingAs($admin)->confirmPassword();
+        $form = ['_once' => (string) Str::uuid(), 'direction' => 'credit', 'amount' => '5.00', 'currency' => 'USD', 'reason' => 'Goodwill'];
+
+        $this->postForm(route('admin.users.balance', $user), $form)->assertSessionHas('success');
+        $message = session('success');
+        $this->postForm(route('admin.users.balance', $user), $form)->assertSessionHas('success', $message);
+
+        $this->assertSame(500, $user->fresh()->balance_minor);
+        $this->assertSame(1, DB::table('balance_transactions')->where('user_id', $user->id)->count());
+
+        // A form without its key is refused, not processed.
+        $this->postForm(route('admin.users.balance', $user), array_diff_key($form, ['_once' => true]))->assertSessionHas('error');
+        $this->assertSame(500, $user->fresh()->balance_minor);
+    }
+
+    public function test_ux18_a_resent_gift_card_form_creates_one_card_and_shows_its_code_again(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->confirmPassword();
+        $form = ['_once' => (string) Str::uuid(), 'amount' => '10.00', 'currency' => 'USD'];
+
+        $this->postForm(route('admin.gift-cards.store'), $form)->assertSessionHas('success');
+        $first = session('success');
+        $this->assertMatchesRegularExpression('/Code: [A-Z0-9]{4}-/', $first);
+        $this->postForm(route('admin.gift-cards.store'), $form)->assertSessionHas('success', $first);
+        $this->assertSame(1, GiftCard::query()->count());
+
+        // The kept message is encrypted at rest.
+        $stored = Cache::get('submit-once:'.$admin->id.':'.$form['_once'].':result');
+        $this->assertIsString($stored);
+        $this->assertStringNotContainsString('Code:', $stored);
+    }
+
+    public function test_ux18_a_failed_submission_does_not_use_up_the_key(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->confirmPassword();
+        $key = (string) Str::uuid();
+
+        $this->postForm(route('admin.gift-cards.store'), ['_once' => $key, 'amount' => 'abc', 'currency' => 'USD'])->assertSessionHas('error');
+        $this->postForm(route('admin.gift-cards.store'), ['_once' => $key, 'amount' => '10.00', 'currency' => 'USD'])->assertSessionHas('success');
+        $this->assertSame(1, GiftCard::query()->count());
     }
 
     public function test_ux02_irreversible_actions_have_a_confirmation_step(): void

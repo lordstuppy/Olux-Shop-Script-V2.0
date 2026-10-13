@@ -41,10 +41,10 @@
         <x-select name="type" :label="__('Type')" :options="['percent' => __('Percent off'), 'fixed' => __('Fixed amount off')]" />
         <x-field name="value" :label="__('Value')" inputmode="decimal" :hint="__('Percent (e.g. 15 or 12.5) or amount (e.g. 5.00).')" required />
         <x-select name="currency" :label="__('Currency')" :options="array_combine($currencies, $currencies)" :placeholder="__('Any currency (percent only)')" :hint="__('Required for fixed coupons. Restricts the coupon to orders in this currency.')" />
-        <x-field name="min_total" :label="__('Minimum subtotal')" inputmode="decimal" :hint="__('Optional, in the coupon currency.')" />
-        <x-field name="max_redemptions" :label="__('Maximum redemptions')" type="number" min="1" />
-        <x-field name="max_per_user" :label="__('Maximum uses per buyer')" type="number" min="1" />
-        <x-field name="expires_at" :label="__('Expires at')" type="datetime-local" />
+        <x-field optional name="min_total" :label="__('Minimum subtotal')" inputmode="decimal" :hint="__('In the coupon currency.')" />
+        <x-field optional name="max_redemptions" :label="__('Maximum redemptions')" type="number" min="1" />
+        <x-field optional name="max_per_user" :label="__('Maximum uses per buyer')" type="number" min="1" />
+        <x-field optional name="expires_at" :label="__('Expires at')" type="datetime-local" />
         <button type="submit">{{ __('Create coupon') }}</button>
     </form>
 @endsection

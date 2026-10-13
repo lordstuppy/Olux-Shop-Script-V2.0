@@ -18,7 +18,7 @@
 <body data-label-show-password="{{ __('Show password') }}" data-label-hide-password="{{ __('Hide password') }}"
     data-label-suggestions="{{ __(':count suggestions. Use the down arrow key to choose one.') }}" data-label-table="{{ __('Table') }}"
     @auth
-        data-live="{{ route('live') }}" data-live-version="{{ $liveVersion ?? '' }}" data-live-sound="{{ auth()->user()->notification_sound !== false ? '1' : '0' }}"
+        data-live="{{ route('live') }}" data-live-version="{{ $liveVersion ?? '' }}" data-live-nav="{{ auth()->user()->role->value }}" data-live-sound="{{ auth()->user()->notification_sound !== false ? '1' : '0' }}"
         data-label-live-lost="{{ __('Connection lost. Trying again...') }}" data-label-live-back="{{ __('Connection restored.') }}"
         data-label-live-updated="{{ __('This page was updated.') }}" data-label-live-pending="{{ __('This page has new information.') }}"
         data-label-live-show="{{ __('Show it') }}" data-label-live-new="{{ __('New notification:') }}" data-label-close="{{ __('Close') }}"

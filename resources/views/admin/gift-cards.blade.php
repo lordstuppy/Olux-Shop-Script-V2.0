@@ -31,9 +31,10 @@
     <h2>{{ __('Create gift card') }}</h2>
     <form method="post" action="{{ route('admin.gift-cards.store') }}" class="stack">
         @csrf
+        <x-once />
         <x-field name="amount" :label="__('Amount')" inputmode="decimal" required />
         <x-select name="currency" :label="__('Currency')" :options="array_combine($currencies, $currencies)" />
-        <x-field name="expires_at" :label="__('Expires on')" type="date" />
+        <x-field optional name="expires_at" :label="__('Expires on')" type="date" />
         <button type="submit">{{ __('Create gift card') }}</button>
     </form>
 @endsection

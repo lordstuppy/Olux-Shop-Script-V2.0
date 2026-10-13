@@ -10,6 +10,7 @@ use App\Http\Middleware\PinAppUrl;
 use App\Http\Middleware\PreventRequestForgery;
 use App\Http\Middleware\RequireRecentPassword;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SubmitOnce;
 use App\Http\Middleware\TrustProxies;
 use App\Support\RequestId;
 use Illuminate\Contracts\Database\LostConnectionDetector;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'staff.2fa' => EnsureStaffTwoFactor::class,
             'password.recent' => RequireRecentPassword::class,
+            'submit.once' => SubmitOnce::class,
         ]);
 
         // Proxy IPs/CIDRs come from config (shop.trusted_proxies) so they work with config:cache.

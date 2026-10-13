@@ -1,36 +1,17 @@
 /*
- * Optional progressive enhancement. The shop is fully usable without this
- * file: every feature here has a server-rendered equivalent.
- *  1. Live search suggestions under the header search box (arrow keys move
- *     into the list, Escape closes it; screen readers hear how many there are).
- *  2. Prevents accidental double submission: a second submit of the same POST
- *     form while the first is on its way is dropped, and forms marked
- *     data-once also disable their buttons (payments use idempotency keys too).
- *  3. Show/hide button (eye) on password fields. Without scripts the fields
- *     simply stay masked: a server-side toggle would have to send the
- *     password back in a page, which is worse than no toggle.
- *  4. Scrolls a sideways section menu (narrow screens) to the current page.
- *  5. Busy indicator on the button that submitted a form, shown when the
- *     next page takes longer than 200 ms (without scripts the browser's own
- *     loading indicator does this job).
- *  6. After a failed submission the error summary takes the focus, and table
- *     boxes that scroll sideways can be scrolled with the keyboard.
- *  7. Leaving a page with a half-written text (a message, a review) asks
- *     first, with the browser's own dialog.
- *  8. Live updates for signed-in users: polls /live every 10 s while the tab
- *     is visible and someone used it in the last 20 minutes. Updates the
- *     unread badge and wallet balance (in every tab of this browser), shows
- *     new notifications with an optional sound, and re-fetches the page
- *     content when it changed - unless the person is filling in a form, who
- *     gets a "Show it" button instead. When the session ends (expiry, sign-out
- *     elsewhere) it says so, offers a sign-in in another tab and afterwards
- *     renews the page's form tokens, so typed input can still be sent.
- *     Two minutes before an idle session would end, it offers to stay
- *     signed in (WCAG 2.2.1).
- *     Without scripts pages show current data whenever they are loaded.
+ * Optional progressive enhancement; every feature has a server-rendered
+ * equivalent, and the shop works without this file. Sections: search
+ * suggestions, double-submit guard, password show/hide, menus, busy
+ * indicator, error focus and table scrolling, unsaved-text guard, and live
+ * updates for signed-in users (docs/ux/ux-realtime-sync-report.md).
+ * Without scripts, pages show current data whenever they are loaded.
  */
 (function () {
     'use strict';
+
+    var each = function (root, selector, fn) {
+        Array.prototype.forEach.call(root.querySelectorAll(selector), fn);
+    };
 
     var input = document.querySelector('[data-live-search]');
     if (input && window.fetch) {
@@ -48,7 +29,7 @@
         input.setAttribute('autocomplete', 'off');
         var countLabel = document.body.getAttribute('data-label-suggestions') || ':count suggestions. Use the down arrow key to choose one.';
 
-        var timer = null;
+        var searchTimer = null;
         var lastQuery = '';
 
         var render = function (results) {
@@ -94,12 +75,12 @@
 
         input.addEventListener('input', function () {
             var q = input.value.trim();
-            clearTimeout(timer);
+            clearTimeout(searchTimer);
             if (q.length < 2) {
                 render([]);
                 return;
             }
-            timer = setTimeout(function () {
+            searchTimer = setTimeout(function () {
                 lastQuery = q;
                 fetch(input.getAttribute('data-live-search') + '?q=' + encodeURIComponent(q), {
                     headers: { 'Accept': 'application/json' },
@@ -138,16 +119,18 @@
 
     // Parts of the page that live updates may replace are enhanced again afterwards.
     var enhance = function (root) {
-        Array.prototype.forEach.call(root.querySelectorAll('form[data-once]'), function (form) {
+        each(root, 'form[data-once]', function (form) {
             form.addEventListener('submit', function () {
-                Array.prototype.forEach.call(form.querySelectorAll('button[type=submit]'), function (button) {
+                each(form, 'button[type=submit]', function (button) {
                     button.disabled = true;
                     button.setAttribute('aria-disabled', 'true');
                 });
             });
         });
 
-        Array.prototype.forEach.call(root.querySelectorAll('input[type=password]'), function (field) {
+        // Show/hide on password fields. Without scripts they stay masked: a
+        // server-side toggle would have to send the password back in a page.
+        each(root, 'input[type=password]', function (field) {
             var wrap = document.createElement('span');
             wrap.className = 'password-wrap';
             field.parentNode.insertBefore(wrap, field);
@@ -220,7 +203,7 @@
         return body.getAttribute('data-label-table') || 'Table';
     };
     var tables = function () {
-        Array.prototype.forEach.call(document.querySelectorAll('.table-wrap'), function (box) {
+        each(document, '.table-wrap', function (box) {
             if (box.scrollWidth > box.clientWidth + 1) {
                 box.setAttribute('tabindex', '0');
                 box.setAttribute('role', 'region');
@@ -246,15 +229,17 @@
         menu.scrollLeft += current.getBoundingClientRect().left - menu.getBoundingClientRect().left - 16;
     }
 
+    // Busy indicator on the button that submitted a form, when the next page
+    // takes over 200 ms (without scripts the browser's own indicator does it).
     var busyTimers = [];
     var clearBusy = function () {
         busyTimers.forEach(clearTimeout);
         busyTimers = [];
-        Array.prototype.forEach.call(document.querySelectorAll('.is-busy'), function (el) {
+        each(document, '.is-busy', function (el) {
             el.classList.remove('is-busy');
             el.removeAttribute('aria-busy');
         });
-        Array.prototype.forEach.call(document.querySelectorAll('form[data-sending]'), function (form) {
+        each(document, 'form[data-sending]', function (form) {
             form.removeAttribute('data-sending');
         });
     };
@@ -433,14 +418,14 @@
 
         // Header: unread badge and wallet balance, in every open tab.
         var showHeader = function (data) {
-            Array.prototype.forEach.call(document.querySelectorAll('[data-live-unread]'), function (badge) {
+            each(document, '[data-live-unread]', function (badge) {
                 badge.hidden = !data.unread;
                 var count = badge.querySelector('[data-live-unread-count]');
                 if (count) {
                     count.textContent = data.unread > 99 ? '99+' : String(data.unread);
                 }
             });
-            Array.prototype.forEach.call(document.querySelectorAll('[data-live-balance]'), function (el) {
+            each(document, '[data-live-balance]', function (el) {
                 if (data.balance) {
                     el.textContent = data.balance;
                 }
@@ -459,6 +444,22 @@
                     chime();
                 }
             }
+        };
+
+        // The current page, fetched again and parsed (null if signed out or gone).
+        var fetchPage = function () {
+            return fetch(window.location.href, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'text/html' } }).then(function (response) {
+                return response.ok && !response.redirected ? response.text() : null;
+            }).then(function (html) {
+                return html ? new DOMParser().parseFromString(html, 'text/html') : null;
+            });
+        };
+        // Moves parsed nodes instead of re-serialising them through innerHTML,
+        // which can turn inert markup into live markup (mXSS).
+        var swap = function (target, source) {
+            target.replaceChildren.apply(target, Array.prototype.map.call(source.childNodes, function (node) {
+                return document.importNode(node, true);
+            }));
         };
 
         // The page itself: re-fetch it and swap the content, unless the person is
@@ -480,28 +481,18 @@
                 return;
             }
             refreshing = true;
-            fetch(window.location.href, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'text/html' } }).then(function (response) {
-                if (response.redirected || !response.ok) {
+            fetchPage().then(function (doc) {
+                refreshing = false;
+                if (!doc) {
                     // Signed out, or the page is gone: let the browser show what is there now.
                     window.location.reload();
-                    return null;
-                }
-                return response.text();
-            }).then(function (html) {
-                refreshing = false;
-                if (html === null || html === undefined) {
                     return;
                 }
-                var doc = new DOMParser().parseFromString(html, 'text/html');
                 var fresh = doc.getElementById('live-content');
                 if (!fresh || fresh.innerHTML === content.innerHTML) {
                     return;
                 }
-                // Move the parsed nodes instead of re-serialising them through
-                // innerHTML, which can turn inert markup into live markup (mXSS).
-                content.replaceChildren.apply(content, Array.prototype.map.call(fresh.childNodes, function (node) {
-                    return document.importNode(node, true);
-                }));
+                swap(content, fresh);
                 document.title = doc.title;
                 dirty = false;
                 enhance(content);
@@ -511,6 +502,30 @@
             }).catch(function () {
                 refreshing = false;
             });
+        };
+        // Header and section menus: replaced when the role changed, even while
+        // the person is typing (forms are not inside them).
+        var navChanged = function () {
+            fetchPage().then(function (doc) {
+                if (!doc) {
+                    window.location.reload();
+                    return;
+                }
+                var main = document.querySelector('.site-header nav');
+                var freshMain = doc.querySelector('.site-header nav');
+                if (main && freshMain) {
+                    swap(main, freshMain);
+                }
+                var sub = document.querySelector('nav.subnav');
+                var freshSub = doc.querySelector('nav.subnav');
+                if (sub && freshSub) {
+                    swap(sub, freshSub);
+                } else if (sub) {
+                    sub.remove();
+                } else if (freshSub) {
+                    document.getElementById('main').before(document.importNode(freshSub, true));
+                }
+            }).catch(function () {});
         };
         var pageChanged = function () {
             if (busy()) {
@@ -534,6 +549,7 @@
         }
 
         var version = body.getAttribute('data-live-version') || null;
+        var nav = body.getAttribute('data-live-nav') || null;
         var failures = 0;
         // Session ended: say so once and keep checking; after a sign-in in
         // another tab, the forms here get the new session's token.
@@ -554,12 +570,10 @@
             }
         };
         var signedIn = function () {
-            fetch(window.location.href, { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'text/html' } }).then(function (response) {
-                return response.ok && !response.redirected ? response.text() : null;
-            }).then(function (html) {
-                var token = html && new DOMParser().parseFromString(html, 'text/html').querySelector('input[name="_token"]');
+            fetchPage().then(function (doc) {
+                var token = doc && doc.querySelector('input[name="_token"]');
                 if (token) {
-                    Array.prototype.forEach.call(document.querySelectorAll('input[name="_token"]'), function (field) {
+                    each(document, 'input[name="_token"]', function (field) {
                         field.value = token.value;
                     });
                 }
@@ -622,6 +636,12 @@
                 announce(data.latest);
                 if (channel) {
                     channel.postMessage({ unread: data.unread, balance: data.balance });
+                }
+                if (data.nav && nav && data.nav !== nav) {
+                    navChanged();
+                }
+                if (data.nav) {
+                    nav = data.nav;
                 }
                 if (data.version && version && data.version !== version) {
                     pageChanged();

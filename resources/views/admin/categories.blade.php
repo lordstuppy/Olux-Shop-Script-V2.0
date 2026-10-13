@@ -13,7 +13,7 @@
                 @csrf
                 @method('PUT')
                 <x-field name="name" :id="'name-'.$category->id" :label="__('Name')" :value="$category->name" maxlength="80" required />
-                <x-field name="description" :id="'desc-'.$category->id" :label="__('Description')" :value="$category->description" maxlength="500" />
+                <x-field optional name="description" :id="'desc-'.$category->id" :label="__('Description')" :value="$category->description" maxlength="500" />
                 <div class="actions">
                     <button type="submit" class="btn-secondary">{{ __('Save') }}<span class="visually-hidden"> {{ $category->name }}</span></button>
                 </div>
@@ -31,7 +31,7 @@
     <form method="post" action="{{ route('admin.categories.store') }}" class="stack">
         @csrf
         <x-field name="name" id="new-name" :label="__('Name')" maxlength="80" required />
-        <x-field name="description" id="new-description" :label="__('Description')" maxlength="500" />
+        <x-field optional name="description" id="new-description" :label="__('Description')" maxlength="500" />
         <button type="submit">{{ __('Add category') }}</button>
     </form>
 @endsection

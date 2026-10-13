@@ -45,6 +45,7 @@
         <h2>{{ __('Adjust balance') }}</h2>
         <form method="post" action="{{ route('admin.users.balance', $user) }}" class="stack">
             @csrf
+            <x-once />
             <x-select name="direction" :label="__('Direction')" :options="['credit' => __('Credit (add)'), 'debit' => __('Debit (remove)')]" />
             <x-field name="amount" :label="__('Amount')" inputmode="decimal" required />
             <x-select name="currency" :label="__('Currency')" :options="array_combine(\App\Support\Money::supported(), \App\Support\Money::supported())" :value="$user->currency" />

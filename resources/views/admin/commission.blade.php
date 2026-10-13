@@ -23,7 +23,7 @@
                             <form method="post" action="{{ route('admin.commission.category', $category->id) }}" class="actions">
                                 @csrf
                                 @method('PUT')
-                                <x-field name="commission_percent" :id="'cat-'.$category->id" :label="__('Commission % for :name', ['name' => $category->name])" :value="$category->commission_bps !== null ? number_format($category->commission_bps / 100, 2, '.', '') : ''" inputmode="decimal" maxlength="6" />
+                                <x-field optional name="commission_percent" :id="'cat-'.$category->id" :label="__('Commission % for :name', ['name' => $category->name])" :value="$category->commission_bps !== null ? number_format($category->commission_bps / 100, 2, '.', '') : ''" inputmode="decimal" maxlength="6" />
                                 <button type="submit" class="btn-secondary">{{ __('Save') }}</button>
                             </form>
                         </td>
@@ -47,7 +47,7 @@
                             <form method="post" action="{{ route('admin.commission.seller', $profile) }}" class="actions">
                                 @csrf
                                 @method('PUT')
-                                <x-field name="commission_percent" :id="'seller-'.$profile->id" :label="__('Commission % for :name', ['name' => $profile->display_name])" :value="$profile->commission_bps !== null ? number_format($profile->commission_bps / 100, 2, '.', '') : ''" inputmode="decimal" maxlength="6" />
+                                <x-field optional name="commission_percent" :id="'seller-'.$profile->id" :label="__('Commission % for :name', ['name' => $profile->display_name])" :value="$profile->commission_bps !== null ? number_format($profile->commission_bps / 100, 2, '.', '') : ''" inputmode="decimal" maxlength="6" />
                                 <button type="submit" class="btn-secondary">{{ __('Save') }}</button>
                             </form>
                         </td>
@@ -78,7 +78,7 @@
         @csrf
         @method('PUT')
         <x-field name="product_id" :label="__('Product number')" type="number" min="1" required :hint="__('Shown as #number on the product pages in the admin area.')" />
-        <x-field name="commission_percent" id="product-commission" :label="__('Commission %')" inputmode="decimal" maxlength="6" :hint="__('Leave empty to remove the product override.')" />
+        <x-field optional name="commission_percent" id="product-commission" :label="__('Commission %')" inputmode="decimal" maxlength="6" :hint="__('Leave empty to remove the product override.')" />
         <button type="submit">{{ __('Set product rate') }}</button>
     </form>
 @endsection

@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 
 /**
  * Polled by enhance.js (about every 10 s while the tab is visible): unread
- * notifications, the wallet balance and the version of the page being shown.
+ * notifications, the wallet balance, the version of the page being shown, and
+ * the role, which decides the navigation (it changes when staff approve a
+ * seller or change a role).
  */
 class LiveController extends Controller
 {
@@ -25,6 +27,7 @@ class LiveController extends Controller
             'latest' => $latest ? ['id' => $latest->id, 'title' => $latest->title, 'url' => route('notifications.open', $latest->id)] : null,
             'balance' => money($user->balance_minor, $user->currency),
             'version' => is_string($path) ? LivePages::version($user, mb_substr($path, 0, 500)) : null,
+            'nav' => $user->role->value,
         ])->header('Cache-Control', 'no-store, private');
     }
 }

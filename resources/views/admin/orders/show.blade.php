@@ -117,7 +117,7 @@
                     <x-field name="destination" :label="__('Buyer\'s destination address')" maxlength="255" autocomplete="off" />
                 </fieldset>
             @endif
-            <x-field name="reason" :label="__('Reason')" maxlength="500" />
+            <x-field optional name="reason" :label="__('Reason')" maxlength="500" />
             <button type="submit" class="btn-danger">{{ __('Record refund') }}</button>
         </form>
     @endif

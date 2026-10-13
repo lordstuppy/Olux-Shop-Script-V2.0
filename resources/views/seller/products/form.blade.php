@@ -26,9 +26,9 @@
         <x-select name="category_id" :label="__('Category')" :options="$categories->pluck('name', 'id')->all()" :value="$product->category_id" :placeholder="__('No category')" />
         <x-field name="price" :label="__('Price')" :value="$product->price_minor ? \App\Support\Money::toDecimal($product->price_minor, $product->currency) : ''" inputmode="decimal" :hint="__('For example 19.99')" required />
         <x-select name="currency" :label="__('Currency')" :options="array_combine(\App\Support\Money::supported(), \App\Support\Money::supported())" :value="$product->currency" />
-        <x-field name="stock" :label="__('Stock')" type="number" :value="$product->stock" min="0" :hint="__('Leave empty for unlimited (for example a downloadable tutorial). Adding licence keys increases stock automatically.')" />
-        <x-field name="access_days" :label="__('Subscription length in days')" type="number" :value="$product->access_days" min="1" max="3660" :hint="__('Leave empty for a one-off purchase. For subscriptions, buyers get access for this many days per unit and a reminder before it ends.')" />
-        <x-field name="download_limit" :label="__('Downloads per purchase')" type="number" :value="$product->download_limit" min="1" max="1000" :hint="__('Leave empty for the shop default (:limit).', ['limit' => config('shop.max_downloads_per_item')])" />
+        <x-field optional name="stock" :label="__('Stock')" type="number" :value="$product->stock" min="0" :hint="__('Leave empty for unlimited (for example a downloadable tutorial). Adding licence keys increases stock automatically.')" />
+        <x-field optional name="access_days" :label="__('Subscription length in days')" type="number" :value="$product->access_days" min="1" max="3660" :hint="__('Leave empty for a one-off purchase. For subscriptions, buyers get access for this many days per unit and a reminder before it ends.')" />
+        <x-field optional name="download_limit" :label="__('Downloads per purchase')" type="number" :value="$product->download_limit" min="1" max="1000" :hint="__('Leave empty for the shop default (:limit).', ['limit' => config('shop.max_downloads_per_item')])" />
         <x-select name="delivery_type" :label="__('Delivery')" :options="['instant' => __('Instant (files or licence keys)'), 'manual' => __('Manual (you deliver after payment)')]" :value="$product->delivery_type?->value" />
         <button type="submit">{{ $editing ? __('Save changes') : __('Save draft') }}</button>
         @if ($editing && in_array($product->status, [\App\Enums\ProductStatus::Active, \App\Enums\ProductStatus::Paused], true))
@@ -98,7 +98,7 @@
             <form method="post" action="{{ route('seller.products.images.store', $product->id) }}" enctype="multipart/form-data" class="stack">
                 @csrf
                 <x-field name="image" :label="__('Add an image')" type="file" accept="image/jpeg,image/png,image/webp" :hint="__('JPEG, PNG or WebP, up to :size MB. Images are re-encoded; metadata is removed.', ['size' => (int) (config('shop.max_image_kb') / 1024)])" required />
-                <x-field name="alt_text" :label="__('Image description (for screen readers)')" maxlength="160" />
+                <x-field optional name="alt_text" :label="__('Image description (for screen readers)')" maxlength="160" />
                 <button type="submit" class="btn-secondary">{{ __('Upload image') }}</button>
             </form>
         @endif
