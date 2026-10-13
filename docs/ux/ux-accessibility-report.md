@@ -36,6 +36,7 @@
 | 2.5.8 Target size (minimum) | AA | axe `target-size`: 0 violations at 375 and 1280 px. On touch screens 44 px for buttons, fields, menus and cards (UX-09). |
 | 3.2.6 Consistent help | A | Support email in the footer of every page; support tickets in the main navigation when signed in. |
 | 3.3.1 Error identification; 3.3.3 Error suggestion | A, AA | Field-level messages naming the fix, an error summary, and `aria-invalid`. Input is kept after errors (passwords excepted). |
+| 3.3.2 Labels or instructions | A | Every field has a visible label; formats and rules are given before submission (hints such as the password rule). Required fields carry `required`; optional fields in staff and seller forms say "(optional)" in the label (UX-17). |
 | 3.3.4 Error prevention (legal, financial, data) | AA | Checkout shows totals and requires accepting the terms. Irreversible actions have a confirmation step (UX-02). Payments are idempotent. |
 | 3.3.7 Redundant entry | A | Nothing is asked twice within a process. After a session end, typed text can be kept (UX-03). |
 | 3.3.8 Accessible authentication (minimum) | AA | No cognitive test (no CAPTCHA; a honeypot and a timing check instead). Password managers and pasting work (`autocomplete` set). 2FA codes can be pasted. Show/hide password. |

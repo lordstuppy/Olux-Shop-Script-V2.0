@@ -25,8 +25,9 @@
 | UX-03 | A session that ends is not shown; typed input is lost on the next submit | High | U4, U11 | Fixed |
 | UX-04 | Seller pages stay stale after staff decisions, while a notification announces them | Medium | U4, U10 | Fixed |
 | UX-05 | Search suggestions cannot be reached with the arrow keys and are not announced | Medium | U8 | Fixed |
-| UX-06 | Only payment forms are protected against a second submit | Medium | U2, U3 | Fixed (client); server part open as UX-18 |
+| UX-06 | Only payment forms are protected against a second submit | Medium | U2, U3 | Fixed (client; server part: UX-18) |
 | UX-22 | No warning before an idle session ends (WCAG 2.2.1) | Medium | U8, U11 | Fixed with JavaScript; no warning without it |
+| UX-25 | Typing in the header search stopped live updates on that page | Medium | U4, U10 | Fixed |
 | UX-07 | After a failed submission the focus stays at the top of the page | Low | U3, U8 | Fixed |
 | UX-08 | Catalogue filters fill the first phone screen; no "Clear filters" once there are results | Low | U6, U9 | Fixed |
 | UX-09 | Touch targets below the project's 44 px goal (logo, product cards) | Low | U6, U8 | Fixed in part |
@@ -37,10 +38,10 @@
 | UX-23 | Many open windows: the rate-limited live poll claimed "Connection lost" | Low | U4, U5 | Fixed |
 | UX-24 | The sound setting says "In this browser" but applies to the account | Low | U5 | Fixed |
 | UX-14 | Regression found during the audit: catalogue grid squeezed staff date filters at 320 px | Low | U15 | Fixed before release |
-| UX-15 | Header navigation follows a role change only on the next page load | Low | U12 | Open |
-| UX-16 | All times are shown in UTC, not in the visitor's time zone | Low | U13 | Open (product decision) |
-| UX-17 | Optional fields are not marked consistently | Low | U3 | Open |
-| UX-18 | No server-side duplicate protection for staff balance adjustments and gift-card creation | Low | U2 | Open (not reproduced) |
+| UX-15 | Header navigation follows a role change only on the next page load | Low | U12 | Fixed |
+| UX-16 | All times are shown in UTC, not in the visitor's time zone | Low | U13 | Accepted: UTC stays (owner decision, 2026-10-13) |
+| UX-17 | Optional fields are not marked consistently | Low | U3 | Fixed |
+| UX-18 | No server-side duplicate protection for staff balance adjustments and gift-card creation | Low | U2 | Fixed |
 | UX-19 | Colour scheme is stored per browser, set only in the footer | Info | U7 | Decision |
 | UX-20 | Two search fields on the catalogue page | Info | U1 | Decision |
 | UX-21 | No screen reader and no real users were available for testing | Info | U8, U14 | Not verified |
@@ -48,17 +49,16 @@
 **Counts:**
 
 - High 3 (all fixed);
-- Medium 4 (all fixed; UX-06's server side continues as UX-18; UX-22 only with JavaScript);
-- Low 14 (9 fixed, 1 in part, 4 open);
+- Medium 5 (all fixed; UX-22 only with JavaScript);
+- Low 14 (12 fixed, 1 in part, 1 accepted by the owner: UX-16);
 - Info 3.
 
 **Open:**
 
-- 4 Low findings: UX-15, UX-16, UX-17, UX-18;
-- the remaining part of UX-09 (Low);
+- the remaining part of UX-09 (Low): links in table cells and notification lists below the 44 px goal, within AA;
 - none High or Medium.
 
-**Total:** 24 findings.
+**Total:** 25 findings.
 
 ## Details
 
@@ -314,15 +314,22 @@ The crawl measures the link element itself, so the card overlay is not counted (
 
 **Test:** wording only; the setting itself is covered by `live.spec.js` (switching the sound off).
 
-### UX-15: Header navigation after a role change (Low, open)
+### UX-15: Header navigation after a role change (Low)
 
-**What happens:** live updates refresh the page content, not the header. When staff approve a seller application, the applicant's page shows the decision at once (UX-04), but the "Seller" link in the header appears on the next page load. The same holds when staff change a role.
+**Root cause:** live updates refreshed the page content, not the header. When staff approved a seller application, the applicant's page showed the decision at once (UX-04), but the "Seller" link in the header appeared only on the next page load. The same held when staff changed a role, also for the staff section menu.
 
-**Impact:** low. The page itself says what changed and links on.
+**Fix:**
 
-**Recommendation:** include the role in the live response and reload once when it changes.
+- `/live` now also returns the user's role, which decides the menus (`data-live-nav` on the page).
+- When it changes, `enhance.js` fetches the page once and replaces the header menu and the section menu, or adds or removes the section menu.
+- Forms are not inside the menus, so typed input stays. The page content follows through its own version as before.
 
-### UX-16: Times in UTC (Low, open)
+**Test:**
+
+- `ux.spec.js` "a role change shows up in the menus of the signed-in user without a reload": staff make the signed-in customer a seller and back. The "Seller" link appears and goes, in the same document, while text typed in the header search stays.
+- `UxAuditTest::test_ux15_*`.
+
+### UX-16: Times in UTC (Low, accepted)
 
 **What happens:** all dates and times are shown in UTC and labelled "UTC". The order page, for example, says "Placed 2026-10-12 20:27 UTC".
 
@@ -331,25 +338,58 @@ The crawl measures the link element itself, so the card overlay is not counted (
 - Consistent and unambiguous.
 - For buyers far from UTC, the delivery windows and expiry times need converting in their heads.
 
-**Decision needed:** a per-account time zone is a product decision.
+**Decision (2026-10-13):** the owner decided to keep UTC only. No change.
 
-### UX-17: Optional fields (Low, open)
+### UX-17: Optional fields (Low)
 
-**What happens:** required fields carry `required` (announced by screen readers) and most optional ones say "Optional" or "Leave empty for ..." in their hint. Some optional staff fields do not, for example the category description.
+**Root cause:** required fields carry `required` (announced by screen readers) and most optional ones said "Optional" or "Leave empty for ..." in a hint. Some did not, for example the category description, the gift-card expiry and the announcement dates.
 
-**Recommendation:** mark optional fields consistently in the field component.
+**Fix:**
 
-### UX-18: Server-side duplicate protection for two staff money forms (Low, open)
+- The `field`, `select` and `textarea` components take an `optional` attribute, which adds "(optional)" to the label in muted text.
+- 23 fields in staff and seller forms are marked. Each one was checked to be `nullable` in its controller's validation.
+- Not marked:
+  - filter forms (GET), where every field is optional by nature;
+  - fields that are required only in some cases and say so in their label, for example "Outgoing transaction reference (manual only)";
+  - selects that always have a value.
+- The coupon hint "Optional, in the coupon currency." became "In the coupon currency.".
 
-**What is missing:** staff balance adjustments and gift-card creation have no idempotency key, unlike checkout, payment, payouts and refunds. If a browser sent the form twice, two credits or two gift cards would be made. For a gift card, the first card's code would then never be shown.
+**Test:** `UxAuditTest::test_ux17_optional_fields_say_so`. The optional description is marked; the required name is not.
 
-**Why Low:**
+### UX-18: Server-side duplicate protection for two staff money forms (Low)
 
-- It was not reproduced (see UX-06).
-- `enhance.js` now blocks second submits.
-- Both forms require a recently confirmed password, and both are audited.
+**Root cause:** staff balance adjustments and gift-card creation had no idempotency key, unlike checkout, payment, payouts and refunds. If a browser sent the form twice, two credits or two gift cards would be made. For a gift card, the first card's code would then never be shown, because the browser shows only the last response.
 
-**Recommendation:** add the same idempotency key as checkout.
+This was not reproduced in Chromium (see UX-06).
+
+**Fix:** a new `submit.once` middleware and an `x-once` form component.
+
+- **The key:** each form carries a one-time key.
+- **A repeated key:**
+  - It is not processed again.
+  - It answers with the first request's success message, so a gift card's code is shown again rather than lost.
+  - That message is kept encrypted (`Crypt`), for the same user only, for 10 minutes. The key itself is remembered for 24 hours.
+- **Failures:** a submission that fails (validation error, refused amount) releases the key, so it can be sent again.
+- **Missing key:** a form without a key, such as a page cached from before this change, is refused with "This form is out of date. Reload the page and send it again."
+- **Order of checks:** the middleware runs after the permission check and after the recent-password check.
+
+**Tests:**
+
+- `UxAuditTest::test_ux18_*` (3 tests):
+  - a resent balance adjustment is applied once and answers with the same message;
+  - a resent gift-card form makes one card and shows the same code again, and the kept message is not stored in plain text;
+  - a failed submission does not use up the key.
+- The existing balance tests in `AdminFeaturesTest` and `SecurityAuditTest` now send a key, so the self-dealing check is still the one being tested.
+
+### UX-25: Typing in the header search stopped live updates (Medium)
+
+**Found by:** the UX-15 browser test, during this round.
+
+**Root cause:** in `enhance.js` the search suggestions' debounce timer and the live poll's timer were both declared as `var timer` in the same function, so they were one variable. Typing in the header search cancelled the scheduled poll. That page then received no live updates until the tab was hidden and shown again, or after 20 idle minutes. This affected any signed-in page, for example a staff member searching from the dashboard. The code had this defect before the audit.
+
+**Fix:** the search uses its own `searchTimer`.
+
+**Test:** `ux.spec.js` "typing in the header search does not stop live updates". With the old file no poll followed within 20 s; with the fix it does.
 
 ### UX-19, UX-20: Decisions (Info)
 

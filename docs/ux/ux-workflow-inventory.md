@@ -7,7 +7,7 @@ The inventory of the user interface, and the verification status of every critic
 | Aspect | What the application uses |
 |---|---|
 | Rendering | Server-rendered Blade pages (Laravel 13); every page and every flow works without JavaScript |
-| Script | One optional file, `public/js/enhance.js` (29.4 KB, 7.7 KB gzip; 20.5 KB and 5.6 KB before this audit), no framework |
+| Script | One optional file, `public/js/enhance.js` (29.1 KB, 7.5 KB gzip; 20.5 KB and 5.6 KB before this audit), no framework |
 | Styles | One stylesheet, `public/css/app.css`, with colour tokens for light and dark |
 | Fonts and assets | System fonts; no external fonts, scripts or styles (blocked by the Content Security Policy) |
 | Components | Blade components `field`, `select`, `textarea`, `status`, `confirm` (new) and partials (flash messages, product card, admin and seller menus, column chart) |
@@ -108,6 +108,6 @@ The inventory of the user interface, and the verification status of every critic
 | Observation | Result |
 |---|---|
 | Two search fields on the catalogue page (header and filter) | Kept on purpose. The header searches everything; the filter field keeps the other filters. Both carry the same value (UX-20, Info). |
-| Pages that needed a manual reload | Before the audit: the seller product list and edit page, and the application page (UX-04); the header navigation after a role change (UX-15, open). The other pages that show other people's changes update by themselves. |
+| Pages that needed a manual reload | Before the audit: the seller product list and edit page, and the application page (UX-04); the header and section menus after a role change (UX-15). All fixed: the pages that show other people's changes update by themselves. |
 | Irreversible actions in one click | 10 actions, fixed with a confirmation step (UX-02). |
 | Repeated data entry | Input stays after recoverable errors (passwords excepted). After a session end, typed text can be kept and sent (UX-03). |

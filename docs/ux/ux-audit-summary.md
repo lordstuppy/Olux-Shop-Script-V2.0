@@ -8,7 +8,7 @@ The shop's journeys work and are now covered by tests:
 - with and without JavaScript;
 - on a phone and by keyboard alone.
 
-All 3 High and 4 Medium findings are fixed, with regression tests that failed before the fixes. Every automated check passes on the candidate.
+All 3 High and 5 Medium findings are fixed, as are all Low findings except part of one, with regression tests that failed before the fixes. Every automated check passes on the candidate.
 
 The decision is BLOCKED because two mandatory gates need something this environment does not have:
 
@@ -22,8 +22,8 @@ The security audit's BLOCKED decision ([docs/security](../security/security-audi
 ## Tested revision
 
 - **Baseline:** `17a3380`.
-- **Candidate:** `66ce3a5` on branch `claude/zen-pasteur-vs99pr`. Later commits add only reports and evidence.
-- **Simulation image:** app `7596c7c4ee64` and web `c401e0174446`, built from `c827db2`. The two later commits change only JavaScript and one label, which the script-free simulation does not use.
+- **Candidate:** `974e3f5` on branch `claude/zen-pasteur-vs99pr`. Later commits add only reports and evidence.
+- **Simulation image:** app `aa9c31e6d589` and web `8a5f73838e2d`, built from `974e3f5`.
 
 ## Gates
 
@@ -36,7 +36,7 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 | U1 Inventory | PASS | 85 pages, 105 actions, 30 critical journeys, each mapped to a test ([ux-workflow-inventory.md](ux-workflow-inventory.md)) |
 | U2 Interaction feedback | PASS | Confirmation for 10 irreversible actions; second submits dropped; feedback from the server only |
 | U3 Forms and passwords | PASS | Password toggle by keyboard; autocomplete and input modes; error summary focused; unsaved text guarded |
-| U4 Real-time sync | PASS | Polling every 10 s on 26 pages; staff-to-user and user-to-staff updates tested; session end and reconnect handled ([ux-realtime-sync-report.md](ux-realtime-sync-report.md)) |
+| U4 Real-time sync | PASS | Polling every 10 s on 26 pages, menus on role changes; staff-to-user and user-to-staff updates tested; session end and reconnect handled ([ux-realtime-sync-report.md](ux-realtime-sync-report.md)) |
 | U5 Notifications | PASS | Toasts only for real events, once across tabs; centre keeps everything; no false "connection lost" |
 | U6 Responsive | PASS | 6 viewports including landscape: 0 overflow, text spacing passes, purchase completed on a phone ([ux-responsive-audit.md](ux-responsive-audit.md)) |
 | U7 Themes | PASS | Light, dark and device; no flash of the wrong theme; contrast checked in both |
@@ -51,13 +51,13 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 
 ## Findings
 
-**24 findings** ([ux-findings.md](ux-findings.md)):
+**25 findings** ([ux-findings.md](ux-findings.md)):
 
 | Severity | Count | Status |
 |---|---|---|
 | High | 3 | Fixed |
-| Medium | 4 | Fixed (UX-22 needs JavaScript) |
-| Low | 14 | 9 fixed, 1 in part, 4 open |
+| Medium | 5 | Fixed (UX-22 needs JavaScript) |
+| Low | 14 | 12 fixed, 1 in part, 1 accepted by the owner (UX-16: times stay in UTC) |
 | Info | 3 | Decisions, or not verifiable here |
 
 **The ones that mattered most:**
@@ -68,12 +68,16 @@ Machine-readable: [ux-gates.json](ux-gates.json).
 - **UX-04 (Medium):** after a staff decision, the seller saw the notification while the list on screen still showed the old status. The application page even promised to show the decision.
 - **UX-22 (Medium):** the 120-minute idle limit came without a warning (WCAG 2.2.1). The page now warns 2 minutes ahead and offers to stay signed in.
 
-**Open, all Low:**
+- **UX-25 (Medium, found in the second round):** typing in the header search silently stopped live updates on that page, because the search and the polling shared one timer variable.
 
-- the header navigation after a role change (UX-15);
-- times in UTC only (UX-16);
-- optional fields not marked consistently (UX-17);
-- no server-side duplicate key for two staff money forms (UX-18; not reproduced, and the browser now blocks double submits).
+**Second round (2026-10-13), on request:**
+
+- UX-15: the menus now follow a role change in place.
+- UX-17: optional fields say "(optional)".
+- UX-18: resent staff balance and gift-card forms are processed once and show the first result again.
+- UX-16: kept as is by the owner's decision.
+
+**Open:** only the remaining part of UX-09 (Low): links in table cells and notification lists below the 44 px goal, within WCAG AA.
 
 ## Workflow coverage
 
@@ -125,8 +129,8 @@ Version checks follow the same access rules as the pages.
 
 | Check | Result |
 |---|---|
-| Browser suite | 37 / 37 (was 19 tests) |
-| PHPUnit | 322 / 322 |
+| Browser suite | 39 / 39 (was 19 tests) |
+| PHPUnit | 327 / 327 |
 | Simulation | 101 / 101 |
 | Security gate | 9 / 9 PASS |
 | Performance gate | Asset budgets PASS |
@@ -135,7 +139,7 @@ Version checks follow the same access rules as the pages.
 
 **Regression of this audit:** one, caught by its own crawl and fixed before release (UX-14).
 
-**Asset budget:** `enhance.js` now uses 98 % of its budget.
+**Asset budget:** `enhance.js` now uses 97 % of its raw budget (29.1 of 30 KB) and 93 % of its gzip budget (7.5 of 8 KB).
 
 Details: [ux-regression-report.md](ux-regression-report.md).
 
@@ -157,5 +161,4 @@ Details: [ux-regression-report.md](ux-regression-report.md).
 
 1. Run the screen-reader script in [ux-accessibility-report.md](ux-accessibility-report.md#screen-reader-script) with NVDA + Firefox and VoiceOver + Safari (iOS), and record the results. This unblocks U8 and the screen-reader part of U14.
 2. Hold at least a few usability sessions on the buyer purchase and the seller listing journeys, or decide formally that U14's user sessions are not required for this release.
-3. Optionally, before or after release: decide UX-16 (time zone) and fix UX-15, UX-17 and UX-18.
-4. Make the CI job `browser` a required check, together with `php`, `security` and `performance`.
+3. Make the CI job `browser` a required check, together with `php`, `security` and `performance`.

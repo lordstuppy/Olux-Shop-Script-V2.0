@@ -1,4 +1,4 @@
-# Simulation summary (UX candidate: image built from c827db2, app 7596c7c4ee64, web c401e0174446; run 20261012-214809)
+# Simulation summary (UX candidate: image built from 974e3f5, app aa9c31e6d589, web 8a5f73838e2d; run 20261013-000543)
 
 Backend: compose. Runs: 1.
 

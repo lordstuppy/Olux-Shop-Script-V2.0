@@ -53,12 +53,14 @@
 - order list and order;
 - disputes, payouts, tickets, products, seller applications and reviews.
 
-**Every signed-in page:** the unread badge and the wallet balance in the header.
+**Every signed-in page:**
+
+- the unread badge and the wallet balance in the header;
+- the header menu and the section menu, when the user's role changes (UX-15).
 
 **Not live:**
 
 - **Public pages** (catalogue, product, cart): there is no polling for guests. Prices and stock are checked again at checkout.
-- **The header navigation after a role change:** UX-15, open.
 - **Pure settings and configuration pages:** these change only through their own forms.
 
 ## Scenarios tested
@@ -70,6 +72,8 @@
 | Staff approve a product, and the seller's list changes from "Pending review" to "Active" in place | `ux.spec.js` | Pass (failed before: UX-04) |
 | A user changes data staff see: a buyer's new order appears in the staff order list | `ux.spec.js` | Pass |
 | Several tabs: marking all read in one tab hides the badge in the other | `live.spec.js` | Pass |
+| Staff change a signed-in user's role: the menus follow in place, typed text stays | `ux.spec.js` | Pass (failed before: UX-15) |
+| Typing in the header search: polling continues | `ux.spec.js` | Pass (failed before: UX-25, a timer shared by search and polling) |
 | Connection lost and back: the message, then "Connection restored", with no stale state | `live.spec.js` | Pass |
 | Session ended while typing: the warning, the typed text kept, sign-in in another tab, the form sent | `ux.spec.js` | Pass (failed before: UX-03) |
 | Concurrent staff decisions: two staff members decide the same seller application from stale pages; the second is refused with an error message and nothing changes | `UxAuditTest::test_u12_*` | Pass |
@@ -96,6 +100,5 @@
 
 | Gap | Severity | Note |
 |---|---|---|
-| Header navigation after a role change | Low (UX-15) | The page content updates; the header links appear on the next page load |
 | Guests see catalogue changes on reload only | Info | Checkout re-checks prices and stock and says what changed |
 | Freshness on real networks and at scale | Not verified | Measured locally and in the sandbox load test. Capacity is a performance-audit item (R-02). |

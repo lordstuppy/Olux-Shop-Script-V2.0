@@ -1,6 +1,6 @@
 {"meta": {
- "code": "66ce3a5 (final candidate)",
- "date": "2026-10-12",
+ "code": "974e3f5 (final candidate)",
+ "date": "2026-10-13",
  "tool": "Playwright 1.56 Chromium, axe-core 4.10 (tags wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa; best-practice separately)",
  "viewports": "320x568, 375x812, 768x1024, 812x375 landscape (touch); 1280x800, 1920x1080",
  "schemes": "light all viewports, dark at 375 and 1280",

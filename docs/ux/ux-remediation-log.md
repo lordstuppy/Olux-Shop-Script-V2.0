@@ -29,6 +29,12 @@ Each change, in the order it was made, with its regression test and the verifica
 | UX-22 idle-session warning | 3a382f8 | `enhance.js`, `layouts/app` (`data-session-lifetime`, labels) | `ux.spec.js` "two minutes before an idle session ends ..." (fake clock) | No warning | Warning with "Stay signed in"; the request renews the session |
 | UX-23 rate-limited polls | 3a382f8 | `enhance.js` | `ux.spec.js` "a rate-limited poll slows down ..." | 2 polls in 40 s, on the way to "Connection lost" | 1 poll, no message |
 | Concurrent staff decisions (evidence for U12) | after 3a382f8 | `UxAuditTest::test_u12_*` (test only; the behaviour already existed) | - | - | Second decision refused with a message |
+| UX-15 menus after a role change | 974e3f5 | `LiveController` (`nav`), `layouts/app` (`data-live-nav`), `enhance.js` (menu swap) | `ux.spec.js` "a role change shows up in the menus ..."; `UxAuditTest::test_ux15_*` | "Seller" link only after a reload | Appears and goes in place |
+| UX-17 optional fields | 974e3f5 | `components/field`, `select`, `textarea` (`optional`); 23 fields in 11 views; `app.css` | `UxAuditTest::test_ux17_*` | Inconsistent | "(optional)" in the label of every optional field in staff and seller forms |
+| UX-18 resent staff money forms | 974e3f5 | New `SubmitOnce` middleware (`submit.once`), `components/once`; routes `admin.users.balance`, `admin.gift-cards.store`; two views; existing tests send a key | `UxAuditTest::test_ux18_*` (3 tests) | A resent form would be processed twice | Processed once; the first result shown again |
+| UX-25 search stopped live updates | 974e3f5 | `enhance.js` (`searchTimer`) | `ux.spec.js` "typing in the header search does not stop live updates" | No poll after typing | Polls continue |
+| JavaScript size | 974e3f5 | `enhance.js`: `fetchPage`, `swap` and `each` helpers, shorter header comment | Asset budget (performance gate) | 31.4 KB after UX-15, over the 30 KB budget | 29.1 KB, 7.4 KB gzip |
+| UX-16 | - | No change: the owner decided to keep UTC (2026-10-13) | - | - | - |
 
 ## Verification after the changes
 
