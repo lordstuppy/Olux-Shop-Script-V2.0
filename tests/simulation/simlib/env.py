@@ -79,6 +79,11 @@ def restart_workers():
     run_sh('restart-workers')
 
 
+def restart_app():
+    """Restarts the application server (PHP-FPM) while requests may be in flight."""
+    run_sh('restart-app')
+
+
 def kill_worker():
     """kill -9 the queue worker process; its supervisor starts a new one."""
     run_sh('kill-worker')

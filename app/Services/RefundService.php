@@ -236,6 +236,14 @@ class RefundService
         $next = $locked->refunded_minor === $locked->total_minor ? OrderStatus::Refunded : OrderStatus::PartiallyRefunded;
         $this->orders->transition($locked, $next);
 
+        if ($targetItem === null) {
+            // A refund from the order page can cover a line the buyer disputes; such a
+            // dispute has nothing left to decide. (A dispute's own refund closes it itself.)
+            foreach ($items->filter(fn (OrderItem $i) => $i->isFullyRefunded()) as $item) {
+                app(DisputeService::class)->closeRefundedLine($item, $payment, $actor);
+            }
+        }
+
         $this->audit->log('refund.created', $payment, [
             'order' => $locked->public_id,
             'amount' => Money::format($amountMinor, $locked->currency),

@@ -26,23 +26,27 @@
                             @if ($payout->status === \App\Enums\PayoutStatus::Requested)
                                 <form method="post" action="{{ route('admin.payouts.approve', $payout) }}" class="inline">
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $payout->status->value }}">
                                     <button type="submit" class="btn-secondary">{{ __('Approve #:id', ['id' => $payout->id]) }}</button>
                                 </form>
                             @endif
                             @if ($shkeeperEnabled && in_array($payout->status, [\App\Enums\PayoutStatus::Approved, \App\Enums\PayoutStatus::Failed], true))
                                 <form method="post" action="{{ route('admin.payouts.send', $payout) }}" class="mt" data-once>
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $payout->status->value }}">
                                     <button type="submit">{{ __('Send #:id via Shkeeper', ['id' => $payout->id]) }}</button>
                                 </form>
                             @endif
                             @if (in_array($payout->status, [\App\Enums\PayoutStatus::Requested, \App\Enums\PayoutStatus::Approved, \App\Enums\PayoutStatus::Failed], true))
                                 <form method="post" action="{{ route('admin.payouts.paid', $payout) }}" class="actions mt">
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $payout->status->value }}">
                                     <x-field name="reference" :id="'ref-'.$payout->id" :label="__('Transaction reference')" maxlength="255" required />
                                     <button type="submit">{{ __('Mark #:id paid', ['id' => $payout->id]) }}</button>
                                 </form>
                                 <form method="post" action="{{ route('admin.payouts.reject', $payout) }}" class="actions mt">
                                     @csrf
+                                    <input type="hidden" name="seen_status" value="{{ $payout->status->value }}">
                                     <x-field name="note" :id="'note-'.$payout->id" :label="__('Rejection reason')" maxlength="500" required />
                                     <button type="submit" class="btn-danger">{{ __('Reject #:id', ['id' => $payout->id]) }}</button>
                                 </form>

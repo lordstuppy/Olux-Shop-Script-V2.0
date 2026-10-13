@@ -50,7 +50,7 @@ class ShkeeperPayoutService
         return (bool) config('services.shkeeper.payouts_enabled');
     }
 
-    public function sendPayout(Payout $payout, User $admin): void
+    public function sendPayout(Payout $payout, User $admin, ?PayoutStatus $seen = null): void
     {
         $this->assertEnabled();
         SelfDealing::assertNotSelf($admin, $payout->seller_id);
@@ -74,8 +74,11 @@ class ShkeeperPayoutService
 
         // Claim the payout before any money moves: a second click, a second
         // admin or a parallel "Reject" now finds it Processing and stops.
-        $claimed = DB::transaction(function () use ($payout, $admin, $crypto, $cryptoAmount) {
+        $claimed = DB::transaction(function () use ($payout, $admin, $crypto, $cryptoAmount, $seen) {
             $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+            if ($seen !== null && $locked->status !== $seen) {
+                throw PayoutService::changedMeanwhile($locked);
+            }
             if (! in_array($locked->status, [PayoutStatus::Approved, PayoutStatus::Failed], true)) {
                 return false;
             }

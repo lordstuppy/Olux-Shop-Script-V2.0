@@ -8,7 +8,7 @@
 #   load               phase 7 (k6)
 #   down               stop and remove everything
 #   stop-service S / start-service S (db, queue, mock, mail), kill-worker,
-#   disk-full [free KB] / disk-free, restart-workers      used by the phases
+#   disk-full [free KB] / disk-free, restart-workers, restart-app   used by the phases
 #
 # SIM_BACKEND=compose (default): docker-compose.yml + docker-compose.test.yml,
 #   the production image with PHP-FPM. Needs the image to build.
@@ -188,6 +188,9 @@ case "$BACKEND:$CMD" in
     compose:reset) compose_reset ;;
     host:restart-workers) host_stop_procs; host_start_procs ;;
     compose:restart-workers) $COMPOSE restart queue scheduler >/dev/null ;;
+    # PHP-FPM gets SIGTERM (requests in flight are cut off), as in a crash or a hasty redeploy.
+    compose:restart-app) $COMPOSE restart -t 2 app >/dev/null ;;
+    host:restart-app) host_stop_procs; host_start_procs ;;
     host:stop-service)
         case "$1" in
             db) docker kill shopsim-db >/dev/null ;;

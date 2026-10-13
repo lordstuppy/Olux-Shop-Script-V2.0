@@ -273,6 +273,44 @@ class FunctionalGateTest extends TestCase
         $this->assertNull($refundedLine->fresh()->delivered_at);
     }
 
+    public function test_fd12_a_payout_decision_from_an_out_of_date_page_is_refused(): void
+    {
+        $seller = $this->sellerWithEarnings();
+        $payout = app(PayoutService::class)->requestPayout($seller, 5000, 'USD');
+        $first = User::factory()->admin()->create();
+        $second = User::factory()->staff(UserRole::Finance)->create();
+
+        // Both opened the list while it was requested; the first approves.
+        $this->actingAs($first)->confirmPassword()->postForm(route('admin.payouts.approve', $payout), ['seen_status' => 'requested'])->assertSessionHas('success');
+        // The second rejects from the old page: refused, the approval stands.
+        $this->actingAs($second)->confirmPassword()->postForm(route('admin.payouts.reject', $payout), ['seen_status' => 'requested', 'note' => 'Stale'])
+            ->assertSessionHas('error');
+        $this->assertSame(PayoutStatus::Approved, $payout->fresh()->status);
+        // After reloading, rejecting the approved payout on purpose works.
+        $this->postForm(route('admin.payouts.reject', $payout), ['seen_status' => 'approved', 'note' => 'Address unverified'])->assertSessionHas('success');
+        $this->assertSame(PayoutStatus::Rejected, $payout->fresh()->status);
+    }
+
+    public function test_fd13_a_full_refund_from_the_order_page_resolves_the_dispute_about_that_line(): void
+    {
+        Mail::fake();
+        $buyer = User::factory()->withBalance(4000)->create();
+        $order = app(OrderService::class)->createFromCart($buyer, [$this->instantProductWithFile(['price_minor' => 4000])->id => 1], 'USD', (string) Str::uuid());
+        app(PaymentService::class)->payWithBalance($order, $buyer);
+        $item = $order->items()->firstOrFail();
+        $this->actingAs($buyer)->postForm(route('disputes.store', [$order, $item]), ['reason' => 'not_working', 'requested_outcome' => 'refund', 'body' => 'The download is broken.']);
+        $dispute = Dispute::firstOrFail();
+
+        $this->actingAs(User::factory()->admin()->create())->confirmPassword()
+            ->postForm(route('admin.orders.refund', $order), ['_once' => (string) Str::uuid(), 'amount' => '40.00', 'method' => 'balance'])->assertSessionHas('success');
+
+        $dispute->refresh();
+        $this->assertSame(DisputeStatus::Resolved, $dispute->status, 'the buyer still sees an open case for money already returned');
+        $this->assertSame(4000, $dispute->refund_minor);
+        $this->assertSame(4000, $buyer->fresh()->balance_minor);
+        $this->assertSame([], app(PayoutService::class)->reconcile());
+    }
+
     public function test_fd10_a_second_delivery_job_does_not_email_the_buyer_again(): void
     {
         Mail::fake();

@@ -14,6 +14,7 @@ use App\Mail\DisputeResolvedMail;
 use App\Models\Dispute;
 use App\Models\DisputeMessage;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
 use Carbon\CarbonInterface;
@@ -157,6 +158,18 @@ class DisputeService
         }
         // Same lock as the staff decisions: a refund or replacement under way finishes first.
         $this->exclusively($dispute, fn () => $this->close($dispute, $buyer, DisputeStatus::Withdrawn, DisputeResolution::Withdrawn, __('The buyer withdrew the dispute.')));
+    }
+
+    /** The disputed line was refunded in full from the order page: the open case is resolved as refunded. */
+    public function closeRefundedLine(OrderItem $item, Payment $payment, User $actor): void
+    {
+        $dispute = Dispute::query()->where('order_item_id', $item->id)->whereIn('status', DisputeStatus::openValues())->first();
+        if ($dispute === null) {
+            return;
+        }
+        $dispute->forceFill(['refund_minor' => $item->refunded_minor, 'refund_payment_id' => $payment->id])->save();
+        $this->close($dispute, $actor, DisputeStatus::Resolved, DisputeResolution::Refund,
+            __('The item was refunded in full (:amount).', ['amount' => Money::format($item->refunded_minor, $payment->currency)]));
     }
 
     /** Cases whose seller did not answer in time go to staff. */

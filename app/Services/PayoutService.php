@@ -157,20 +157,24 @@ class PayoutService
         });
     }
 
-    public function approve(Payout $payout, User $admin): void
+    /**
+     * Staff decisions. $seen is the status the deciding page showed: a decision
+     * made on a page that is out of date (a colleague decided meanwhile) is refused.
+     */
+    public function approve(Payout $payout, User $admin, ?PayoutStatus $seen = null): void
     {
-        $this->transition($payout, PayoutStatus::Approved, $admin, [PayoutStatus::Requested]);
+        $this->transition($payout, PayoutStatus::Approved, $admin, [PayoutStatus::Requested], seen: $seen);
     }
 
-    public function markPaid(Payout $payout, User $admin, string $reference): void
+    public function markPaid(Payout $payout, User $admin, string $reference, ?PayoutStatus $seen = null): void
     {
-        $this->transition($payout, PayoutStatus::Paid, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Processing, PayoutStatus::Failed], $reference);
+        $this->transition($payout, PayoutStatus::Paid, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Processing, PayoutStatus::Failed], $reference, seen: $seen);
     }
 
-    public function reject(Payout $payout, User $admin, string $note): void
+    public function reject(Payout $payout, User $admin, string $note, ?PayoutStatus $seen = null): void
     {
-        DB::transaction(function () use ($payout, $admin, $note) {
-            $this->transition($payout, PayoutStatus::Rejected, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Failed], null, $note);
+        DB::transaction(function () use ($payout, $admin, $note, $seen) {
+            $this->transition($payout, PayoutStatus::Rejected, $admin, [PayoutStatus::Requested, PayoutStatus::Approved, PayoutStatus::Failed], null, $note, $seen);
             $this->entry($payout->seller_id, 'payout_reversal', $payout->amount_minor, $payout->currency, null, $payout->id);
         });
     }
@@ -281,11 +285,14 @@ class PayoutService
         });
     }
 
-    private function transition(Payout $payout, PayoutStatus $to, User $admin, array $from, ?string $reference = null, ?string $note = null): void
+    private function transition(Payout $payout, PayoutStatus $to, User $admin, array $from, ?string $reference = null, ?string $note = null, ?PayoutStatus $seen = null): void
     {
         SelfDealing::assertNotSelf($admin, $payout->seller_id);
-        DB::transaction(function () use ($payout, $to, $admin, $from, $reference, $note) {
+        DB::transaction(function () use ($payout, $to, $admin, $from, $reference, $note, $seen) {
             $locked = Payout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
+            if ($seen !== null && $locked->status !== $seen) {
+                throw self::changedMeanwhile($locked);
+            }
             if (! in_array($locked->status, $from, true)) {
                 throw new UserFacingException(__('Payout #:id is :status and cannot be marked :to.', ['id' => $locked->id, 'status' => mb_strtolower($locked->status->label()), 'to' => mb_strtolower($to->label())]));
             }
@@ -305,6 +312,11 @@ class PayoutService
                 $this->notifier->send($locked->seller, (new PayoutStatusMail($locked))->afterCommit());
             }
         });
+    }
+
+    public static function changedMeanwhile(Payout $payout): UserFacingException
+    {
+        return new UserFacingException(__('Payout #:id is :status now; someone changed it after you opened the page. Reload it and decide again.', ['id' => $payout->id, 'status' => mb_strtolower($payout->status->label())]));
     }
 
     private function entry(int $sellerId, string $type, int $amount, string $currency, ?int $orderItemId = null, ?int $payoutId = null): void

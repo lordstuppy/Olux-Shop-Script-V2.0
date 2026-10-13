@@ -20,7 +20,7 @@ sys.path.insert(0, HERE)
 
 from simlib import env, http, record, shop  # noqa: E402
 
-PHASE_MODULES = ['p1_purchase', 'p2_payments', 'p3_accounts', 'p4_seller', 'p5_admin', 'p6_adversarial', 'p8_recovery', 'p9_extended', 'p10_readiness', 'p11_live']
+PHASE_MODULES = ['p1_purchase', 'p2_payments', 'p3_accounts', 'p4_seller', 'p5_admin', 'p6_adversarial', 'p8_recovery', 'p9_extended', 'p10_readiness', 'p11_live', 'p12_functional']
 
 
 class Ctx:

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PayoutStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Payout;
 use App\Services\PayoutService;
@@ -23,7 +24,7 @@ class PayoutController extends Controller
 
     public function approve(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse
     {
-        $payouts->approve($payout, $request->user());
+        $payouts->approve($payout, $request->user(), $this->seen($request));
 
         return back()->with('success', __('Payout #:id approved.', ['id' => $payout->id]));
     }
@@ -31,14 +32,14 @@ class PayoutController extends Controller
     public function paid(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse
     {
         $data = $request->validate(['reference' => ['required', 'string', 'max:255']]);
-        $payouts->markPaid($payout, $request->user(), $data['reference']);
+        $payouts->markPaid($payout, $request->user(), $data['reference'], $this->seen($request));
 
         return back()->with('success', __('Payout #:id of :amount marked paid.', ['id' => $payout->id, 'amount' => Money::format($payout->amount_minor, $payout->currency)]));
     }
 
     public function send(Request $request, Payout $payout, ShkeeperPayoutService $shkeeper): RedirectResponse
     {
-        $shkeeper->sendPayout($payout->load('seller.sellerProfile'), $request->user());
+        $shkeeper->sendPayout($payout->load('seller.sellerProfile'), $request->user(), $this->seen($request));
 
         $payout->refresh();
 
@@ -48,8 +49,14 @@ class PayoutController extends Controller
     public function reject(Request $request, Payout $payout, PayoutService $payouts): RedirectResponse
     {
         $data = $request->validate(['note' => ['required', 'string', 'max:500']]);
-        $payouts->reject($payout, $request->user(), $data['note']);
+        $payouts->reject($payout, $request->user(), $data['note'], $this->seen($request));
 
         return back()->with('success', __('Payout #:id rejected; the amount was returned to the seller balance.', ['id' => $payout->id]));
+    }
+
+    /** The status the deciding page showed (hidden field); null for clients that do not send it. */
+    private function seen(Request $request): ?PayoutStatus
+    {
+        return PayoutStatus::tryFrom((string) $request->input('seen_status'));
     }
 }
