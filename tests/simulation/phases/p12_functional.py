@@ -415,7 +415,7 @@ def suspend_during_checkout(rec, ctx):
 @scenario(12, 'FS-01 Invalid transitions are refused by the server',
           'p12-states with a delivered order, a pending order and a requested payout; forms are replayed out of order',
           'Cancelling a paid order, refunding an unpaid one, paying a cancelled one, delivering an unpaid line, marking a '
-          'requested payout paid, resolving a closed dispute and refunding more than is left are all refused with a message; '
+          'rejected payout paid and refunding more than is left are all refused with a message; '
           'nothing in the database changes', 'critical')
 def invalid_transitions(rec, ctx):
     email = person('states', 3000)
@@ -470,10 +470,13 @@ def invalid_transitions(rec, ctx):
     s2 = shop.login(env.scalar(f'select email from users where id={sid}'), who='p12-states-seller')
     s2.form('/seller/payouts', '/seller/payouts', {'amount': money(min(seller_available(s2), 500)), 'currency': 'USD'})
     pid = env.scalar(f"select id from payouts where seller_id={sid} and status='requested' order by id desc limit 1")
-    r = fin.post(f'/admin/payouts/{pid}/paid', {'reference': 'skipping approval'}, token_from='/admin/payouts')
-    rec.check(env.scalar(f'select status from payouts where id={pid}') == 'requested' and r.status < 500, 'requested payout marked paid without approval')
-    rec.check(env.scalar(f'select count(*) from seller_ledger_entries where payout_id={pid}') == '0', 'ledger debited for an unapproved payout')
-    staff_form(fin, '/admin/payouts', f'/admin/payouts/{pid}/reject', {'note': 'Phase 12 cleanup.'})
+    # Marking a requested payout paid directly is allowed (the list offers it); a rejected one is final.
+    paid_form = fin.find_form(fin.get('/admin/payouts'), f'/admin/payouts/{pid}/paid')
+    staff_form(fin, '/admin/payouts', f'/admin/payouts/{pid}/reject', {'note': 'Phase 12: rejected.'})
+    ledger = env.scalar(f'select coalesce(sum(amount_minor),0) from seller_ledger_entries where payout_id={pid}')
+    r = fin.submit(paid_form, {'reference': 'after the rejection'})
+    rec.check(env.scalar(f'select status from payouts where id={pid}') == 'rejected' and r.status < 500, 'rejected payout marked paid from a stale form')
+    rec.check(env.scalar(f'select coalesce(sum(amount_minor),0) from seller_ledger_entries where payout_id={pid}') == ledger, 'ledger changed for a rejected payout')
 
 
 @scenario(12, 'FS-02 Stale moderation form: product approved by one moderator, rejected later by another',
@@ -590,8 +593,8 @@ def payout_lost_answer(rec, ctx):
 
 # ---- interrupted requests -----------------------------------------------------
 
-def post_and_hang_up(c, form, fields):
-    """Sends the form like the browser, then drops the connection before the answer arrives."""
+def post_and_hang_up(c, form, fields, linger=0.0):
+    """Sends the form like the browser, then drops the connection (after linger seconds) before the answer arrives."""
     data = [list(x) for x in form['fields']]
     for k, v in fields.items():
         data = [x for x in data if x[0] != k] + [[k, v]]
@@ -607,51 +610,72 @@ def post_and_hang_up(c, form, fields):
     with socket.create_connection((u.hostname, u.port or 443), timeout=5) as sock:
         with ctx.wrap_socket(sock, server_hostname=u.hostname) as tls:
             tls.sendall(raw)
-    # Closed here: the browser lost the connection right after sending.
+            time.sleep(linger)
+    # Closed here: the browser lost the connection before any answer.
 
 
-@scenario(12, 'FR-01 Connection lost right after sending the checkout; the buyer sends it again',
-          'p12-hangup has 40.00 USD; the balance checkout is sent and the connection drops before any answer',
-          'The server finishes or rolls back on its own; sending the same form again gives the same single order and '
-          'one debit', 'blocker')
+@scenario(12, 'FR-01 Connection lost while the checkout is being processed; the buyer sends it again',
+          'p12-hangup has 40.00 USD; the account row is held by another transaction, the balance checkout is sent and the '
+          'connection drops after a second while the server waits; then the lock is released',
+          'Whether the server finished the dropped request or abandoned it, the account ends with exactly one paid order and '
+          'one debit after the buyer sends the same form again, and the retry shows that order', 'blocker')
 def hang_up_checkout(rec, ctx):
-    email = person('hangup', 4000)
-    b = shop.login(email, who='p12-hangup')
-    p = priced(100, 3000)
-    shop.add_to_cart(b, p)
-    form = b.find_form(b.get('/checkout'), '/checkout')
-    post_and_hang_up(b, form, {'payment_method': 'balance', 'accept_terms': '1'})
-    time.sleep(3)
-    first = env.sql(f'select status from orders where buyer_id={uid(email)}')
-    rec.ev(f'after the dropped request: orders {first}, balance {balance(email)}')
-    r = b.submit(form, {'payment_method': 'balance', 'accept_terms': '1'})
-    rec.check(r.status < 500, f'retry: {r.status}')
-    rows = env.sql(f'select status, total_minor from orders where buyer_id={uid(email)}')
-    rec.check(len(rows) == 1 and rows[0][0] in ('paid', 'delivered'), f'orders after retry: {rows}')
-    rec.check(balance(email) == 4000 - int(rows[0][1]), 'balance debited wrong')
-    rec.check(env.scalar(f"select count(*) from balance_transactions where user_id={uid(email)} and type='order_payment'") == '1', 'debited twice')
+    import threading
+    for tag, linger, lock in (('hangup', 1.0, True), ('hangup2', 0.0, False)):
+        email = person(tag, 4000)
+        u = uid(email)
+        b = shop.login(email, who=f'p12-{tag}')
+        shop.add_to_cart(b, priced(100, 3000))
+        form = b.find_form(b.get('/checkout'), '/checkout')
+        locker = threading.Thread(target=lambda: env.sql(f"begin; select id from users where id={u} for update; select pg_sleep(4); commit;"))
+        if lock:
+            locker.start()
+            time.sleep(0.5)
+        post_and_hang_up(b, form, {'payment_method': 'balance', 'accept_terms': '1'}, linger=linger)
+        if lock:
+            locker.join()
+        time.sleep(3)
+        first = env.sql(f'select status, total_minor from orders where buyer_id={u}')
+        rec.ev(f'{tag}: connection dropped after {linger}s{" while waiting for the account lock" if lock else ""}; '
+               f'the server {"finished it" if first else "never processed it"}: orders {first}, balance {balance(email)}')
+        rec.check(all(r[0] in ('paid', 'delivered') for r in first) and len(first) <= 1, f'{tag}: half-done after the drop: {first}')
+        r = b.submit(form, {'payment_method': 'balance', 'accept_terms': '1'})
+        rec.check(r.status < 500 and '/orders/' in r.url, f'{tag}: retry: {r.status} {r.url}')
+        rows = env.sql(f'select status, total_minor from orders where buyer_id={u}')
+        rec.check(len(rows) == 1 and rows[0][0] in ('paid', 'delivered'), f'{tag}: orders after retry: {rows}')
+        rec.check(balance(email) == 4000 - int(rows[0][1]), f'{tag}: balance debited wrong')
+        rec.check(env.scalar(f"select count(*) from balance_transactions where user_id={u} and type='order_payment'") == '1', f'{tag}: debited twice')
 
 
-@scenario(12, 'FR-02 PHP-FPM restarted during a burst of checkouts',
-          'Six p12 buyers with 30.00 USD each send balance checkouts while the app container restarts',
-          'Each request either completed or failed visibly (502/503/connection error); afterwards no half-created order, '
-          'no debit without a paid order; sending the same form again yields exactly one paid order per buyer', 'blocker')
+@scenario(12, 'FR-02 PHP-FPM restarted while checkouts are being processed',
+          'Six p12 buyers with 30.00 USD each send balance checkouts; their account rows are held by another transaction so '
+          'the requests are inside PHP when the app container restarts (SIGTERM)',
+          'Requests cut off by the restart fail visibly (502/503/504 or a dropped connection); nothing is half-written: no '
+          'order without its debit and no debit without a paid order; the same form sent again gives exactly one paid order each', 'blocker')
 def restart_during_checkouts(rec, ctx):
+    import threading
     ctx.allow_status(502, 503, 504)
-    ctx.allow_log(r'(?i)SIGTERM|terminat|connection|shutdown|graceful')
+    ctx.allow_log(r'(?i)SIGTERM|terminat|connection|shutdown|graceful|server closed|broken pipe')
     buyers = []
     for i in range(6):
         email = person(f'restart{i}', 3000)
         c = shop.login(email, who=f'p12-restart{i}')
         shop.add_to_cart(c, priced(100, 2500))
         buyers.append((email, c, c.find_form(c.get('/checkout'), '/checkout')))
-    import threading
-    restarter = threading.Thread(target=lambda: (time.sleep(0.15), env.restart_app()))
+    ids = ','.join(uid(e) for e, _, _ in buyers)
+    locker = threading.Thread(target=lambda: env.sql(f"begin; select id from users where id in ({ids}) for update; select pg_sleep(6); commit;"))
+    locker.start()
+    time.sleep(0.5)
+    restarter = threading.Thread(target=lambda: (time.sleep(1.5), env.restart_app()))
     restarter.start()
     res = parallel([lambda c=c, f=f: c.submit(f, {'payment_method': 'balance', 'accept_terms': '1'}) for _, c, f in buyers])
     restarter.join()
-    rec.ev(f'first attempt: {[r.status if not isinstance(r, Exception) else type(r).__name__ for r in res]}')
+    locker.join()
+    first = [r.status if not isinstance(r, Exception) else type(r).__name__ for r in res]
+    rec.ev(f'first attempt: {first}')
+    rec.check(any(x != 200 and x != 302 for x in first), f'the restart did not cut off any request: {first}')
     shop.wait_for(lambda: Client('p12-probe').raw('GET', '/health').status == 200, 'app back', 90)
+    time.sleep(3)
     for email, c, f in buyers:
         bal = balance(email)
         rows = env.sql(f'select status, total_minor from orders where buyer_id={uid(email)}')
