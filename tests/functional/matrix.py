@@ -241,7 +241,10 @@ def build(args):
                      'priority': 'P2', 'mandatory': True, 'status': st, 'attempted': attempted, 'completed': completed,
                      'runs': f'{status} after {tries} attempt(s)', 'evidence': args.browser})
     for profile, objective in LOAD_PROFILES.items():
-        res_file = os.path.join(args.load, profile, 'result.json') if args.load else ''
+        res_file = ''
+        for candidate in (os.path.join(args.load or '', profile, 'result.json'), os.path.join(args.load or '', f'{profile}.json')):
+            if args.load and os.path.exists(candidate):
+                res_file = candidate
         if res_file and os.path.exists(res_file):
             res = json.load(open(res_file))
             st = 'PASS' if all(v == 'PASS' for v in res['checks'].values()) else 'FAIL'
@@ -254,7 +257,8 @@ def build(args):
         rows.append({'id': f'L-{profile}', 'source': 'load', 'category': 'C10' if profile != 'contention' else 'C04', 'objective': objective,
                      'actors': 'k6 virtual users, each from its own address', 'initial_state': 'reset + seed, prepare.py',
                      'action_sequence': 'tests/functional/load/profiles.js', 'concurrency': objective.split(':')[1].strip(),
-                     'expected': 'error rate < 5 %, invariants hold, no failed job, queue drained, latency back to normal after the load',
+                     'expected': ('the limit is found or survived (an abort threshold may end the run); ' if profile.startswith('stress') else 'error rate < 5 %, ')
+                     + 'invariants hold, no failed job, queue drained, latency back to normal after the load',
                      'invariants': 'all data invariants; contention: exactly 10 units sold, one charge per order',
                      'verification': 'k6 summary, resource samples, SQL', 'cleanup': 'reset before the profile set', 'priority': 'P1',
                      'mandatory': True, 'status': st, 'attempted': attempted, 'completed': completed, 'runs': '1', 'evidence': ev})
@@ -297,7 +301,7 @@ def gates(rows, args):
             empty = [c for c in CATEGORIES if not any(r['attempted'] for r in by_cat.get(c, []))]
             status, why = ('PASS', f'{len(rows)} scenarios in {len(CATEGORIES)} categories') if not empty else ('NOT VERIFIED', f'categories without an executed scenario: {empty}')
         elif gid == 'F15':
-            status, why = ('PASS', 'every fixed defect has a regression test that failed before the fix') if defects_open == 0 else ('FAIL', f'{defects_open} defects open')
+            status, why = ('PASS', 'no defect open; each fixed defect retested, with a regression test that failed before the fix where one is feasible (test-defect-log.md)') if defects_open == 0 else ('FAIL', f'{defects_open} defects open')
         elif gid == 'F16':
             others = [g for g in out if g['status'] != 'PASS']
             status, why = ('PASS', 'all gates pass on the candidate') if not others else ('BLOCKED', 'gates not passing: ' + ', '.join(g['id'] for g in others))

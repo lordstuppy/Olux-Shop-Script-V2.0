@@ -34,7 +34,7 @@ Defects confirmed by the final functional gate, with root cause, fix and regress
 | FD-12 | Low | Payouts | Two staff deciding the same payout at once both took effect (approve and reject). A decision on an out-of-date page was applied, although the UX audit (U12) states stale decisions are refused. | `40594c9` | `test_fd12_...` | PASS; phase 12 FC-06 |
 | FD-13 | Medium | Disputes | A full refund of a disputed line from the order page left the dispute open ("waiting for the seller"), with no fitting way for staff to close it. | `40594c9` | `test_fd13_...` | PASS; phase 12 FC-07 |
 
-**By severity:** High 4, Medium 7, Low 3 (14 entries, 13 defects; FD-02 has two tests). There is no Critical defect. All are fixed and retested; none is open.
+**By severity:** High 4, Medium 6, Low 3; 13 defects. There is no Critical defect. All are fixed and retested; none is open.
 
 ## Details
 

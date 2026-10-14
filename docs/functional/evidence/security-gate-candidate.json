@@ -1,0 +1,17 @@
+{
+  "revision": "5892b3cf3b1601f1952160460efcd709cbd86fc2",
+  "working_tree_dirty": true,
+  "generated": "2026-10-14T01:34:18Z",
+  "tools": {"semgrep": "1.180.0", "gitleaks": "zricethezav/gitleaks:v8.21.2", "trivy": "aquasec/trivy:0.57.1", "osv": "ghcr.io/google/osv-scanner:v1.9.1"},
+  "status": "PASS",
+  "checks": [
+    {"id":"deps-composer","title":"Composer advisories and abandoned packages","status":"PASS","exit_code":0,"started":"2026-10-14T01:32:29Z","finished":"2026-10-14T01:32:30Z","log":"deps-composer.log"},
+    {"id":"deps-npm","title":"npm advisories (high and critical)","status":"PASS","exit_code":0,"started":"2026-10-14T01:32:30Z","finished":"2026-10-14T01:32:30Z","log":"deps-npm.log"},
+    {"id":"deps-osv","title":"OSV database scan of all lockfiles","status":"PASS","exit_code":0,"started":"2026-10-14T01:32:30Z","finished":"2026-10-14T01:32:33Z","log":"deps-osv.log"},
+    {"id":"secrets-history","title":"Secret scan of the full git history (gitleaks)","status":"PASS","exit_code":0,"started":"2026-10-14T01:32:33Z","finished":"2026-10-14T01:33:10Z","log":"secrets-history.log"},
+    {"id":"secrets-env","title":"No environment files tracked","status":"PASS","exit_code":0,"started":"2026-10-14T01:33:10Z","finished":"2026-10-14T01:33:10Z","log":"secrets-env.log"},
+    {"id":"sast","title":"Static analysis: project rules and Semgrep registry rulesets","status":"PASS","exit_code":0,"started":"2026-10-14T01:33:10Z","finished":"2026-10-14T01:33:31Z","log":"sast.log"},
+    {"id":"iac","title":"Container and infrastructure configuration (Trivy config)","status":"PASS","exit_code":0,"started":"2026-10-14T01:33:31Z","finished":"2026-10-14T01:33:40Z","log":"iac.log"},
+    {"id":"image","title":"Runtime image vulnerabilities, app and web (Trivy image)","status":"PASS","exit_code":0,"started":"2026-10-14T01:33:40Z","finished":"2026-10-14T01:34:18Z","log":"image.log"}
+  ]
+}

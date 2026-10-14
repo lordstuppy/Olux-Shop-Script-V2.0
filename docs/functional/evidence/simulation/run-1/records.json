@@ -1,0 +1,1834 @@
+{
+ "run": 1,
+ "records": [
+  {
+   "phase": 1,
+   "name": "Single item purchase (crypto)",
+   "precondition": "buyer01 logged in; an instant product with a clean file",
+   "expected": "Order paid and delivered, file downloadable, one sale + commission ledger entry, emails sent",
+   "severity": "blocker",
+   "steps": [
+    "   0.54s  buy Retro Invoice Template Pack (1, 2.99 USD)",
+    "   0.92s  checkout -> order d6c1808e-df2f-4ba4-9d6c-f594b9ef99ec (/orders/d6c1808e-df2f-4ba4-9d6c-f594b9ef99ec/pay)"
+   ],
+   "evidence": [
+    "mock pay: {'status': 'success', 'delivered': True, 'callback_http_status': 202, 'callback_http_statuses': [202], 'callback_response': {'message': 'Accepted.', 'status': 'processed'}}",
+    "line 1 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.5
+  },
+  {
+   "phase": 1,
+   "name": "Two items from the same vendor",
+   "precondition": "buyer02; two instant products of one seller",
+   "expected": "One order with two lines, both delivered; one \"new sale\" mail to the seller",
+   "severity": "critical",
+   "steps": [
+    "   1.13s  checkout -> order abd50d54-26ee-4558-8cb8-2b97419c15b3 (/orders/abd50d54-26ee-4558-8cb8-2b97419c15b3/pay)"
+   ],
+   "evidence": [
+    "mock pay: {'status': 'success', 'delivered': True, 'callback_http_status': 202, 'callback_http_statuses': [202], 'callback_response': {'message': 'Accepted.', 'status': 'processed'}}",
+    "line 2 seller 6: net 2099, rate 1000 bps, fee 210, earning 1889",
+    "line 3 seller 6: net 1000, rate 1000 bps, fee 100, earning 900"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.4
+  },
+  {
+   "phase": 1,
+   "name": "Three vendors; one delivery fails without blocking the others",
+   "precondition": "buyer03; products of three sellers (one a licence-key product whose keys are withdrawn after checkout)",
+   "expected": "Per-seller lines, rate and ledger correct; two lines delivered; the failing line stays undelivered, order stays paid, delivery.failed audited, no ledger loss",
+   "severity": "critical",
+   "steps": [
+    "   0.62s  sellers 6, 8, 13",
+    "   1.35s  fault injected: deleted 10 unassigned keys of product 35 before payment"
+   ],
+   "evidence": [
+    "audit delivery.failed: {\"order\": \"429f5bcd-c8e1-4329-a0b7-48344a7e8668\", \"reason\": \"product has no files or licence keys to deliver\"}",
+    "line 4 seller 6: net 2099, rate 1000 bps, fee 210, earning 1889",
+    "line 5 seller 13: net 9399, rate 1500 bps, fee 1410, earning 7989",
+    "line 6 seller 8: net 9199, rate 500 bps, fee 460, earning 8739"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 7.4
+  },
+  {
+   "phase": 1,
+   "name": "Five units of one product",
+   "precondition": "buyer04; a licence-key product with >= 5 keys in stock",
+   "expected": "One line quantity 5, five distinct keys delivered, stock reduced by 5",
+   "severity": "critical",
+   "steps": [
+    "   0.83s  checkout -> order e354506a-a1c0-4147-9865-6a47cf8c11b1 (/orders/e354506a-a1c0-4147-9865-6a47cf8c11b1/pay)"
+   ],
+   "evidence": [
+    "mock pay: {'status': 'success', 'delivered': True, 'callback_http_status': 202, 'callback_http_statuses': [202], 'callback_response': {'message': 'Accepted.', 'status': 'processed'}}",
+    "line 7 seller 8: net 9495, rate 500 bps, fee 475, earning 9020"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.9
+  },
+  {
+   "phase": 1,
+   "name": "Mixed stock states in the cart",
+   "precondition": "buyer05; one unlimited, one limited (stock 2), one out of stock product",
+   "expected": "Out-of-stock product cannot be added; more than stock is refused with the stock count; after another sale lowers stock the cart flags it and reduces the quantity; checkout charges the reduced quantity",
+   "severity": "major",
+   "steps": [
+    "   1.38s  cart: 1 x1, 195 x3 (stock 7)",
+    "   1.43s  stock of the limited product lowered to 2 (another buyer)"
+   ],
+   "evidence": [
+    "line 8 seller 9: net 299, rate 1000 bps, fee 30, earning 269",
+    "line 9 seller 6: net 17998, rate 1500 bps, fee 2700, earning 15298"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.5
+  },
+  {
+   "phase": 1,
+   "name": "Coupon on the subtotal; commission on the discounted amount",
+   "precondition": "Super admin creates SIM20 (20% off); buyer06 buys two products of different sellers",
+   "expected": "Discount = 20% of the subtotal, allocated across lines; commission computed on each net line amount",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "subtotal 698, discount 140, total 558",
+    "line 10 seller 9: net 239, rate 1000 bps, fee 24, earning 215",
+    "line 11 seller 11: net 319, rate 1000 bps, fee 32, earning 287"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.6
+  },
+  {
+   "phase": 1,
+   "name": "Insufficient balance: blocked, no partial order",
+   "precondition": "buyer10 (balance 0); a product in the cart; pays with balance (also forcing the disabled radio)",
+   "expected": "Clear error with total and available amount, no order, stock and balance unchanged, cart kept",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.3
+  },
+  {
+   "phase": 1,
+   "name": "Abandoned cart, return later: cart kept, prices revalidated, sold-out items flagged",
+   "precondition": "buyer07 adds two products and leaves; the session ends (new browser, log in again); meanwhile one price changes and one product sells out",
+   "expected": "Cart is still there after logging in again; new price shown and charged; the sold-out item is flagged and removed",
+   "severity": "major",
+   "steps": [
+    "   0.85s  buyer leaves; browser closed (session cookie gone)",
+    "   0.96s  price of 1 raised to 799; 193 sold out"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.0
+  },
+  {
+   "phase": 1,
+   "name": "Guest checkout",
+   "precondition": "A visitor who is not logged in, with a product in the cart",
+   "expected": "Not applicable by design (accounts are required for delivery and downloads): the visitor can fill a cart and is sent to log in at checkout; after logging in the cart is still there",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "Not applicable by design (decision recorded); the cart survives login and checkout continues.",
+   "duration": 0.9
+  },
+  {
+   "phase": 1,
+   "name": "Concurrent purchase of the last unit",
+   "precondition": "buyer11 and buyer12 have the same product with stock 1 in the cart",
+   "expected": "Exactly one order gets the unit; the other buyer gets a clear out-of-stock error; stock never negative",
+   "severity": "blocker",
+   "steps": [
+    "   0.10s  product 191 set to stock 1"
+   ],
+   "evidence": [
+    "orders: [['e7735a49-68cd-4b69-8de0-c2755a7b9fc8', 'pending']]; responses: ['/orders/e7735a49-68cd-4b69-8de0-c2755a7b9fc8/pay', '/checkout']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.9
+  },
+  {
+   "phase": 2,
+   "name": "Successful payment",
+   "precondition": "buyer13 has a pending crypto order",
+   "expected": "One confirmed charge for the exact total, order delivered, ledger booked, \"paid\" email once",
+   "severity": "blocker",
+   "steps": [
+    "   0.92s  order 419f6e08-3bd5-4cc7-b9ef-998c13f238cf for 2.99 USD (buyer13)"
+   ],
+   "evidence": [
+    "line 16 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.6
+  },
+  {
+   "phase": 2,
+   "name": "Underpayment (90%)",
+   "precondition": "buyer14 has a pending crypto order",
+   "expected": "Order stays pending, payment partial with 90% recorded, pay page shows what is still due; paying the rest completes the order",
+   "severity": "blocker",
+   "steps": [
+    "   0.83s  order 8b3acf8c-e8fb-438a-94dc-e4cec5053412 for 2.99 USD (buyer14)"
+   ],
+   "evidence": [
+    "line 17 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.2
+  },
+  {
+   "phase": 2,
+   "name": "Overpayment (110%)",
+   "precondition": "buyer15 has a pending crypto order",
+   "expected": "Order paid once; the extra 10% is credited to the buyer balance with an audit entry",
+   "severity": "critical",
+   "steps": [
+    "   0.88s  order cfadeaad-3afd-4024-bbbc-a3932f8e9529 for 2.99 USD (buyer15)"
+   ],
+   "evidence": [
+    "line 18 seller 9: net 299, rate 1000 bps, fee 30, earning 269",
+    "balance 0 -> 29"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.1
+  },
+  {
+   "phase": 2,
+   "name": "Expired quote and expired order, retry possible",
+   "precondition": "buyer16 has a pending crypto order",
+   "expected": "After the quote expires the pay page asks for a new amount and a new invoice can be paid; after the order itself expires, stock is released and the buyer can buy the same items again",
+   "severity": "critical",
+   "steps": [
+    "   0.83s  order 3f3c89b8-08e9-494e-96bc-178dd6bc9875 for 2.99 USD (buyer16)",
+    "   0.87s  quote aged by 20 minutes (quote lifetime 15)",
+    "   2.26s  order b9981496-8cff-4f19-b17e-d4c9efa1c566 moved past its deadline; waiting for the scheduler (shop:expire-orders, every minute)"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 41.7
+  },
+  {
+   "phase": 2,
+   "name": "Duplicate callback delivered five times",
+   "precondition": "buyer17 has a pending crypto order",
+   "expected": "All five answered 202; exactly one confirmed charge, one ledger booking, one paid email, one delivery",
+   "severity": "blocker",
+   "steps": [
+    "   0.95s  order 8b8c94b5-4d2b-4a70-a028-124b37646e93 for 2.99 USD (buyer17)"
+   ],
+   "evidence": [
+    "callback statuses [202, 202, 202, 202, 202]",
+    "line 22 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.3
+  },
+  {
+   "phase": 2,
+   "name": "Out-of-order callbacks",
+   "precondition": "buyer18 has a pending crypto order",
+   "expected": "PAID arriving before an older PARTIAL: order paid once and stays paid, recorded amount never goes down; two PARTIALs out of order keep the higher cumulative amount",
+   "severity": "critical",
+   "steps": [
+    "   0.88s  order fb089c35-d7c2-4baf-9ab6-347256c0ec31 for 2.99 USD (buyer18)"
+   ],
+   "evidence": [
+    "line 23 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.2
+  },
+  {
+   "phase": 2,
+   "name": "Callback delayed 30 minutes",
+   "precondition": "buyer19 paid on time; the callback is held back for 30 minutes (timestamps moved back)",
+   "expected": "The shop finds the payment by polling before the callback arrives or accepts the late callback; order paid exactly once and delivered, not expired",
+   "severity": "critical",
+   "steps": [
+    "   0.87s  order 8794ffe9-9c10-41c9-a7e0-aa5e8eeef77d for 2.99 USD (buyer19)",
+    "   0.92s  payment made, callback withheld, clock moved 30 minutes forward for this order",
+    " 165.72s  reconciliation (polling every 5 minutes) found the payment"
+   ],
+   "evidence": [
+    "line 24 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 166.8
+  },
+  {
+   "phase": 2,
+   "name": "Forged callbacks are rejected (401) and audited",
+   "precondition": "buyer20 has a pending crypto order",
+   "expected": "Unsigned, wrong-key, tampered-body, stale-timestamp and missing-header callbacks get 401, change nothing, and each leaves an audit entry; the order stays pending",
+   "severity": "blocker",
+   "steps": [
+    "   0.95s  order 44d26742-c522-4502-8c82-373d8e8d57c1 for 2.99 USD (buyer20)"
+   ],
+   "evidence": [
+    "unsigned: HTTP 401 {\"message\":\"Invalid or missing signature.\"}",
+    "wrong key: HTTP 401 {\"message\":\"Invalid or missing signature.\"}",
+    "stale timestamp: HTTP 401 {\"message\":\"Invalid or missing signature.\"}",
+    "tampered body: HTTP 401 {\"message\":\"Invalid or missing signature.\"}",
+    "signature only: HTTP 401 {\"message\":\"Invalid or missing signature.\"}"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.2
+  },
+  {
+   "phase": 2,
+   "name": "Malformed webhook bodies return 400, never 500",
+   "precondition": "none",
+   "expected": "Signed non-JSON, truncated JSON, a JSON array, an empty body and a huge body get 400 (or 413); nothing stored",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "not json: 400",
+    "truncated: 400",
+    "array: 400",
+    "empty: 400",
+    "number: 400",
+    "nested junk: 400"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.5
+  },
+  {
+   "phase": 2,
+   "name": "Gateway timeout on invoice creation",
+   "precondition": "buyer21 checks out while the gateway hangs on payment_request",
+   "expected": "Buyer lands on the order page with a clear retry message after at most the client timeout; no confirmed charge; retrying later creates the invoice and the order can be paid",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "checkout took 10.2s; landed on /orders/b8774ef7-39a2-4f74-b108-b4cfebf2a970/pay: The payment provider could not create an invoice for order b8774ef7. Your order is saved; try again in a few minutes or choose another currency."
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 11.9
+  },
+  {
+   "phase": 2,
+   "name": "Gateway timeout during callback processing",
+   "precondition": "buyer22 pays while the order row is locked for 14 s (slow database)",
+   "expected": "The first callback times out at the gateway (10 s); the gateway re-sends; the order is paid exactly once",
+   "severity": "critical",
+   "steps": [
+    "   0.87s  order 1a262121-18d6-417b-a3a2-b11190de5021 for 2.99 USD (buyer22)",
+    "   1.37s  order row locked for 14 s by another transaction"
+   ],
+   "evidence": [
+    "callback statuses [0, 202]",
+    "line 27 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 18.6
+  },
+  {
+   "phase": 3,
+   "name": "Registration: valid, invalid and duplicate emails",
+   "precondition": "Visitors on /register",
+   "expected": "A valid address registers and gets a verification mail; malformed addresses are refused with a field error; an existing address (any letter case) is refused without revealing more; no 500s",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 37.1
+  },
+  {
+   "phase": 3,
+   "name": "Verification link: valid, already used, expired, tampered",
+   "precondition": "newbie01 registered and has the verification mail",
+   "expected": "Valid link verifies; using it again is harmless; a tampered or expired link gets 403 and changes nothing",
+   "severity": "critical",
+   "steps": [
+    "   0.01s  link https://localhost:8443/email/verify/66/1c0254c68d9c1d6e5cacde54a9105396d0adfad0?expires=17..."
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.5
+  },
+  {
+   "phase": 3,
+   "name": "Login: correct password, wrong password, unknown email",
+   "precondition": "Seeded buyer23",
+   "expected": "Correct password signs in; wrong password and unknown email give the same message; nothing reveals which",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.5
+  },
+  {
+   "phase": 3,
+   "name": "Lockout after 20 rapid failed logins",
+   "precondition": "buyer24; an attacker tries 20 wrong passwords, first from one address, then spread over five",
+   "expected": "From one address: throttled after 5 per minute with a clear 429 page, the right password is also refused while throttled. Across addresses: after 20 failures the account is locked for 15 minutes for every address, the owner is emailed once, a password reset unlocks it",
+   "severity": "critical",
+   "steps": [
+    "   3.01s  waiting 61 s for the per-minute window"
+   ],
+   "evidence": [
+    "single address statuses: [200, 200, 200, 200, 200, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429, 429]"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 73.0
+  },
+  {
+   "phase": 3,
+   "name": "Password reset",
+   "precondition": "buyer25 forgot the password; two other sessions are open",
+   "expected": "Same answer for known and unknown emails; link works once; old password stops working; other sessions are signed out",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.0
+  },
+  {
+   "phase": 3,
+   "name": "Password change",
+   "precondition": "buyer26 signed in on two devices",
+   "expected": "Wrong current password refused; weak new password refused; success signs out the other device; new password works",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.9
+  },
+  {
+   "phase": 3,
+   "name": "Email change",
+   "precondition": "buyer27 changes the address to buyer27-new@sim.test",
+   "expected": "Needs the password; confirmation goes to the new address, a notice to the old; the address changes only after confirming; the link is single use; an address already in use is refused",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.0
+  },
+  {
+   "phase": 3,
+   "name": "2FA: enable, sign in, recovery codes, disable",
+   "precondition": "buyer29 without 2FA",
+   "expected": "Enabling needs a valid code; sign-in then asks for a code; a wrong code is refused; each recovery code works once; turning it off needs a code",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 37.4
+  },
+  {
+   "phase": 3,
+   "name": "Profile update",
+   "precondition": "buyer30 signed in",
+   "expected": "Name updated and shown; empty or 81-character names refused",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.9
+  },
+  {
+   "phase": 3,
+   "name": "Account deletion",
+   "precondition": "n/a",
+   "expected": "Not applicable: account self-deletion is not offered (decision recorded); support handles erasure requests (see the data retention page)",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "Not applicable by decision; the data retention page explains how to request erasure.",
+   "duration": 0.0
+  },
+  {
+   "phase": 3,
+   "name": "Sessions: logout, expiry, fixation resistance",
+   "precondition": "buyer31",
+   "expected": "Logout ends the session server-side (old cookie no longer works); an idle session older than the lifetime is refused; the session id changes at login so a planted id is useless",
+   "severity": "blocker",
+   "steps": [
+    "   1.39s  session made idle for 3 hours (lifetime 120 minutes)"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.5
+  },
+  {
+   "phase": 3,
+   "name": "Two devices at once",
+   "precondition": "buyer32 signs in on a phone and a laptop",
+   "expected": "Both work independently; the account page lists both; signing out the other session from the phone ends the laptop session only",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.0
+  },
+  {
+   "phase": 4,
+   "name": "Seller onboarding",
+   "precondition": "A new person registers, verifies the email and applies at /sell",
+   "expected": "Application pending until staff approve; approval makes the account a seller with a profile and emails the applicant; documents: not applicable (no document upload by decision)",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.9
+  },
+  {
+   "phase": 4,
+   "name": "Product create and edit (file scan, image, keys, review)",
+   "precondition": "newseller is approved",
+   "expected": "Draft created; clean file scanned clean; EICAR upload detected and removed; image re-encoded; keys added; submit -> review -> moderator approves -> visible; editing the price sends it back to review",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.5
+  },
+  {
+   "phase": 4,
+   "name": "Deactivate and reactivate a product",
+   "precondition": "newseller has an active product in a buyer cart",
+   "expected": "Pause hides it (catalog, product page, cart flags it); resume shows it again without review",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.1
+  },
+  {
+   "phase": 4,
+   "name": "Sales and ledger views match the database",
+   "precondition": "seller04 has sales from earlier phases plus a new one",
+   "expected": "Sales page lists the new sale with net and earning; dashboard balances equal the ledger sums per currency",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "line 28 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.5
+  },
+  {
+   "phase": 4,
+   "name": "Payout request, approve and reject",
+   "precondition": "Super admin sets the payout hold to 0 days; seller05 has earnings",
+   "expected": "Seller requests a payout; amounts above the available balance are refused; finance rejects one (funds return) and approves and pays another (ledger debited once); reconciliation stays clean",
+   "severity": "critical",
+   "steps": [
+    "   2.92s  sales moved 15 days into the past (dispute window closed)"
+   ],
+   "evidence": [
+    "available 16467 of ledger total 16467"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.7
+  },
+  {
+   "phase": 4,
+   "name": "Dispute response by the seller",
+   "precondition": "buyer49 bought a product of seller06 and opens a dispute",
+   "expected": "Seller is emailed, sees the dispute and replies; buyer sees the reply; the line earning is held while open",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.6
+  },
+  {
+   "phase": 4,
+   "name": "Seller rating",
+   "precondition": "n/a",
+   "expected": "Not applicable: sellers are not rated (decision recorded); products have buyer reviews",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "Not applicable by decision.",
+   "duration": 0.0
+  },
+  {
+   "phase": 4,
+   "name": "IDOR: sellers and buyers cannot reach other people's data (403)",
+   "precondition": "seller07 and seller08; buyer37 and buyer38",
+   "expected": "Every cross-account read or write answers 403 and changes nothing",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "seller07 GET /seller/products/8/edit: 403",
+    "seller07 POST /seller/products/8: 403",
+    "seller07 POST /seller/products/8/keys: 403",
+    "seller07 POST /seller/products/8/submit: 403",
+    "seller07 POST /seller/products/8/pause: 403",
+    "seller07 POST /seller/products/8/files/8: 403",
+    "seller07 POST /seller/items/5/deliver: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/invoice: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/pay: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/result: 403",
+    "buyer37 POST /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/cancel: 403",
+    "buyer37 POST /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/pay-balance: 403",
+    "buyer37 POST /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/reorder: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/items/31/dispute: 403",
+    "buyer37 GET /orders/8845bd91-3631-4a8c-b139-8dd1c07d184b/items/31/files/1?expires=1792199061: 403"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.5
+  },
+  {
+   "phase": 5,
+   "name": "Each staff role sees only what it may",
+   "precondition": "Five staff accounts with 2FA, one per role",
+   "expected": "Every admin page answers 200 for roles that have the ability and 403 for the others; navigation shows only allowed links",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "admin: 25 of 25 pages allowed, as mapped",
+    "manager: 20 of 25 pages allowed, as mapped",
+    "finance: 14 of 25 pages allowed, as mapped",
+    "moderator: 9 of 25 pages allowed, as mapped",
+    "support: 6 of 25 pages allowed, as mapped"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.8
+  },
+  {
+   "phase": 5,
+   "name": "Manager is denied destructive and super-admin actions",
+   "precondition": "manager@sim.test signed in with a recent password",
+   "expected": "Settings, gateway, roles, commission, gift cards, balance changes and suspending staff are refused (403 or a clear error); nothing changes",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "manager PUT /admin/settings: 403",
+    "manager PUT /admin/gateway: 403",
+    "manager POST /admin/users/55/role: 403",
+    "manager PUT /admin/commission/categories/1: 403",
+    "manager POST /admin/gift-cards: 403",
+    "manager POST /admin/users/55/balance: 403",
+    "manager POST /admin/exchange-rates: 403"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.3
+  },
+  {
+   "phase": 5,
+   "name": "Approve and reject seller applications",
+   "precondition": "Two people apply to sell",
+   "expected": "Approve makes a seller; reject needs a reason, keeps the role buyer and emails the reason",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 12.6
+  },
+  {
+   "phase": 5,
+   "name": "Approve and reject products; admin edit",
+   "precondition": "seller09 submits two new products",
+   "expected": "Moderator approves one (listed) and rejects the other with a reason the seller sees on the product page and by email; admin product editing: not applicable by decision (staff disable and the seller edits)",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.0
+  },
+  {
+   "phase": 5,
+   "name": "Order filters",
+   "precondition": "Orders from phases 1-5 exist",
+   "expected": "Status, buyer, seller and date filters each return exactly the matching orders; an invalid date is a field error, not a 500",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.6
+  },
+  {
+   "phase": 5,
+   "name": "Full and partial refunds",
+   "precondition": "Two delivered orders; finance refunds",
+   "expected": "Partial refund: order partially refunded, buyer balance credited, line earnings reduced proportionally; over-refund refused; full refund: order refunded, earnings 0; refund mails sent; ledger reconciles",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.4
+  },
+  {
+   "phase": 5,
+   "name": "Disputes resolved both ways",
+   "precondition": "The dispute from phase 4 (refund asked) and a new one",
+   "expected": "Refund resolution refunds the line and closes the dispute; rejection releases the held earning; both parties emailed",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "line 34 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.8
+  },
+  {
+   "phase": 5,
+   "name": "Suspend a buyer",
+   "precondition": "buyer43 is signed in",
+   "expected": "Suspension ends the session at once, sign-in is refused with a clear message, reactivation restores access; audited",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.9
+  },
+  {
+   "phase": 5,
+   "name": "Suspend a seller hides their products",
+   "precondition": "seller10 has active products; a buyer has one in the cart",
+   "expected": "After suspension the products leave the catalog, search, seller filter and product pages; carts flag them; checkout is refused; reactivation brings them back",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.2
+  },
+  {
+   "phase": 5,
+   "name": "Payouts via the gateway",
+   "precondition": "Hold 0 days (phase 4); seller01 requests a payout; finance sends it through Shkeeper",
+   "expected": "Payout sent, the gateway callback marks it paid with the tx hash; a duplicate callback changes nothing; ledger reconciles",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.9
+  },
+  {
+   "phase": 5,
+   "name": "Audit log search",
+   "precondition": "Actions from this run are audited",
+   "expected": "Filtering by action prefix, actor and target returns the matching entries only",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.4
+  },
+  {
+   "phase": 5,
+   "name": "Email templates",
+   "precondition": "Manager edits the \"order paid\" template",
+   "expected": "Preview shows sample data; removing a required placeholder is refused; saved text is used for the next mail; reset restores",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.0
+  },
+  {
+   "phase": 5,
+   "name": "Gateway config and logs",
+   "precondition": "Super admin on /admin/gateway",
+   "expected": "Switching LTC off removes it from checkout; the connection check works and is logged; logs filter by channel and outcome; switching it back restores it",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.6
+  },
+  {
+   "phase": 5,
+   "name": "CSV export of orders and users",
+   "precondition": "Finance exports; one buyer named \"=HYPERLINK(...)\"",
+   "expected": "Both CSVs download as attachments with the expected rows; no password hashes, 2FA secrets or tokens; formula-looking cells are neutralised",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.4
+  },
+  {
+   "phase": 6,
+   "name": "XSS in every field people can write",
+   "precondition": "buyer and seller accounts; staff viewing the data",
+   "expected": "Every payload is shown as text (escaped) on buyer, seller and admin pages and in the search box; a strict CSP is sent; Blade syntax in input is not evaluated",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 10.9
+  },
+  {
+   "phase": 6,
+   "name": "SQL injection in search, filters, paths and login",
+   "precondition": "Guests, a buyer and an admin",
+   "expected": "Every payload is treated as data: no 500, no extra rows, no delay, tables intact",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.4
+  },
+  {
+   "phase": 6,
+   "name": "Path traversal",
+   "precondition": "A buyer with a delivered order; a seller uploading files",
+   "expected": "Traversal in download, image, export and static paths is refused (403/404); an upload named ../../x.php is stored under a safe name and never executed",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "/storage/../.env: 403",
+    "/../.env: 400",
+    "/.env: 403",
+    "/%2e%2e/%2e%2e/etc/passwd: 400",
+    "/product-images/..%2f..%2f.env/thumb: 400",
+    "/product-images/1/..%2f..%2fetc%2fpasswd: 404",
+    "/css/../../.env: 400",
+    "/index.php/../.env: 403",
+    "/composer.json: 404",
+    "/artisan: 404",
+    "/storage/logs/laravel.log: 404",
+    "/vendor/autoload.php: 404",
+    "upload result: Please correct the following problem: The file field must have one of the following extensions: zip, 7z, gz, tar, pdf, epub, txt, md, mp3, mp4, png, jpg, jpeg, webp, csv, json. | The file field must have one of the following extensions: zip, 7z, gz, tar, pdf, epub, txt, md, mp3, mp4, png, jpg, jpeg, webp, csv, json.; stored []"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.3
+  },
+  {
+   "phase": 6,
+   "name": "Oversized uploads and request bodies",
+   "precondition": "A seller; a guest",
+   "expected": "A 60 MB upload is refused (413) without a 500; a 6 MB image is refused with a field error; a 20 MB form post is refused; nothing half-stored",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "60 MB file: HTTP 413 413 Request Entity Too Large 413 Request Entity Too Large nginx"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.7
+  },
+  {
+   "phase": 6,
+   "name": "Unicode and emoji input",
+   "precondition": "buyer09; seller02",
+   "expected": "Names, product titles, reviews and searches with emoji, RTL, combining and zero-width characters are stored and shown intact; checkout, invoice PDF, emails and CSV export work",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.8
+  },
+  {
+   "phase": 6,
+   "name": "Extremely long inputs",
+   "precondition": "Guests and a buyer",
+   "expected": "Over-long search, email, name, coupon, review and ticket inputs get field errors or are cut safely; never a 500",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.5
+  },
+  {
+   "phase": 6,
+   "name": "Malformed webhook JSON returns 400, never 500",
+   "precondition": "none",
+   "expected": "Invalid UTF-8, wrong content type, deeply nested and duplicate-key JSON: 400 (or 202 when it is a valid object), no 500",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "invalid utf-8: 202",
+    "nested: 400",
+    "nul bytes: 400",
+    "bom: 400"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.2
+  },
+  {
+   "phase": 6,
+   "name": "Double-click on checkout and pay",
+   "precondition": "buyer01 with a balance submits the checkout form twice at the same moment",
+   "expected": "Exactly one order and one balance debit; the second click lands on the same order",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "responses: ['/orders/4f7208a0-e4a1-43f9-9ca0-04e5e8d91a22/result', '/orders/4f7208a0-e4a1-43f9-9ca0-04e5e8d91a22/result', '/orders/4f7208a0-e4a1-43f9-9ca0-04e5e8d91a22/result']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.2
+  },
+  {
+   "phase": 8,
+   "name": "Kill the database mid-checkout",
+   "precondition": "Six buyers with a balance check out at the same moment; PostgreSQL is killed (SIGKILL) during the requests",
+   "expected": "Each buyer gets either a complete order or a clear error page (no hang, no stack trace); after PostgreSQL restarts the shop serves again without restarting the app; no half-created orders, stock and balances consistent; the queue resumes",
+   "severity": "blocker",
+   "steps": [
+    "   4.91s  PostgreSQL killed during the checkouts",
+    "   6.61s  PostgreSQL started again",
+    "  10.86s  order b7e46e52-0d43-4ed8-97a5-4b286b99ac14 paid, its 3 queued delivery/invoice jobs removed (lost between commit and queueing)",
+    " 234.54s  all orders that were created got delivered after the restart (queue worker recovered)"
+   ],
+   "evidence": [
+    "responses during the outage: [503, 200, 503, 503, 200, 200]",
+    "home page while the database is down: 503",
+    "orders created: [['1c2452c0-8382-44e4-9370-da4e1105da67', 'paid', 'buyer11@sim.test'], ['d3362408-a637-4f51-8706-90c997d891b8', 'delivered', 'buyer03@sim.test'], ['e44c8856-4065-45e8-bd8f-5f7e71f5a83b', 'delivered', 'buyer07@sim.test']]",
+    "all orders delivered 0s after the database came back",
+    "recovered by shop:recover-stuck-orders after 224s"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 234.5
+  },
+  {
+   "phase": 8,
+   "name": "Kill the queue worker",
+   "precondition": "Orders are paid while the worker is down; another worker is killed (kill -9) in the middle of a delivery",
+   "expected": "Paid orders wait as \"paid\" and are delivered once the worker is back; the interrupted delivery is retried and completes once; each buyer gets exactly one \"paid\" email",
+   "severity": "blocker",
+   "steps": [
+    "   0.29s  queue worker stopped",
+    "   7.03s  queue worker started",
+    "  16.37s  worker killed (kill -9) while it was inside the delivery job",
+    " 103.51s  the interrupted delivery was retried after retry_after and completed"
+   ],
+   "evidence": [
+    "line 70 seller 15: net 6899, rate 1500 bps, fee 1035, earning 5864",
+    "buyer02@sim.test: 2 paid mails",
+    "buyer03@sim.test: 4 paid mails",
+    "buyer04@sim.test: 2 paid mails",
+    "buyer05@sim.test: 2 paid mails"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 106.9
+  },
+  {
+   "phase": 8,
+   "name": "Mail server down",
+   "precondition": "Mailpit is down while an order is paid and a password reset is requested",
+   "expected": "Mails are retried, not lost: they arrive after the mail server is back; nothing else fails",
+   "severity": "major",
+   "steps": [
+    "   0.33s  mail server down",
+    "   8.12s  mail server back"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 13.2
+  },
+  {
+   "phase": 8,
+   "name": "Kill the payment gateway (Shkeeper mock)",
+   "precondition": "The gateway container is killed while buyers check out and reconciliation runs",
+   "expected": "Checkout says the invoice could not be created and keeps the order; the health page shows the gateway down; after the gateway is back the buyer retries and pays; webhooks and reconciliation resume",
+   "severity": "critical",
+   "steps": [
+    "   1.18s  gateway killed",
+    "   2.10s  gateway back (same container, state kept)"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.3
+  },
+  {
+   "phase": 8,
+   "name": "Restore a backup",
+   "precondition": "A backup is taken with scripts/backup.sh; afterwards a new order and a new account are created; the documented restore procedure is followed",
+   "expected": "After the restore the data equals the backup exactly (orders, payments, ledger, users checksums), files are back, later changes are gone, the shop works, invariants hold",
+   "severity": "blocker",
+   "steps": [
+    "   9.82s  changes after the backup: one paid order, one renamed account",
+    "  13.99s  restored data equals the backup; 0 queued jobs from backup time will run after the restart",
+    "  16.75s  restore procedure: down, stop workers, restore.sh, migrate, reconcile-payouts, up, start workers, reconcile-payments",
+    "  17.41s  file of pre-backup order d6c1808e-df2f-4ba4-9d6c-f594b9ef99ec downloads after the restore"
+   ],
+   "evidence": [
+    "backup: /backups/20261014T011217Z: Backup written to /backups/20261014T011217Z\n Container shopsim-db-1 Running \n Container shopsim-db-1 Waiting \n Container shopsim-db-1 Healthy \n Container shopsim-backup-run-592684406f19 Creating \n Container shopsim-backup-run-592684406f19 Created \n"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 19.0
+  },
+  {
+   "phase": 8,
+   "name": "Disk full during upload",
+   "precondition": "Only 256 KB are left on the product file storage; a seller uploads a 2 MB file",
+   "expected": "The seller gets a clear error; no database row and no partial file remain; other pages keep working; after space is freed the same upload succeeds",
+   "severity": "critical",
+   "steps": [
+    "   0.77s  product storage limited to current files + 256 KB",
+    "   1.24s  space freed"
+   ],
+   "evidence": [
+    "upload with a full disk: HTTP 200: The file could not be saved because of a storage problem on our side. Nothing was stored; please try again later. Our team has been alerted."
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.5
+  },
+  {
+   "phase": 9,
+   "name": "Gift cards: create, redeem, reuse, race, wrong currency, expiry, guessing",
+   "precondition": "Finance creates USD and EUR cards; buyers with USD and EUR wallets redeem",
+   "expected": "Card credited once; second use and a concurrent double redeem refused; EUR card on a funded USD wallet refused without using the card; expired card refused; codes are not stored in plain text; guessing is rate limited",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.7
+  },
+  {
+   "phase": 9,
+   "name": "Balance adjustments by finance",
+   "precondition": "Finance credits and debits a buyer with a reason",
+   "expected": "Credit and debit are recorded with the reason (shown in the wallet history), a debit below zero is refused, a manager cannot adjust, every change is audited",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.3
+  },
+  {
+   "phase": 9,
+   "name": "Crypto refund through the gateway: success, failure, retry",
+   "precondition": "Finance refunds two paid orders in crypto; the gateway reports one success and one failure",
+   "expected": "Success: refund confirmed with tx hash, earnings reduced once; failure: the refund is marked failed, the refundable amount is available again and a second attempt can succeed; duplicate callbacks change nothing; ledger reconciles",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.7
+  },
+  {
+   "phase": 9,
+   "name": "Payout address change with confirmation and waiting period",
+   "precondition": "seller07 changes the payout address",
+   "expected": "Nothing changes until the emailed link is opened by the seller; the link is single use and useless for another seller; after the change payouts are blocked for the waiting period and the seller is told until when; afterwards they work",
+   "severity": "critical",
+   "steps": [
+    "   6.01s  waiting period moved 49 hours and the sales 15 days into the past"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.2
+  },
+  {
+   "phase": 9,
+   "name": "Manual delivery by the seller and by staff",
+   "precondition": "buyer45 buys two manual products of different sellers",
+   "expected": "Order stays paid until delivered; the seller delivers their line (text shown to the buyer, emailed); staff deliver the other line on the seller's behalf; only then the order is delivered; empty or oversized payloads refused",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "line 79 seller 14: net 2399, rate 1000 bps, fee 240, earning 2159",
+    "line 80 seller 6: net 3799, rate 1000 bps, fee 380, earning 3419"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.4
+  },
+  {
+   "phase": 9,
+   "name": "Download limits, expired links and staff reset",
+   "precondition": "buyer46 owns a delivered file product",
+   "expected": "Each download counts; at the limit the link stops working with a clear message; an expired or tampered link is refused; staff reset the counter and downloads work again",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.9
+  },
+  {
+   "phase": 9,
+   "name": "Subscription access over time",
+   "precondition": "buyer47 buys a subscription; time is moved forward",
+   "expected": "Access is set to 30 days; 3 days before the end one reminder is sent (never two); after the end downloads are refused with a renewal hint and the product can be bought again",
+   "severity": "major",
+   "steps": [
+    "   1.66s  access end moved to 3 days from now; running the hourly shop:subscription-reminders"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 8.1
+  },
+  {
+   "phase": 9,
+   "name": "Reviews",
+   "precondition": "buyer48 bought a product; buyer28 did not",
+   "expected": "Only buyers can review; one review per buyer (a second submit edits it); hidden reviews disappear and leave the rating",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.0
+  },
+  {
+   "phase": 9,
+   "name": "Wishlist",
+   "precondition": "buyer29 saves products",
+   "expected": "Add, list and remove work; a product that becomes unavailable is marked, not a 500; another buyer cannot remove it",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.9
+  },
+  {
+   "phase": 9,
+   "name": "Support tickets",
+   "precondition": "buyer31 opens a ticket about an order; support answers",
+   "expected": "Ticket linked to the order; staff reply is emailed and shown, internal notes are never shown or emailed; another buyer gets 403; assign and close work; closed tickets can be reopened by a reply or are clearly closed",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.0
+  },
+  {
+   "phase": 9,
+   "name": "Announcements",
+   "precondition": "Support publishes a scheduled and a current announcement",
+   "expected": "The current one is shown on every page (escaped), the future one not yet; toggling and deleting hide it",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 122.6
+  },
+  {
+   "phase": 9,
+   "name": "Categories",
+   "precondition": "Moderator manages categories",
+   "expected": "Create, rename and delete an empty category; a category with products cannot be deleted; duplicate names refused; the catalog filter follows the rename",
+   "severity": "minor",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.0
+  },
+  {
+   "phase": 9,
+   "name": "Commission settings screens drive real sales",
+   "precondition": "Super admin sets product, seller and category rates in the UI",
+   "expected": "Each level overrides the next (product > seller > category > global) for new sales only; old sales keep their frozen rate; invalid percentages refused; changes audited",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "line 87 seller 6: net 2099, rate 500 bps, fee 105, earning 1994"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.8
+  },
+  {
+   "phase": 9,
+   "name": "Bulk actions on products and users",
+   "precondition": "Moderator and manager tick rows",
+   "expected": "Bulk disable then approve products (products without clean files are skipped and reported); bulk suspend users skips staff and the actor; over 500 ids refused; everything audited",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.7
+  },
+  {
+   "phase": 9,
+   "name": "Currencies: EUR cart, EUR wallet, rate change, fixed-amount coupon",
+   "precondition": "buyer36 (EUR wallet) and buyer37 (USD)",
+   "expected": "Prices convert with the stored rate; a EUR order paid from a EUR wallet books seller earnings in EUR; a rate change re-prices an open cart; a EUR fixed coupon is refused on a USD cart; payouts are per currency",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "line 88 seller 9: net 303, rate 1000 bps, fee 30, earning 273"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.6
+  },
+  {
+   "phase": 9,
+   "name": "Dispute deadline passes",
+   "precondition": "A dispute the seller ignores; time is moved past the response deadline",
+   "expected": "The scheduled escalation hands it to staff, both parties are emailed once, earnings stay held until staff decide",
+   "severity": "critical",
+   "steps": [
+    "   2.34s  seller deadline moved into the past; running the 15-minute shop:escalate-disputes"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.7
+  },
+  {
+   "phase": 9,
+   "name": "Payout hold period",
+   "precondition": "Hold set to 7 days; a new sale for seller09",
+   "expected": "The new earning is held: after 8 days (hold over) it is still held while the buyer can dispute it; after 15 days (dispute window closed) it becomes available",
+   "severity": "major",
+   "steps": [
+    "   3.03s  sale moved 8 days into the past: hold over, dispute window still open",
+    "   3.24s  sale moved 15 days into the past: dispute window closed"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.6
+  },
+  {
+   "phase": 9,
+   "name": "Reporting pages agree with the database",
+   "precondition": "Orders, refunds and payouts from this run",
+   "expected": "Dashboard, reports, reconciliation, payments and webhook pages load fast for their roles; the reported revenue and refund totals equal SQL sums; a failed webhook event can be retried",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "SQL USD net revenue 2265.97"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.6
+  },
+  {
+   "phase": 9,
+   "name": "Concurrent money operations",
+   "precondition": "Double-clicks and two staff members acting at the same moment",
+   "expected": "A double-clicked payout request creates one payout; two simultaneous refunds never exceed the order total; the last use of a coupon goes to one buyer only; delivering a manual item twice at once keeps one delivery",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 12.2
+  },
+  {
+   "phase": 10,
+   "name": "Staff alert for rejected payment callbacks",
+   "precondition": "Forged Shkeeper callbacks arrive from four addresses with a wrong key",
+   "expected": "All are refused with 401; the staff mailbox gets exactly one alert that names the reason and links the gateway page",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "Shkeeper callbacks are being rejected\r\n\r\nReason: wrong signature\r\nLast sender: 127.106.28.88\r\nEither the API key or allowed addresses do not match Shkeeper, or someone is sending forged payment callbacks. Paid orders stay unpaid until this is fixed.\r\n\r\nOpen: https://localhost:8443/admin/gateway\r\n\r\nThis is an automatic message for the Laravel team.\r\n\r\n"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.7
+  },
+  {
+   "phase": 10,
+   "name": "A failed email: retried, kept, alerted once, sent again from the health page",
+   "precondition": "The mail server is down while a password reset email uses up its 5 tries",
+   "expected": "The job ends in the failed jobs list and on the dashboard; staff get one alert once mail works again; a manager retries it on /admin/health and the buyer receives a reset link that works; nothing stays failed",
+   "severity": "critical",
+   "steps": [
+    "   0.67s  mail server down",
+    "  12.03s  mail server back"
+   ],
+   "evidence": [
+    "gave up after the attempts recorded in the payload: None"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 18.8
+  },
+  {
+   "phase": 10,
+   "name": "Staff alert when Shkeeper stops answering",
+   "precondition": "The gateway is stopped while a buyer tries to pay with crypto three times",
+   "expected": "Checkout fails cleanly; the health check turns critical; shop:health-alerts mails staff even with the queue worker stopped (sent directly); a second run within the hour sends nothing",
+   "severity": "critical",
+   "steps": [
+    "   0.70s  gateway stopped",
+    "   2.89s  queue worker stopped",
+    "   7.87s  gateway back"
+   ],
+   "evidence": [
+    "api calls in the last 15 minutes: [['error', '4'], ['ok', '51']]"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 7.9
+  },
+  {
+   "phase": 10,
+   "name": "Needs-attention digest for staff",
+   "precondition": "A buyer applies to sell and another opens a support ticket",
+   "expected": "shop:staff-digest mails staff a summary that lists both; a run with nothing new sends nothing",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "Needs attention since 2026-10-14 01:16 UTC\r\n\r\n- 1 seller applications\r\n- 1 new support tickets\r\n\r\nOpen: https://localhost:8443/admin\r\n\r\nThis is an automatic message for the Laravel team.\r\n\r\n"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 11.4
+  },
+  {
+   "phase": 10,
+   "name": "Seller email preferences and the review email",
+   "precondition": "A seller turns off sale and review emails; buyers buy and review",
+   "expected": "No sale email while off, one again after switching it back on; a review sends the seller an email only while review emails are on; the buyer is mailed either way",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 16.6
+  },
+  {
+   "phase": 10,
+   "name": "Buyer gets a confirmation when opening a dispute",
+   "precondition": "A buyer opens a dispute on a delivered item",
+   "expected": "Buyer, seller and staff each get the dispute email written for them",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.0
+  },
+  {
+   "phase": 10,
+   "name": "Colour scheme, security.txt and static files through nginx and TLS",
+   "precondition": "A visitor uses the footer colour-scheme form; scanners ask for security.txt and dotfiles; a browser loads the stylesheet",
+   "expected": "The choice is stored in a Secure, HttpOnly cookie and applies to the next pages, error pages included; security.txt answers with the contact; other dotfiles stay blocked; CSS is gzipped and cached for a year under its hashed URL; HTML is neither",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "theme=eyJpdiI6Imx2T2N2WDdGbjhSUkxtUVNxWURBdEE9PSIsInZhbHVlIjoicitpQXVXYldDa2JCVHpUU3J1ZDdlbWVLa3c4aHFLLzQzU21ZU296TC9vVUtGMEt3YWQrQ2kzY0lkMTF5QVJyZiIsIm1hYyI6ImVlMjMyMjNhZDhiYzhkM2ZmZTg0MDViZDBmZTZmMz"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.6
+  },
+  {
+   "phase": 10,
+   "name": "Upgrade: the go-live migrations on a populated database",
+   "precondition": "All earlier scenarios left their data; the four go-live and three performance migrations are rolled back and applied again, as an upgrade from the previous release would",
+   "expected": "Both directions run cleanly; no row is lost; existing users get both email preferences switched on; the new indexes exist again; the shop keeps serving buyers and staff",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "rows before: {'users': '69', 'orders': '69', 'order_items': '78', 'payments': '73', 'seller_ledger_entries': '155', 'tickets': '8', 'disputes': '4', 'product_reviews': '3'}"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.8
+  },
+  {
+   "phase": 11,
+   "name": "Notification centre: events, badge, open and read all",
+   "precondition": "A new buyer buys with crypto from a seller who turned sale emails off",
+   "expected": "The buyer sees \"placed\" and \"paid\" in the list and the header badge; opening an entry marks it read and goes to the order; \"mark all as read\" clears the badge; the seller gets no sale email but the sale is in the seller list; emails still arrive",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "buyer entries: ['Order 5e158eae placed: awaiting payment', 'Order 5e158eae paid']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 14.2
+  },
+  {
+   "phase": 11,
+   "name": "The notification list does not depend on the mail server",
+   "precondition": "The mail server is down when support answers a ticket",
+   "expected": "The buyer sees the reply in the notification list at once; the email follows once the mail server is back",
+   "severity": "major",
+   "steps": [
+    "   5.27s  mail server down",
+    "   6.02s  mail server back"
+   ],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 8.1
+  },
+  {
+   "phase": 11,
+   "name": "Staff alerts in the notification list of super admins and managers",
+   "precondition": "Forged payment callbacks arrive",
+   "expected": "Super admin and manager see the alert in their list; support, finance and moderator do not",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "staff entries before {'superadmin@sim.test': 0, 'manager@sim.test': 0, 'support@sim.test': 0, 'finance@sim.test': 0, 'moderator@sim.test': 0} after {'superadmin@sim.test': 1, 'manager@sim.test': 1, 'support@sim.test': 0, 'finance@sim.test': 0, 'moderator@sim.test': 0}"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 1.5
+  },
+  {
+   "phase": 11,
+   "name": "Live updates endpoint through nginx and TLS",
+   "precondition": "Buyers, another buyer, a guest and staff ask /live about pages while an order is paid and a ticket is answered",
+   "expected": "Guests get 401; the order version changes when the order is paid and matches the version on the page; balance and unread count are current; pages the user may not see have no version; internal staff notes do not change the customer version but a reply does; responses are not cached; polling is limited to 30 a minute",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 18.6
+  },
+  {
+   "phase": 11,
+   "name": "Seller replies to a review",
+   "precondition": "The buyer from the first scenario reviews the product; its seller answers, edits; another seller tries; a moderator removes the reply",
+   "expected": "The seller is told about the review; the reply shows under the review; the reviewer gets one email and one list entry that links to the review; editing sends nothing; another seller is refused; the moderator can remove it",
+   "severity": "major",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 8.6
+  },
+  {
+   "phase": 12,
+   "name": "FC-01 One buyer, two devices, balance enough for one order",
+   "precondition": "p12-twodev has 15.00 USD; signed in on a phone and a laptop, each with a different product (7.51-15.00) in its cart",
+   "expected": "Both balance checkouts are released together: exactly one order is paid, the other is refused with a message and leaves no order; the balance is never negative and equals 15.00 minus the one order",
+   "severity": "blocker",
+   "steps": [
+    "   1.78s  both checkout pages open; releasing both submits together"
+   ],
+   "evidence": [
+    "orders after the race: [['paid', '900']]; flashes: ['Order b70f1893 paid. Delivery is in progress; you will receive an email when it is ready.', 'Insufficient balance. Order total 10.00 USD, available 6.00 USD.']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.2
+  },
+  {
+   "phase": 12,
+   "name": "FC-02 Staff debit races a balance checkout",
+   "precondition": "p12-debit has 20.00 USD and a product of 12.00-15.00 in the cart; finance debits 10.00 at the same moment",
+   "expected": "Never both (they need more than 20.00): the balance stays >= 0 and equals 20.00 minus what succeeded; the wallet history matches the balance",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "paid orders [], staff debit applied: 1; flashes ['Insufficient balance. Order total 13.99 USD, available 10.00 USD.', 'Debited 10.00 USD to p12-debit@sim.test. New balance: 10.00 USD.']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.0
+  },
+  {
+   "phase": 12,
+   "name": "FC-03 Same email registered five times at once",
+   "precondition": "Five visitors submit the sign-up form with the same new address at the same moment",
+   "expected": "Exactly one account; the others get the \"already taken\" field error, never a 500",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "landed on ['/register', '/register', '/register', '/register', '/email/verify']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 4.0
+  },
+  {
+   "phase": 12,
+   "name": "FC-04 Ten identical payment callbacks at the same moment",
+   "precondition": "p12-tencb has a pending crypto order; the gateway recorded the payment but its callback is sent ten times in parallel",
+   "expected": "One confirmed charge, one sale ledger entry per line, one paid email, one delivery",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "callback statuses [202, 202, 202, 202, 202, 202, 202, 202, 202, 202]",
+    "line 107 seller 9: net 299, rate 1000 bps, fee 30, earning 269"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.7
+  },
+  {
+   "phase": 12,
+   "name": "FC-05 Payment arrives while the order expires",
+   "precondition": "p12-expire has four pending crypto orders past their deadline; for each, the expiry command and the PAID callback start together",
+   "expected": "Each order is either paid (and delivered), or expired with the late payment credited to the balance in full: received money is never lost or applied twice; stock and coupon reservations are not released for a paid order",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "outcomes [('db2afe4c-b16c-455c-96c0-50b034c5656e', ('delivered', 0)), ('a58e1b52-3561-4706-ba1b-78ad167a293d', ('delivered', 0)), ('94d3f2c3-bbf0-43c9-9bf1-b345982625d6', ('delivered', 0)), ('462c4b4f-bf07-423e-9084-e745c82a615e', ('delivered', 0))]"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.8
+  },
+  {
+   "phase": 12,
+   "name": "FC-06 Two staff decide the same payout at the same moment",
+   "precondition": "seller03 requests a payout; finance approves while super admin rejects; later both mark it paid together",
+   "expected": "Exactly one decision stands; a rejected payout returns the funds once; marking paid twice debits the ledger once",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "after approve/reject race: approved; ['Payout #39 approved.', 'Payout #39 is approved now; someone changed it after you opened the page. Reload it and decide again.']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 6.2
+  },
+  {
+   "phase": 12,
+   "name": "FC-07 Full refund races the dispute resolution of the same order",
+   "precondition": "p12-dispute has a delivered order and an open dispute asking for a refund; finance refunds the order in full while the manager resolves the dispute with a refund",
+   "expected": "The buyer gets the money once: refunded never exceeds the total, the balance rises by the total once, the line earning is reversed once; the dispute ends resolved",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "order {'id': 105, 'status': 'refunded', 'total': 299, 'refunded': 299, 'currency': 'USD', 'buyer_id': 117}; dispute resolved; ['Refunded 2.99 USD on order c9cd5105 via balance.', 'Order c9cd5105 is refunded and cannot be refunded.']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.6
+  },
+  {
+   "phase": 12,
+   "name": "FC-08 Eight buyers race for three units",
+   "precondition": "A licence-key product with stock 3 (and at least 3 unused keys); eight buyers check out with crypto at the same moment",
+   "expected": "Exactly three orders reserve it, stock ends at 0 and never below; the five others get \"just sold out\", no 5xx; paying the three delivers three distinct keys",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "orders 3; stock 0; messages ['Sorry, \"CodeLens Studio Licence\" just sold out. Remove it from your cart to cont', 'Pay order 1f90cde5 - Laravel Skip to main content Laravel Search products Search', 'Pay order 5f64322f - Laravel Skip to main content Laravel Search products Search', 'Pay order aed4ed4a - Laravel Skip to main content Laravel Search products Search', 'Sorry, \"CodeLens Studio Licence\" just sold out. Remove it from your cart to cont', 'Sorry, \"CodeLens Studio Licence\" just sold out. Remove it from your cart to cont', 'Sorry, \"CodeLens Studio Licence\" just sold out. Remove it from your cart to cont', 'Sorry, \"CodeLens Studio Licence\" just sold out. Remove it from your cart to cont']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 7.1
+  },
+  {
+   "phase": 12,
+   "name": "FC-09 Double submits of a review, a dispute and a wishlist entry",
+   "precondition": "p12-double has a delivered order; each form is sent three times at the same moment",
+   "expected": "One review, one dispute, one wishlist row; no 5xx",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "{'reviews': '1', 'wishlist': '1', 'disputes': '1'}"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.5
+  },
+  {
+   "phase": 12,
+   "name": "FC-10 Five downloads at once with one download left",
+   "precondition": "p12-dl owns a delivered file product with a limit of 3 and 2 downloads used",
+   "expected": "Exactly one of five simultaneous downloads is served; the counter ends at 3, never above",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "statuses [403, 403, 403, 200, 403]"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.4
+  },
+  {
+   "phase": 12,
+   "name": "FC-11 Seller asks for two payouts from two devices that together exceed the balance",
+   "precondition": "seller04 has available earnings A; a phone asks for 0.7 A and a laptop for 0.7 A at the same moment",
+   "expected": "At most A is requested in total; the seller ledger never goes below zero; the refused request says why",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "available 11829; requested now 8280; ['Payout #40 of 82.80 USD requested to bc1qvrhuv7spl0g9rqtn8dvh99f0w2x5rqa8jfvug4.', 'Requested 82.80 USD but only 35.49 USD is available for payout.']"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 3.2
+  },
+  {
+   "phase": 12,
+   "name": "FC-12 Buyer suspended while checking out",
+   "precondition": "p12-susp has 50.00 USD and a product in the cart; the manager suspends the account while the balance checkout is sent",
+   "expected": "Either the order completed before the suspension or it was refused; nothing half-done; afterwards the session is ended and further checkouts are impossible",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "orders [['paid', '299']]; balance 4701; user suspended"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 2.1
+  },
+  {
+   "phase": 12,
+   "name": "FS-01 Invalid transitions are refused by the server",
+   "precondition": "p12-states with a delivered order, a pending order and a requested payout; forms are replayed out of order",
+   "expected": "Cancelling a paid order, refunding an unpaid one, paying a cancelled one, delivering an unpaid line, marking a rejected payout paid and refunding more than is left are all refused with a message; nothing in the database changes",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 9.1
+  },
+  {
+   "phase": 12,
+   "name": "FS-02 Stale moderation form: product approved by one moderator, rejected later by another",
+   "precondition": "seller01 submits a product for review; the moderator and the manager open the review queue; the moderator approves",
+   "expected": "The manager's later reject from the stale page is refused with a message; the product stays active; one decision audited",
+   "severity": "major",
+   "steps": [],
+   "evidence": [
+    "manager: \"Clean Landing Page Kit\" is active now; someone changed it after you opened the page. Reload it and decide again."
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 0.6
+  },
+  {
+   "phase": 12,
+   "name": "FF-01 Gateway answers 429, 503 and a cut-off response at checkout",
+   "precondition": "p12-gw checks out with crypto three times while the gateway rate-limits, is in maintenance, then resets mid-answer",
+   "expected": "Each time the order is kept and the buyer lands on the payment page with a retry message within the client timeout; no charge; a retry then creates one invoice and the order is paid once; each failure is in the gateway log",
+   "severity": "critical",
+   "steps": [],
+   "evidence": [
+    "http429: 0.2s, /orders/37138e12-1a98-4748-ad00-0c25037e72e0/pay: The payment provider could not create an invoice for order 37138e12. Your order is saved; try again in a few minutes or choose another currency.",
+    "http503: 0.2s, /orders/64e0ca9e-a514-459e-9c91-f7563e81673b/pay: The payment provider could not create an invoice for order 64e0ca9e. Your order is saved; try again in a few minutes or choose another currency.",
+    "truncated: 0.2s, /orders/d8c14459-be89-4154-afe9-395c7caa7b19/pay: The payment provider could not create an invoice for order d8c14459. Your order is saved; try again in a few minutes or choose another currency."
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 5.3
+  },
+  {
+   "phase": 12,
+   "name": "FF-02 The gateway created the invoice but its answer was lost",
+   "precondition": "p12-lost checks out; the gateway processes the invoice request and then never answers (the shop times out at 10 s)",
+   "expected": "The buyer is told to retry; the retry reuses the same invoice (same order id at the gateway); the payment confirms the order once; reconciliation finds nothing left over",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "gateway has invoice 86 for 0c6fe5f8-d223-4ff3-bc92-c3b13d91764e although the shop got no answer"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 12.3
+  },
+  {
+   "phase": 12,
+   "name": "FF-03 A payout sent to the gateway whose answer was lost",
+   "precondition": "seller05 has an approved payout; finance sends it through Shkeeper; the gateway accepts it and never answers",
+   "expected": "The payout is not marked failed and not sent again blindly (its outcome is unknown); once the gateway reports the result, the payout is paid and the ledger is debited exactly once",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "after the lost answer: payout processing; Shkeeper did not answer in time, so payout #42 may already be on its way. It stays \"processing\" until Shkeeper reports the result; do not pay it manually."
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 13.6
+  },
+  {
+   "phase": 12,
+   "name": "FR-01 Connection lost while the checkout is being processed; the buyer sends it again",
+   "precondition": "p12-hangup has 40.00 USD; the account row is held by another transaction, the balance checkout is sent and the connection drops after a second while the server waits; then the lock is released",
+   "expected": "Whether the server finished the dropped request or abandoned it, the account ends with exactly one paid order and one debit after the buyer sends the same form again, and the retry shows that order",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "hangup: connection dropped after 1.0s while waiting for the account lock; the server finished it: orders [['delivered', '299']], balance 3701",
+    "hangup2: connection dropped after 0.0s; the server never processed it: orders [], balance 4000"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 12.9
+  },
+  {
+   "phase": 12,
+   "name": "FR-02 PHP-FPM restarted while checkouts are being processed",
+   "precondition": "Six p12 buyers with 30.00 USD each send balance checkouts; their account rows are held by another transaction so the requests are inside PHP when the app container restarts (SIGTERM)",
+   "expected": "Requests cut off by the restart fail visibly (502/503/504 or a dropped connection); nothing is half-written: no order without its debit and no debit without a paid order; the same form sent again gives exactly one paid order each",
+   "severity": "blocker",
+   "steps": [],
+   "evidence": [
+    "first attempt: [502, 502, 502, 502, 502, 502]"
+   ],
+   "status": "pass",
+   "actual": "As expected.",
+   "duration": 18.2
+  }
+ ],
+ "http": {
+  "requests": 3342,
+  "by_status": {
+   "200": 2218,
+   "302": 894,
+   "202": 21,
+   "401": 21,
+   "400": 13,
+   "413": 2,
+   "403": 101,
+   "429": 24,
+   "404": 35,
+   "503": 5,
+   "422": 2,
+   "502": 6
+  },
+  "server_errors": [
+   {
+    "who": "dbkill-3",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 503,
+    "request_id": "fdaac95b2885ffda"
+   },
+   {
+    "who": "dbkill-4",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 503,
+    "request_id": "2a77c8c03c3a651f"
+   },
+   {
+    "who": "dbkill-1",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 503,
+    "request_id": "c2c5dc68e43c9676"
+   },
+   {
+    "who": "during-outage",
+    "method": "GET",
+    "url": "https://localhost:8443/",
+    "status": 503,
+    "request_id": "694e6fdf0969dc2f"
+   },
+   {
+    "who": "during-outage",
+    "method": "GET",
+    "url": "https://localhost:8443/health",
+    "status": 503,
+    "request_id": "41bd48af6e086c3b"
+   },
+   {
+    "who": "p12-restart2",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   },
+   {
+    "who": "p12-restart3",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   },
+   {
+    "who": "p12-restart0",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   },
+   {
+    "who": "p12-restart5",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   },
+   {
+    "who": "p12-restart4",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   },
+   {
+    "who": "p12-restart1",
+    "method": "POST",
+    "url": "https://localhost:8443/checkout",
+    "status": 502,
+    "request_id": ""
+   }
+  ]
+ }
+}

@@ -275,6 +275,19 @@ The people are registered through the real sign-up and email verification. The J
 | Live endpoint | 401 for guests; the order version changes on payment and equals the version on the page; no version for pages the user may not see; internal notes do not change the customer version, replies do; `no-store`; the 31st request in a minute gets 429 |
 | Review replies | Seller told about the review; reply shown under it; one email and one entry for the reviewer, linking to the review; edits not announced; another seller refused; moderator removal audited |
 
+### Phase 12: final functional gate (`phases/p12_functional.py`)
+
+This phase belongs to docs/functional. Competing requests are released together by a barrier; faults are timed with a database lock so they hit requests inside PHP. The people are created for the phase, so it also runs alone (`run.sh test --phases 12`).
+
+| Group | Scenarios |
+|---|---|
+| Races (FC-01 to FC-12) | One balance on two devices; staff debit against checkout; same email five times; ten parallel callbacks; payment against expiry; two staff on one payout; refund against dispute resolution; eight buyers for three units; double submits of review, dispute and wishlist; five downloads with one left; two payout requests from two devices; suspension during checkout |
+| Transitions (FS-01, FS-02) | Stale and invalid transitions refused; stale moderation |
+| Gateway (FF-01 to FF-03) | 429, 503 and a reset mid-answer; invoice created but its answer lost; payout sent but its answer lost |
+| Interruptions (FR-01, FR-02) | Connection dropped during the checkout; PHP-FPM restarted while checkouts are inside PHP |
+
+The defects it and the accompanying review found are in docs/functional/test-defect-log.md (FD-01 to FD-13).
+
 ## Bugs found and fixed
 
 | # | Severity | Found in | Problem | Fix | Regression test |
@@ -364,6 +377,10 @@ The simulation is evidence, not approval. Exit criterion 8 is a second engineer'
 ## Results
 
 The reports are under `tests/simulation/reports/`.
+
+### Final functional gate, 2026-10-14 (phases 1-6 and 8-12, 120 scenarios)
+
+There was one run on application code `40594c9` (image `c173f14e26d2`), from a fresh database: **120 of 120 passed**. The report is `reports/20261014-005508`; the summary is in docs/functional/evidence/simulation-candidate.md.
 
 ### Production image (`compose` backend), 2026-10-10
 
