@@ -1,0 +1,105 @@
+{
+ "profile": "stress",
+ "requests": 35803,
+ "requests_per_s": 84.8,
+ "max_vus": 200,
+ "duration_s": 422.3,
+ "latency_ms": {
+  "med": 628.9,
+  "p(90)": 1514.1,
+  "p(95)": 1588.9,
+  "p(99)": 1697.6,
+  "max": 2081.7
+ },
+ "error_rate": 0,
+ "per_endpoint_p95_ms": {
+  "home": 1572.1,
+  "product": 1627.8,
+  "checkout page": 0,
+  "login": 381.7,
+  "admin products": 0,
+  "cart": 1551.8,
+  "search": 1597.4,
+  "webhook": 0,
+  "place order": 0,
+  "add to cart": 1562.4,
+  "catalog": 1588.5
+ },
+ "orders_placed": 0,
+ "sold_out_answers": 0,
+ "callbacks_ok": 0,
+ "thresholds_crossed": [],
+ "aborted_by_host_ceiling": false,
+ "resources": {
+  "containers": {
+   "shopsim-app-1": {
+    "cpu_peak": 193.35,
+    "mem_peak_mb": 129.8,
+    "cpu_avg": 161.1
+   },
+   "shopsim-queue-1": {
+    "cpu_peak": 1.52,
+    "mem_peak_mb": 129.7,
+    "cpu_avg": 0.2
+   },
+   "shopsim-scheduler-1": {
+    "cpu_peak": 88.12,
+    "mem_peak_mb": 134.7,
+    "cpu_avg": 4.6
+   },
+   "shopsim-tls-1": {
+    "cpu_peak": 4.12,
+    "mem_peak_mb": 15.4,
+    "cpu_avg": 3.0
+   },
+   "shopsim-web-1": {
+    "cpu_peak": 5.26,
+    "mem_peak_mb": 10.0,
+    "cpu_avg": 4.0
+   },
+   "shopsim-db-1": {
+    "cpu_peak": 176.16,
+    "mem_peak_mb": 122.6,
+    "cpu_avg": 148.8
+   },
+   "shopsim-shkeeper-mock-1": {
+    "cpu_peak": 0.04,
+    "mem_peak_mb": 21.0,
+    "cpu_avg": 0.0
+   },
+   "shopsim-fakeclamd-1": {
+    "cpu_peak": 0.02,
+    "mem_peak_mb": 6.6,
+    "cpu_avg": 0.0
+   },
+   "shopsim-mailpit-1": {
+    "cpu_peak": 0.31,
+    "mem_peak_mb": 33.2,
+    "cpu_avg": 0.0
+   }
+  },
+  "db_connections_peak": 22,
+  "jobs_queued_peak": 1,
+  "host_load1_peak": 26.1982421875
+ },
+ "recovery": {
+  "queue_drained_after_s": 0.1,
+  "catalogue_before": {
+   "median_ms": 41.0,
+   "max_ms": 43
+  },
+  "catalogue_after": {
+   "median_ms": 42.0,
+   "max_ms": 64
+  }
+ },
+ "invariant_problems": [],
+ "failed_jobs": 0,
+ "checks": {
+  "error rate under 5 %": "PASS",
+  "no data invariant violated": "PASS",
+  "no failed background job": "PASS",
+  "queue drained within 3 minutes": "PASS",
+  "recovered: catalogue median within 2x of before the load (+100 ms)": "PASS"
+ }
+}

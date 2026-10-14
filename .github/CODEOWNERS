@@ -8,3 +8,6 @@
 /docs/security/           @lordstuppy
 /docker/                  @lordstuppy
 /Dockerfile               @lordstuppy
+/scripts/functional-gate.sh @lordstuppy
+/tests/functional/        @lordstuppy
+/docs/functional/         @lordstuppy

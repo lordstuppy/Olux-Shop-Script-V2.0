@@ -4,6 +4,7 @@
 //   PROFILE=load        the target workload: 50 browsers (30 signed in), checkouts paid
 //                       through the gateway, ~100 payment callbacks a minute, staff paging
 //   PROFILE=stress      browsers in steps of 25, 50, 100, 150, 200 until an abort threshold
+//   PROFILE=stress-high continues with 200, 250, 300, 400 browsers
 //   PROFILE=spike       10 browsers, then 150 within 10 s for a minute, then 10 again
 //   PROFILE=soak        30 browsers, a checkout every 20 s and callbacks for 20 minutes
 //   PROFILE=contention  40 buyers at once for 10 units of one product, while the same
@@ -46,6 +47,11 @@ const PROFILES = {
         browse: { executor: 'ramping-vus', exec: 'browse', startVUs: 0, gracefulRampDown: '10s',
             stages: [25, 50, 100, 150, 200].flatMap((n) => [{ duration: '20s', target: n }, { duration: '60s', target: n }]).concat([{ duration: '20s', target: 0 }]) },
     },
+    // Continues stress beyond 200 browsers when the first run found no limit.
+    'stress-high': {
+        browse: { executor: 'ramping-vus', exec: 'browse', startVUs: 0, gracefulRampDown: '10s',
+            stages: [200, 250, 300, 400].flatMap((n) => [{ duration: '20s', target: n }, { duration: '60s', target: n }]).concat([{ duration: '20s', target: 0 }]) },
+    },
     spike: {
         browse: { executor: 'ramping-vus', exec: 'browse', startVUs: 10, gracefulRampDown: '10s',
             stages: [{ duration: '1m', target: 10 }, { duration: '10s', target: 150 }, { duration: '1m', target: 150 }, { duration: '10s', target: 10 }, { duration: '2m', target: 10 }] },
@@ -65,7 +71,10 @@ const PROFILES = {
 export const options = {
     insecureSkipTLSVerify: true, // self-signed certificate of the test stack
     scenarios: PROFILES[PROFILE],
-    thresholds: { ...abort, admin_product_list: ['p(95)<60000'] },
+    // The per-page rows only make k6 report each page's percentiles; the abort thresholds decide.
+    thresholds: { ...abort, admin_product_list: ['p(95)<60000'],
+        ...Object.fromEntries(['home', 'catalog', 'search', 'product', 'add to cart', 'cart', 'login', 'checkout page', 'place order', 'webhook', 'admin products']
+            .map((n) => [`http_req_duration{name:${n}}`, ['p(95)<60000']])) },
     summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 

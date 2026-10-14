@@ -105,6 +105,7 @@ LOAD_PROFILES = {
     'baseline': 'Baseline: 5 browsers and staff paging, 2 minutes',
     'load': 'Target workload: 50 browsers (30 signed in), 20 multi-seller checkouts paid through the gateway, ~100 callbacks a minute, staff paging',
     'stress': 'Stress: browsers in steps of 25, 50, 100, 150, 200 until an abort threshold',
+    'stress-high': 'Stress, continued: 200, 250, 300, 400 browsers until an abort threshold',
     'spike': 'Spike: 10 -> 150 browsers in 10 s for a minute, then back to 10',
     'soak': 'Soak: 30 browsers, a checkout every 20 s, callbacks and staff paging for 20 minutes',
     'contention': 'Contention: 40 buyers for 10 units at once, 120 parallel callbacks for 5 orders',
@@ -257,6 +258,21 @@ def build(args):
                      'invariants': 'all data invariants; contention: exactly 10 units sold, one charge per order',
                      'verification': 'k6 summary, resource samples, SQL', 'cleanup': 'reset before the profile set', 'priority': 'P1',
                      'mandatory': True, 'status': st, 'attempted': attempted, 'completed': completed, 'runs': '1', 'evidence': ev})
+    if args.large and os.path.exists(args.large):
+        large = json.load(open(args.large))
+        for i, c in enumerate(large['checks'], 1):
+            rows.append({'id': f'D-{i:02d}', 'source': 'large-data', 'category': 'C06', 'objective': c['check'],
+                         'actors': '', 'initial_state': 'simulation seed + tests/performance/scale-data.sql: ' + ', '.join(f'{k} {v}' for k, v in large['dataset'].items()),
+                         'action_sequence': 'tests/functional/large_data.py', 'concurrency': '-',
+                         'expected': 'correct answer' + (f' within {c["ceiling_s"]} s (a guard, not an SLO)' if c.get('ceiling_s') else ''),
+                         'invariants': '-', 'verification': 'HTTP status and content, SQL counts', 'cleanup': 'reset before the dataset',
+                         'priority': 'P2', 'mandatory': True, 'status': c['status'], 'attempted': True, 'completed': True, 'runs': '1',
+                         'evidence': f'{c["detail"]}' + (f'; {c["seconds"]} s' if c.get('seconds') is not None else '')})
+    else:
+        rows.append({'id': 'D-00', 'source': 'large-data', 'category': 'C06', 'objective': 'Year-scale data volumes and input limits',
+                     'actors': '', 'initial_state': '', 'action_sequence': 'tests/functional/large_data.py', 'concurrency': '-', 'expected': '',
+                     'invariants': '', 'verification': '', 'cleanup': '', 'priority': 'P2', 'mandatory': True, 'status': 'NOT VERIFIED',
+                     'attempted': False, 'completed': False, 'runs': '-', 'evidence': 'not run'})
     for gid, cat, objective, st, reason, mandatory in GAPS:
         rows.append({'id': gid, 'source': 'gap', 'category': cat, 'objective': objective, 'actors': '', 'initial_state': '', 'action_sequence': '',
                      'concurrency': '', 'expected': '', 'invariants': '', 'verification': '', 'cleanup': '', 'priority': 'P1' if mandatory else 'P3',
@@ -322,7 +338,7 @@ def write(rows, gate_rows, args):
         'scenarios_summary': {'identified': len(rows), 'executed': len(executed), 'passed': c['PASS'], 'failed': c['FAIL'],
                               'blocked': c['BLOCKED'], 'not_verified': c['NOT VERIFIED'], 'not_applicable': c['NOT APPLICABLE'],
                               'skipped_not_counted_as_pass': len([r for r in rows if r['attempted'] and not r['completed']]),
-                              'by_source': {s: len([r for r in rows if r['source'] == s]) for s in ('simulation', 'phpunit', 'browser', 'load', 'gap')}},
+                              'by_source': {s: len([r for r in rows if r['source'] == s]) for s in ('simulation', 'phpunit', 'browser', 'load', 'large-data', 'gap')}},
         'scenarios': rows,
     }
     os.makedirs(DOCS, exist_ok=True)
@@ -340,14 +356,14 @@ def write(rows, gate_rows, args):
         rs = [r for r in rows if r['category'] == cid]
         cc = counts(rs)
         md.append(f'| {cid} {title} | {len(rs)} | {cc["PASS"]} | {cc["FAIL"]} | {cc["BLOCKED"]} | {cc["NOT VERIFIED"]} | {cc["NOT APPLICABLE"]} |')
-    md += ['', '## Simulation, load and identified gaps', '',
+    md += ['', '## Simulation, load, large data and identified gaps', '',
            'One row per scenario. Initial state, expected outcome and priority come from the scenario definition; '
            'invariants: all data invariants of `tests/simulation/simlib/shop.py` hold after each scenario, no 5xx, no undeclared error log; '
            'cleanup: every run starts from `migrate:fresh` and the simulation seed.', '',
            '| ID | Category | Scenario | Initial state | Concurrency | Expected | Priority | Status | Runs | Evidence |', '|---|---|---|---|---|---|---|---|---|---|']
     esc = lambda t: str(t).replace('|', '/').replace('\n', ' ')  # noqa: E731
     for r in rows:
-        if r['source'] in ('simulation', 'load', 'gap'):
+        if r['source'] in ('simulation', 'load', 'large-data', 'gap'):
             md.append(f'| {r["id"]} | {r["category"]} | {esc(r["objective"])} | {esc(r["initial_state"])[:220]} | {esc(r["concurrency"])} | '
                       f'{esc(r["expected"])[:300]} | {r["priority"]} | **{r["status"]}** | {r["runs"]} | {esc(r["evidence"])[:300]} |')
     md += ['', '## PHPUnit and browser tests', '',
@@ -377,6 +393,7 @@ def main():
     ap.add_argument('--phpunit')
     ap.add_argument('--browser')
     ap.add_argument('--load')
+    ap.add_argument('--large')
     ap.add_argument('--open-defects', type=int, default=0)
     ap.add_argument('--check', action='store_true')
     args = ap.parse_args()

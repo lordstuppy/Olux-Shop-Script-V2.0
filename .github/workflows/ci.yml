@@ -182,3 +182,68 @@ jobs:
         with:
           name: live-test-logs
           path: /tmp/shop-live/logs
+
+  # Final functional release gate (docs/functional): PHPUnit and browser suites,
+  # the simulation (phases 1-6, 8-12: journeys, payments, races with barriers,
+  # gateway and infrastructure failures) on the production image, the load
+  # profiles (baseline, contention, target load, spike, stress, soak) and the
+  # year-scale dataset, then tests/functional/matrix.py decides from those
+  # results alone. Takes about 3 hours, so it runs weekly (scheduled
+  # adversarial and stress testing) and on demand for a release candidate.
+  # It only ever targets the disposable stack it starts on the runner.
+  functional:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    needs: [php, browser]
+    timeout-minutes: 300
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: shop
+          POSTGRES_PASSWORD: shop
+          POSTGRES_DB: shop
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shop -d shop" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_USERNAME: shop
+      DB_PASSWORD: shop
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, gd, sodium, curl
+          coverage: none
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Configure
+        run: |
+          cp .env.example .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^DB_PASSWORD=.*/DB_PASSWORD=shop/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
+          php artisan key:generate
+          PGPASSWORD=shop psql -h 127.0.0.1 -U shop -d shop -c 'CREATE DATABASE shop_test'
+      - run: cd tests/browser && npm ci --no-fund && npx playwright install --with-deps chromium
+      - name: Install k6 (checksum pinned)
+        run: |
+          curl -fsSL -o /tmp/k6.tgz https://github.com/grafana/k6/releases/download/v0.54.0/k6-v0.54.0-linux-amd64.tar.gz
+          echo "c7f03434854f837b6790ee81572e4b0f955241974c79a43cbb9f8d0fef069589  /tmp/k6.tgz" | sha256sum -c -
+          tar -xzf /tmp/k6.tgz -C /tmp && sudo install /tmp/k6-v0.54.0-linux-amd64/k6 /usr/local/bin/k6
+      - name: Functional gate
+        run: OUT="$RUNNER_TEMP/functional-gate" scripts/functional-gate.sh
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: functional-gate
+          path: |
+            ${{ runner.temp }}/functional-gate
+            tests/simulation/reports
+            docs/functional/functional-gates.json
+            docs/functional/scenario-matrix.md
+          retention-days: 30

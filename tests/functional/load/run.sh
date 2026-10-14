@@ -16,6 +16,7 @@ SIM="$ROOT/tests/simulation"
 K6=${K6:-k6}
 OUT=${OUT:-"$SIM/reports/functional-load-$(date -u +%Y%m%d-%H%M%S)"}
 mkdir -p "$OUT"
+OUT=$(cd "$OUT" && pwd)  # k6 resolves relative paths against the script's directory
 if [ "${NO_RESET:-}" != 1 ]; then
     sh "$SIM/run.sh" reset
     python3 -I "$HERE/prepare.py" "$OUT/data.json"

@@ -1,0 +1,300 @@
+{
+ "dataset": {
+  "products": 20204,
+  "orders": 200000,
+  "order_items": 250000,
+  "users": 50565,
+  "audit_log": 1002560,
+  "user_notifications": 500033,
+  "seller_ledger_entries": 420000
+ },
+ "checks": [
+  {
+   "check": "dataset is at the provisional first-year scale",
+   "status": "PASS",
+   "detail": "{\"products\": 20204, \"orders\": 200000, \"order_items\": 250000, \"users\": 50565, \"audit_log\": 1002560, \"user_notifications\": 500033, \"seller_ledger_entries\": 420000}",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "catalogue first page",
+   "status": "PASS",
+   "detail": "17185 products on sale",
+   "seconds": 0.07,
+   "ceiling_s": 5
+  },
+  {
+   "check": "catalogue last page",
+   "status": "PASS",
+   "detail": "page 1433",
+   "seconds": 0.1,
+   "ceiling_s": 5
+  },
+  {
+   "check": "catalogue page past the end: empty page, not an error",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.09,
+   "ceiling_s": 5
+  },
+  {
+   "check": "catalogue page=0 handled",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "catalogue page=-1 handled",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "catalogue page=abc handled",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "catalogue page=1e9 handled",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "catalogue page=%00 handled",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "search with a 100-character Unicode query",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.11,
+   "ceiling_s": 5
+  },
+  {
+   "check": "admin orders first page",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.07,
+   "ceiling_s": 10
+  },
+  {
+   "check": "admin orders last page",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.19,
+   "ceiling_s": 10
+  },
+  {
+   "check": "admin orders filtered by status and a year",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.08,
+   "ceiling_s": 10
+  },
+  {
+   "check": "audit log first page",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.07,
+   "ceiling_s": 10
+  },
+  {
+   "check": "audit log last page",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.21,
+   "ceiling_s": 10
+  },
+  {
+   "check": "audit log search over 1,000,000 entries",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.07,
+   "ceiling_s": 10
+  },
+  {
+   "check": "user search over 50,000 accounts",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.15,
+   "ceiling_s": 10
+  },
+  {
+   "check": "dashboard with year-scale data",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.53,
+   "ceiling_s": 10
+  },
+  {
+   "check": "finance report over a year",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.69,
+   "ceiling_s": 15
+  },
+  {
+   "check": "CSV export of every orders (streamed)",
+   "status": "PASS",
+   "detail": "200000 rows of 200000, 28 MB, app container memory peak 72 MiB",
+   "seconds": 4.03,
+   "ceiling_s": 180
+  },
+  {
+   "check": "CSV export of every users (streamed)",
+   "status": "PASS",
+   "detail": "50565 rows of 50565, 5 MB, app container memory peak 71 MiB",
+   "seconds": 0.8,
+   "ceiling_s": 180
+  },
+  {
+   "check": "order history of the buyer with the most orders",
+   "status": "PASS",
+   "detail": "1500 orders",
+   "seconds": 0.05,
+   "ceiling_s": 5
+  },
+  {
+   "check": "last page of that history",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.05,
+   "ceiling_s": 5
+  },
+  {
+   "check": "notification centre of the user with the most entries",
+   "status": "PASS",
+   "detail": "2006 entries",
+   "seconds": 0.04,
+   "ceiling_s": 5
+  },
+  {
+   "check": "live update version for that user",
+   "status": "PASS",
+   "detail": "status 200",
+   "seconds": 0.05,
+   "ceiling_s": 2
+  },
+  {
+   "check": "seller dashboard of the busiest seller",
+   "status": "PASS",
+   "detail": "590 sold lines",
+   "seconds": 0.08,
+   "ceiling_s": 5
+  },
+  {
+   "check": "that seller's sales",
+   "status": "PASS",
+   "detail": "590 sold lines",
+   "seconds": 0.06,
+   "ceiling_s": 5
+  },
+  {
+   "check": "payout balances over every sale",
+   "status": "PASS",
+   "detail": "590 sold lines",
+   "seconds": 0.07,
+   "ceiling_s": 5
+  },
+  {
+   "check": "payout reconciliation over 200,000 orders",
+   "status": "PASS",
+   "detail": "exit 0: Seller ledger matches completed orders and payouts.",
+   "seconds": 0.56,
+   "ceiling_s": 300
+  },
+  {
+   "check": "product with a 160-character title, 20,000-character description, price 999999.99",
+   "status": "PASS",
+   "detail": "Edit TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "161-character title refused with a message",
+   "status": "PASS",
+   "detail": "Please correct the following problem: The title field must not be greater than 160 characters. | The title field must not be greater than 160 characters.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "20,001-character description refused with a message",
+   "status": "PASS",
+   "detail": "Please correct the following problem: The description field must not be greater than 20000 characters. | The description field must not be greater than 20000 ch",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "price 1000000.00 refused with a message",
+   "status": "PASS",
+   "detail": "The price must be between 0.01 and 999999.99.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "price 0 refused with a message",
+   "status": "PASS",
+   "detail": "The price must be between 0.01 and 999999.99.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "negative price refused with a message",
+   "status": "PASS",
+   "detail": "Enter the price as a number such as 19.99 in USD.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "cart line with the maximum quantity 10",
+   "status": "PASS",
+   "detail": "Added 10 x \"Retro Invoice Template Pack\" to your cart.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "quantity 11 refused with a message",
+   "status": "PASS",
+   "detail": "Please correct the following problem: The quantity field must not be greater than 10. | The quantity field must not be g",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "percent coupon of 100 accepted",
+   "status": "PASS",
+   "detail": "Coupon F11P100X39279 created.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "percent coupon of 101 refused",
+   "status": "PASS",
+   "detail": "A percent coupon must be between 0.01 and 100 percent; a fixed coupon must be positive.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "percent coupon of 0 refused",
+   "status": "PASS",
+   "detail": "A percent coupon must be between 0.01 and 100 percent; a fixed coupon must be positive.",
+   "seconds": null,
+   "ceiling_s": null
+  },
+  {
+   "check": "49 MB file upload (just under the 50 MB limit) stored in full, virus scan queued",
+   "status": "PASS",
+   "detail": "stored size 51380224; Uploaded \"large.zip\" (51,380,224 bytes). It is delivered to buyers once the virus scan reports it cl",
+   "seconds": 2.33,
+   "ceiling_s": 120
+  }
+ ]
+}

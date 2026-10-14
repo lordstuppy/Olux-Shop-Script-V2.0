@@ -69,7 +69,7 @@ def main(out):
     for bad in ('0', '-1', 'abc', '1e9', '%00'):
         r, _ = timed(guest, f'/products?page={bad}')
         check(f'catalogue page={bad} handled', r.status in (200, 404, 422) or (300 <= r.status < 400), f'status {r.status}')
-    q = urllib.parse.quote('üñïçødé ' * 14 + '\U0001F680')
+    q = urllib.parse.quote('\u00fc\u00f1\u00ef\u00e7\u00f8d\u00e9 ' * 14 + '\U0001F680')
     r, s = timed(guest, f'/products?q={q}')
     check('search with a 100-character Unicode query', r.status == 200, f'status {r.status}', s, 5)
 
@@ -100,6 +100,11 @@ def main(out):
         check(f'CSV export of every {kind} (streamed)', r.status == 200 and abs(rows - expected) <= 5 if kind == 'orders' else r.status == 200 and rows > 50000,
               f'{rows} rows of {expected}, {len(r.raw) // 1048576} MB, app container memory peak {max(mem or [0]):.0f} MiB', s, 180)
 
+    # The dataset spreads orders evenly (about 4 per buyer); give one buyer a long history.
+    env.sql("""update orders set buyer_id=(select id from users where email='perf-buyer-1@perf.test')
+        where id in (select id from orders order by id limit 1500)""")
+    env.sql("""update user_notifications set user_id=(select id from users where email='perf-buyer-1@perf.test')
+        where id in (select id from user_notifications order by id limit 2000)""")
     heavy = env.sql("select u.email, count(*) from orders o join users u on u.id=o.buyer_id where u.email like 'perf-buyer-%' group by 1 order by 2 desc limit 1")[0]
     b = shop.login(heavy[0], who='f11-heavy-buyer')
     r, s = timed(b, '/orders')
@@ -136,14 +141,14 @@ def main(out):
 def boundaries(admin):
     """Exact limits of inputs: the maximum is accepted, one more is refused with a message, never a 500."""
     seller = shop.login('seller01@sim.test', who='f11-seller01')
-    page = seller.get('/seller/products/create')
+    page = seller.get('/seller/products/new')
     form = seller.find_form(page, '/seller/products')
     base = {'title': 'T' * 160, 'description': 'D' * 20000, 'price': '999999.99', 'currency': 'USD', 'delivery_type': 'manual'}
     r = seller.submit(form, base)
     check('product with a 160-character title, 20,000-character description, price 999999.99', r.status < 500 and '/edit' in r.url, text_of(r.text)[:120])
     for field, value, why in (('title', 'T' * 161, '161-character title'), ('description', 'D' * 20001, '20,001-character description'),
                               ('price', '1000000.00', 'price 1000000.00'), ('price', '0.00', 'price 0'), ('price', '-1', 'negative price')):
-        r = seller.submit(seller.find_form(seller.get('/seller/products/create'), '/seller/products'), {**base, field: value})
+        r = seller.submit(seller.find_form(seller.get('/seller/products/new'), '/seller/products'), {**base, field: value})
         check(f'{why} refused with a message', r.status < 500 and '/edit' not in r.url, ' | '.join(r.flashes())[:160] or text_of(r.text)[:160])
 
     buyer = shop.login('buyer02@sim.test', who='f11-buyer02')
@@ -159,12 +164,21 @@ def boundaries(admin):
     fin = shop.login('finance@sim.test', who='f11-finance2')
     shop.confirm_password(fin)
     for value, ok in (('100', True), ('101', False), ('0', False)):
-        code = f'F11P{value}X'
+        code = f'F11P{value}X{int(time.time()) % 100000}'
         page = fin.get('/admin/coupons')
         r = fin.submit(fin.find_form(page, '/admin/coupons'), {'code': code, 'type': 'percent', 'value': value})
         stored = env.scalar(f"select count(*) from coupons where code='{code}'") == '1'
         check(f'percent coupon of {value} {"accepted" if ok else "refused"}', r.status < 500 and stored == ok, ' | '.join(r.flashes())[:120])
 
+    def remove_large_uploads():
+        # The test stack's product storage is a 64 MB tmpfs (for the disk-full scenario), and "stop
+        # delivering" keeps a file for earlier buyers, so earlier test uploads are removed here directly.
+        for fid, path in env.sql("select f.id, f.storage_path from product_files f join products p on p.id=f.product_id join users u on u.id=p.seller_id "
+                                 "where u.email='seller01@sim.test' and f.original_name='large.zip'"):
+            if env.BACKEND == 'compose':
+                env.sh(env.COMPOSE + ['exec', '-T', 'app', 'rm', '-f', f'storage/app/private/products/{path}'], check=False)
+            env.sql(f'delete from product_files where id={fid}')
+    remove_large_uploads()
     big = os.path.join(env.HERE, 'work', 'f11-49mb.bin')
     os.makedirs(os.path.dirname(big), exist_ok=True)
     with open(big, 'wb') as f:
@@ -177,11 +191,12 @@ def boundaries(admin):
         r = seller.submit(forms[0], files={'file': ('large.zip', open(big, 'rb').read(), 'application/zip')})
         s = time.time() - t
         stored = env.scalar(f'select max(size) from product_files where product_id={pid}')
-        check('49 MB file upload (just under the 50 MB limit) stored and scanned', r.status < 500 and stored not in (None, '') and int(stored) == 49 * 1024 * 1024,
+        check('49 MB file upload (just under the 50 MB limit) stored in full, virus scan queued', r.status < 500 and stored not in (None, '') and int(stored) == 49 * 1024 * 1024,
               f'stored size {stored}; {" | ".join(r.flashes())[:100]}', s, 120)
     else:
-        check('49 MB file upload (just under the 50 MB limit) stored and scanned', False, 'no upload form on the edit page')
+        check('49 MB file upload (just under the 50 MB limit) stored in full, virus scan queued', False, 'no upload form on the edit page')
     os.remove(big)
+    remove_large_uploads()
 
 
 if __name__ == '__main__':

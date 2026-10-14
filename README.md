@@ -236,6 +236,10 @@ its CI gate is `scripts/performance-gate.sh`.
 The UX, UI and usability audit (workflows, responsive layouts, accessibility,
 live updates, gates) is in [docs/ux/](docs/ux/ux-audit-summary.md); its checks
 run in the CI job `browser` (`tests/browser/ux.spec.js` and `a11y.spec.js`).
+The final functional gate (scenario matrix, concurrency with synchronisation
+barriers, payment integrity, failure injection, load, stress and soak, large
+data) is in [docs/functional/](docs/functional/functional-test-summary.md); it
+runs as `scripts/functional-gate.sh` in the weekly and on-demand CI job `functional`.
 
 ## Legal pages
 

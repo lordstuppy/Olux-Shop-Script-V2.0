@@ -41,6 +41,11 @@ def mem_mb(text):
 def main(profile, d, data_path):
     if sys.argv[1:2] == ['--before']:
         return
+    if not os.path.exists(os.path.join(d, 'k6-summary.json')):
+        json.dump({'profile': profile, 'checks': {'k6 produced a summary': 'FAIL'}, 'error': open(os.path.join(d, 'k6.log')).read()[-2000:]},
+                  open(os.path.join(d, 'result.json'), 'w'), indent=1)
+        print(f'{profile}: no k6 summary (see k6.log)')
+        return 1
     summary = json.load(open(os.path.join(d, 'k6-summary.json')))
     m = summary['metrics']
     dur = m['http_req_duration']['values']
@@ -81,6 +86,13 @@ def main(profile, d, data_path):
         'recovered: catalogue median within 2x of before the load (+100 ms)': after['median_ms'] <= 2 * before['median_ms'] + 100,
     }
     extra = {}
+    if profile.startswith('stress'):
+        # Stress looks for the limit: crossing an abort threshold is the expected end, not a failure.
+        # What must hold is the data, the queue and the recovery afterwards.
+        checks.pop('error rate under 5 %')
+        crossed = [k for k, v in m.items() if any(not t.get('ok', True) for t in (v.get('thresholds') or {}).values())]
+        extra['operating_limit'] = (f'abort threshold crossed ({", ".join(crossed)}) at up to {int(m.get("vus_max", {}).get("values", {}).get("max", 0))} browsers'
+                                    if crossed else f'no abort threshold crossed up to {int(m.get("vus_max", {}).get("values", {}).get("max", 0))} browsers')
     if profile == 'contention':
         data = json.load(open(data_path))
         pid = data['contention_product']['id']

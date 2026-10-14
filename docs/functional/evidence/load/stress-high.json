@@ -1,0 +1,105 @@
+{
+ "profile": "stress-high",
+ "requests": 30117,
+ "requests_per_s": 87.6,
+ "max_vus": 400,
+ "duration_s": 344.0,
+ "latency_ms": {
+  "med": 2491.9,
+  "p(90)": 4107.5,
+  "p(95)": 4232.9,
+  "p(99)": 4617.8,
+  "max": 4933.0
+ },
+ "error_rate": 0,
+ "per_endpoint_p95_ms": {
+  "search": 4248.9,
+  "catalog": 4236.4,
+  "product": 4273.8,
+  "cart": 4173.6,
+  "home": 4196.3,
+  "place order": 0,
+  "admin products": 0,
+  "login": 2188.3,
+  "add to cart": 4197.0,
+  "webhook": 0,
+  "checkout page": 0
+ },
+ "orders_placed": 0,
+ "sold_out_answers": 0,
+ "callbacks_ok": 0,
+ "thresholds_crossed": [],
+ "aborted_by_host_ceiling": false,
+ "resources": {
+  "containers": {
+   "shopsim-app-1": {
+    "cpu_peak": 278.9,
+    "mem_peak_mb": 338.8,
+    "cpu_avg": 182.5
+   },
+   "shopsim-queue-1": {
+    "cpu_peak": 4.78,
+    "mem_peak_mb": 118.0,
+    "cpu_avg": 0.3
+   },
+   "shopsim-scheduler-1": {
+    "cpu_peak": 98.69,
+    "mem_peak_mb": 97.0,
+    "cpu_avg": 2.8
+   },
+   "shopsim-tls-1": {
+    "cpu_peak": 4.56,
+    "mem_peak_mb": 23.7,
+    "cpu_avg": 3.5
+   },
+   "shopsim-web-1": {
+    "cpu_peak": 4.99,
+    "mem_peak_mb": 14.0,
+    "cpu_avg": 4.4
+   },
+   "shopsim-db-1": {
+    "cpu_peak": 179.1,
+    "mem_peak_mb": 148.4,
+    "cpu_avg": 167.7
+   },
+   "shopsim-shkeeper-mock-1": {
+    "cpu_peak": 0.05,
+    "mem_peak_mb": 22.5,
+    "cpu_avg": 0.0
+   },
+   "shopsim-fakeclamd-1": {
+    "cpu_peak": 0.02,
+    "mem_peak_mb": 6.6,
+    "cpu_avg": 0.0
+   },
+   "shopsim-mailpit-1": {
+    "cpu_peak": 3.63,
+    "mem_peak_mb": 37.6,
+    "cpu_avg": 0.4
+   }
+  },
+  "db_connections_peak": 22,
+  "jobs_queued_peak": 2,
+  "host_load1_peak": 26.974609375
+ },
+ "recovery": {
+  "queue_drained_after_s": 0.0,
+  "catalogue_before": {
+   "median_ms": 47.5,
+   "max_ms": 61
+  },
+  "catalogue_after": {
+   "median_ms": 47.0,
+   "max_ms": 82
+  }
+ },
+ "invariant_problems": [],
+ "failed_jobs": 0,
+ "checks": {
+  "no data invariant violated": "PASS",
+  "no failed background job": "PASS",
+  "queue drained within 3 minutes": "PASS",
+  "recovered: catalogue median within 2x of before the load (+100 ms)": "PASS"
+ },
+ "operating_limit": "no abort threshold crossed up to 400 browsers"
+}

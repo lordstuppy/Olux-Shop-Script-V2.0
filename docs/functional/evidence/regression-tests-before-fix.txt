@@ -1,0 +1,19 @@
+FunctionalGateTest against the code before each fix (application code of the parent revision, tests of the fix).
+
+Round 1: the 11 tests of 424330b against the application code of ab32013 (app/, resources/, routes/ of the fix stashed), 2026-10-13. 10 fail; the one that passes (test_fd02_staff_can_close_...) checks the escape hatch the fix keeps for staff, which already worked:
+failed 11 passed 1
+FAIL test_fd01_a_rejected_payout_that_shkeeper_sent_after_all_is_booked_and_reported | Failed asserting that two variables reference the same object. --- Expected +++ Actual @@ @@ -App\Enums\PayoutStatus Enum #4070 (Paid, 'paid') +App\Enums\PayoutStatus Enum #4072 (Rejected, 'rejected')
+FAIL test_fd02_money_on_a_refused_payment_keeps_the_order_open_and_alerts_staff_once | The expected [App\Mail\StaffAlertMail] mailable was queued 0 times instead of 1 time. Failed asserting that 0 is identical to 1.
+FAIL test_fd03_balance_payment_is_refused_while_crypto_has_partly_arrived | Session is missing expected key [error]. Failed asserting that false is true.
+FAIL test_fd04_saving_the_product_form_keeps_stock_that_sales_changed_meanwhile | the stale stock from the form was written back (oversell) Failed asserting that 3 is identical to 2.
+FAIL test_fd05_a_resent_refund_form_refunds_once | Failed asserting that 2000 is identical to 1000.
+FAIL test_fd06_a_withdrawal_waits_for_a_staff_decision_in_progress | Session is missing expected key [error]. Failed asserting that false is true.
+FAIL test_fd08_checkout_refuses_a_total_that_changed_after_the_page_was_shown | Failed asserting that '<!doctype html>\n <html lang="en" >\n <head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>Checkout - Laravel</titl
+FAIL test_fd09_a_manual_line_can_still_be_delivered_after_another_line_was_refunded | Session is missing expected key [success]. Failed asserting that false is true.
+FAIL test_fd10_a_second_delivery_job_does_not_email_the_buyer_again | The expected [App\Mail\OrderPaidMail] mailable was queued 2 times instead of 1 time. Failed asserting that 2 is identical to 1.
+FAIL test_fd07_moderation_decisions_on_an_out_of_date_page_are_refused | Call to undefined method App\Models\Product::reviewVersion()
+
+Round 2: FD-12 and FD-13 against 424330b application code:
+failed 2 passed 0
+FAIL test_fd12_a_payout_decision_from_an_out_of_date_page_is_refused | Session is missing expected key [error]. Failed asserting that false is true.
+FAIL test_fd13_a_full_refund_from_the_order_page_resolves_the_dispute_about_that_line | the buyer still sees an open case for money already returned Failed asserting that two variables reference the same object. --- Expected +++ Actual @@ @@ -App\Enums\DisputeStatus Enum #4008 (Resolved,

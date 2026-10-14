@@ -1,0 +1,104 @@
+{
+ "profile": "contention",
+ "requests": 484,
+ "requests_per_s": 52.1,
+ "max_vus": 70,
+ "duration_s": 9.3,
+ "latency_ms": {
+  "med": 745.0,
+  "p(90)": 1668.8,
+  "p(95)": 2679.0,
+  "p(99)": 3574.5,
+  "max": 4520.8
+ },
+ "error_rate": 0,
+ "per_endpoint_p95_ms": {},
+ "orders_placed": 10,
+ "sold_out_answers": 26,
+ "callbacks_ok": 120,
+ "thresholds_crossed": [],
+ "aborted_by_host_ceiling": false,
+ "resources": {
+  "containers": {
+   "shopsim-app-1": {
+    "cpu_peak": 344.85,
+    "mem_peak_mb": 338.0,
+    "cpu_avg": 249.8
+   },
+   "shopsim-queue-1": {
+    "cpu_peak": 45.19,
+    "mem_peak_mb": 61.1,
+    "cpu_avg": 22.7
+   },
+   "shopsim-scheduler-1": {
+    "cpu_peak": 0.11,
+    "mem_peak_mb": 34.4,
+    "cpu_avg": 0.1
+   },
+   "shopsim-tls-1": {
+    "cpu_peak": 5.27,
+    "mem_peak_mb": 10.2,
+    "cpu_avg": 4.0
+   },
+   "shopsim-web-1": {
+    "cpu_peak": 3.79,
+    "mem_peak_mb": 7.6,
+    "cpu_avg": 2.2
+   },
+   "shopsim-db-1": {
+    "cpu_peak": 151.53,
+    "mem_peak_mb": 97.5,
+    "cpu_avg": 94.8
+   },
+   "shopsim-shkeeper-mock-1": {
+    "cpu_peak": 0.03,
+    "mem_peak_mb": 20.6,
+    "cpu_avg": 0.0
+   },
+   "shopsim-fakeclamd-1": {
+    "cpu_peak": 0.02,
+    "mem_peak_mb": 6.4,
+    "cpu_avg": 0.0
+   },
+   "shopsim-mailpit-1": {
+    "cpu_peak": 0.21,
+    "mem_peak_mb": 31.1,
+    "cpu_avg": 0.1
+   }
+  },
+  "db_connections_peak": 18,
+  "jobs_queued_peak": 8,
+  "host_load1_peak": 0.99560546875
+ },
+ "recovery": {
+  "queue_drained_after_s": 2.1,
+  "catalogue_before": {
+   "median_ms": 40.0,
+   "max_ms": 47
+  },
+  "catalogue_after": {
+   "median_ms": 47.0,
+   "max_ms": 73
+  }
+ },
+ "invariant_problems": [],
+ "failed_jobs": 0,
+ "checks": {
+  "error rate under 5 %": "PASS",
+  "no data invariant violated": "PASS",
+  "no failed background job": "PASS",
+  "queue drained within 3 minutes": "PASS",
+  "recovered: catalogue median within 2x of before the load (+100 ms)": "PASS",
+  "exactly the limited units sold, stock 0": "PASS",
+  "120 parallel callbacks for 5 orders: one charge each": "PASS"
+ },
+ "units_sold": 10,
+ "stock_left": 0,
+ "charges_per_callback_order": {
+  "251d9731-aa60-4908-9be8-f3ae57f05376": 1,
+  "3a5d981e-7a59-4765-99ac-8aaa3efaa447": 1,
+  "8c172253-4f5d-40de-9d27-a11d9db7f964": 1,
+  "c6107c50-890c-48e2-904d-eef1b929158a": 1,
+  "d5253776-20d2-427b-b897-499b800c2fb3": 1
+ }
+}
