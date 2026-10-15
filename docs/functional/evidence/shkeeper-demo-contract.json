@@ -1,0 +1,72 @@
+{
+    "shkeeper": "https://demo.shkeeper.io",
+    "crypto": "LTC",
+    "run_at": "2026-10-15T13:30:48+00:00",
+    "results": [
+        {
+            "check": "crypto list parsed",
+            "status": "PASS",
+            "detail": "BNB, BNB-USDC, BTC, ETH, ETH-USDC, ETH-USDT, FIRO, FIRO-SPARK, LTC, XMR, XRP"
+        },
+        {
+            "check": "invoice created",
+            "status": "PASS",
+            "detail": "id 122, amount 0.21227588 LTC, rate 58.1319, address ltc1q3..."
+        },
+        {
+            "check": "same order id returns the same invoice (retry after a lost answer)",
+            "status": "PASS",
+            "detail": "first id 122, second id 122"
+        },
+        {
+            "check": "invoice status parsed",
+            "status": "PASS",
+            "detail": "status UNPAID, fiat USD, amount 12.34, balance 0"
+        },
+        {
+            "check": "invoice status fields",
+            "status": "INFO",
+            "detail": "keys: amount_fiat, balance_fiat, external_id, fiat, status, txs"
+        },
+        {
+            "check": "unknown invoice reads as \"no invoice\"",
+            "status": "PASS",
+            "detail": "null"
+        },
+        {
+            "check": "quote answer",
+            "status": "INFO",
+            "detail": "HTTP 200 keys: amount_crypto, amount_fiat, crypto, exchange_rate, fiat, status"
+        },
+        {
+            "check": "quote parsed by the shop",
+            "status": "FAIL",
+            "detail": "Shkeeper quote response has no valid crypto_amount."
+        },
+        {
+            "check": "wrong API key refused",
+            "status": "PASS",
+            "detail": "Shkeeper error: Bad API key"
+        },
+        {
+            "check": "unknown crypto refused",
+            "status": "PASS",
+            "detail": "Shkeeper error: NOPE payment gateway is unavailable"
+        },
+        {
+            "check": "EUR invoice",
+            "status": "PASS",
+            "detail": "amount 0.19331142 LTC"
+        },
+        {
+            "check": "unknown payout: raw answer",
+            "status": "INFO",
+            "detail": "HTTP 404 {\"error\":\"Payout not found\"}\n"
+        },
+        {
+            "check": "unknown payout reads as \"never arrived\"",
+            "status": "FAIL",
+            "detail": "Shkeeper GET /api/v1/LTC/payout/status?external_id=payout-contract-MxezFM failed with HTTP 404."
+        }
+    ]
+}
