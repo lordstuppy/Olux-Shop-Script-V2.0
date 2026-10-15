@@ -56,17 +56,24 @@ def charges(oid):
 
 
 @scenario(2, 'Successful payment', 'buyer13 has a pending crypto order',
-          'One confirmed charge for the exact total, order delivered, ledger booked, "paid" email once', 'blocker')
+          'The "unconfirmed" callback is acknowledged without a decision or alert; one confirmed charge for the exact total, '
+          'order delivered, ledger booked, "paid" email once', 'blocker')
 def success(rec, ctx):
     email, c, oid, row = order_for(rec, 13)
+    alerts = len(env.mails(subject='needs a decision'))
     r = shop.pay(oid)
+    rec.check(r['unconfirmed_http_status'] == 202, f'unconfirmed callback answered {r}')
     rec.check(r['callback_http_status'] == 202, f'webhook answered {r}')
+    rec.check(env.scalar(f"select count(*) from webhook_events where external_id='{oid}' and status='ignored'") == '1', 'unconfirmed callback not stored as ignored')
+    rec.check(env.scalar(f"""select count(*) from audit_log a join payments p on a.target_id=p.id::text join orders o on o.id=p.order_id
+        where a.action='payment.rejected' and o.public_id='{oid}'""") == '0', 'unconfirmed callback rejected the payment')
     wait_status(oid, 'delivered')
     rec.check(charges(oid) == [['confirmed', str(row['total']), 'shkeeper']], f'charges {charges(oid)}')
     check_ledger(rec, oid)
     env.wait_mail(email, 'paid')
     time.sleep(2)
     rec.check(len(env.mails(email, 'paid')) == 1, 'more than one paid email')
+    rec.check(len(env.mails(subject='needs a decision')) == alerts, 'staff were alerted about a normal payment')
     page = c.get(f'/orders/{oid}/result')
     rec.check('Delivered' in page.text or 'delivered' in page.text, 'result page does not show the delivered state')
 

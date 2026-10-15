@@ -129,7 +129,7 @@ class ShkeeperClientTest extends TestCase
     public function test_quote_and_payout_requests(): void
     {
         $this->http->fake([
-            'pay.example/api/v1/BTC/quote' => $this->http->response(['crypto_amount' => '0.00083333', 'exchange_rate' => '60000', 'status' => 'success']),
+            'pay.example/api/v1/BTC/quote' => $this->http->response(['amount_crypto' => '0.00083333', 'exchange_rate' => '60000', 'status' => 'success']),
             'pay.example/api/v1/BTC/payout' => $this->http->response(['task_id' => 'task-42', 'external_id' => 'payout-7']),
             'pay.example/api/v1/BTC/payout/status*' => $this->http->response(['id' => 1, 'external_id' => 'payout-7', 'status' => 'SUCCESS', 'txid' => 'abc', 'crypto' => 'BTC']),
         ]);

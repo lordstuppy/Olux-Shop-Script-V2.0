@@ -128,6 +128,16 @@ Tests that post these forms now send `_once`, like the browser does; no assertio
 
 **Fix:** a refund from the order page that refunds a disputed line in full resolves its open dispute as "refunded", with the amount and a message to both parties (`DisputeService::closeRefundedLine`). A dispute's own refund closes the dispute itself, as before.
 
+## Shkeeper contract findings
+
+The contract test against the public Shkeeper demo found three more defects, SK-1 to SK-3. All three are fixed, with regression tests in `tests/Feature/ShkeeperContractTest.php`. Details are in [shkeeper-contract-report.md](shkeeper-contract-report.md).
+
+| ID | Severity | Defect | Status |
+|---|---|---|---|
+| SK-1 | High | The quote answer's field was misread, so every automatic payout and crypto refund through Shkeeper failed. | Fixed |
+| SK-2 | Medium | Shkeeper's "unconfirmed" callback rejected the payment and alerted staff on every crypto payment. | Fixed |
+| SK-3 | Medium | Shkeeper's "payout not found" answer was not recognised, so an unanswered payout stayed "processing" for good. | Fixed |
+
 ## Review findings that are not defects
 
 | Candidate | Why not a defect | Where it stands |

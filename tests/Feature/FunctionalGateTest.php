@@ -68,7 +68,7 @@ class FunctionalGateTest extends TestCase
         config(['services.shkeeper.payouts_enabled' => true, 'services.shkeeper.payout_username' => 'payout-user',
             'services.shkeeper.payout_password' => 'payout-pass', 'services.shkeeper.payout_fees' => ['BTC' => '10']]);
         Http::fake([
-            'shkeeper.test/api/v1/BTC/quote' => Http::response(['crypto_amount' => '0.00150000', 'exchange_rate' => '60000', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote' => Http::response(['amount_crypto' => '0.00150000', 'exchange_rate' => '60000', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout/status*' => Http::response([]),
             'shkeeper.test/api/v1/BTC/payout' => Http::response('', 504),
         ]);

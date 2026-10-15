@@ -6,6 +6,17 @@
  * (Set PHP_CLI_SERVER_WORKERS=4 or more when using the "timeout" failure mode,
  * otherwise the single-worker built-in server blocks while it sleeps.)
  *
+ * Answers and callbacks follow the real Shkeeper (source commit e6a4128 and the
+ * public demo; docs/functional/shkeeper-contract-report.md), configured as the
+ * shop requires: invoices are PAID at 100 %, no fee. In particular:
+ *   - a wrong API key gets HTTP 200 {"status": "error", "message": "Bad API key"};
+ *   - the quote answers amount_crypto (not crypto_amount, as the README says);
+ *   - an unknown payout status is HTTP 404 {"error": "Payout not found"};
+ *   - a payment first sends an "unconfirmed" callback, then the invoice callback;
+ *   - callback bodies are compact JSON with sorted keys;
+ *   - payout callbacks are sent for SUCCESS only (ENABLE_PAYOUT_CALLBACK), without
+ *     X-Shkeeper-Api-Key; a FAIL is only visible through the payout status.
+ *
  * Implements:
  *   GET  /api/v1/crypto
  *   POST /api/v1/{crypto}/payment_request      (X-Shkeeper-Api-Key required)
@@ -15,16 +26,20 @@
  *   GET  /api/v1/{crypto}/payout/status?external_id=...  (X-Shkeeper-Api-Key required)
  * Test controls (not part of Shkeeper):
  *   POST /__mock/pay/{external_id}
- *        body: {"amount": "25.00", "status": "PAID", "fiat": "USD",
- *               "repeat": 1, "deliver": true, "delay_callback_ms": 0}   (all optional)
- *        Records a payment and sends a signed callback to the invoice callback_url.
- *        "repeat" sends the identical payload n times in a row (fresh timestamp and
- *        signature each time); "deliver": false records the payment without sending
- *        any callback (lost callback, the shop must poll); "delay_callback_ms" sleeps
- *        before sending. Response: callback_http_status (last), callback_http_statuses
- *        (all), callback_response (last, decoded JSON).
+ *        body: {"amount": "25.00", "status": "PAID", "fiat": "USD", "repeat": 1,
+ *               "deliver": true, "delay_callback_ms": 0, "unconfirmed": true}   (all optional)
+ *        Records a payment ("amount" is the cumulative fiat balance) and sends the signed
+ *        callbacks to the invoice callback_url: first the "unconfirmed" one for the new
+ *        transaction (unless "unconfirmed": false or nothing new arrived), then the
+ *        invoice callback. "repeat" sends the identical invoice callback n times in a
+ *        row (fresh timestamp and signature each time); "deliver": false records the
+ *        payment without sending any callback (lost callbacks, the shop must poll);
+ *        "delay_callback_ms" sleeps before sending. Response: unconfirmed_http_status,
+ *        callback_http_status (last), callback_http_statuses (all invoice callbacks),
+ *        callback_response (last, decoded JSON).
  *   POST /__mock/payout-result/{external_id}   body: {"status": "SUCCESS"|"FAIL"}
- *        Completes a payout and sends a signed payout callback.
+ *        Completes a payout. SUCCESS sends a signed payout callback; FAIL sends none
+ *        (callback_http_status null), as Shkeeper does.
  *   POST /__mock/callback-unknown
  *        body: {"external_id": "...", "amount": "10.00", "fiat": "USD", "callback_url": "http://...",
  *               "crypto": "BTC", "status": "PAID"}   (crypto and status optional)
@@ -216,22 +231,59 @@ function postCallback(string $url, string $payload, string $apiKey, bool $sign =
     return [$code, is_string($response) ? $response : ''];
 }
 
-/** Builds the JSON body of an invoice (payment) callback. */
-function invoicePayload(array $invoice, string $fiat, string $amount): string
+/** Shkeeper serialises callbacks compactly with sorted keys. */
+function callbackJson(array $data): string
 {
-    return json_encode([
+    $sort = function (array $a) use (&$sort): array {
+        if (! array_is_list($a)) {
+            ksort($a);
+        }
+
+        return array_map(fn ($v) => is_array($v) ? $sort($v) : $v, $a);
+    };
+
+    return json_encode($sort($data), JSON_UNESCAPED_SLASHES);
+}
+
+function cryptoAmount(string $fiatAmount, string $rate): string
+{
+    return number_format((float) $fiatAmount / (float) $rate, 8, '.', '');
+}
+
+/** A transaction as Shkeeper lists it in invoice callbacks (no fee configured). */
+function transaction(string $crypto, string $fiatAmount, string $rate): array
+{
+    return [
+        'txid' => bin2hex(random_bytes(32)), 'date' => gmdate('Y-m-d H:i:s'), 'crypto' => $crypto,
+        'amount_crypto' => cryptoAmount($fiatAmount, $rate), 'amount_fiat' => $fiatAmount,
+        'amount_fiat_without_fee' => $fiatAmount, 'fee_fiat' => '0', 'trigger' => false,
+    ];
+}
+
+/** Builds the JSON body of an invoice (payment) callback; the last transaction is the trigger. */
+function invoicePayload(array $invoice, string $fiat, string $amount, string $rate): string
+{
+    $txs = $invoice['txs'];
+    if ($txs !== []) {
+        $txs[count($txs) - 1]['trigger'] = true;
+    }
+    $overpaid = max(0, (float) $amount - (float) ($invoice['amount_fiat'] ?? $amount));
+
+    return callbackJson([
         'external_id' => $invoice['external_id'],
         'crypto' => $invoice['crypto'],
         'addr' => $invoice['wallet'],
         'fiat' => $fiat,
         'balance_fiat' => $amount,
-        'balance_crypto' => '0',
+        'balance_crypto' => cryptoAmount($amount, $rate),
         'paid' => in_array($invoice['status'], ['PAID', 'OVERPAID'], true),
         'status' => $invoice['status'],
-        'transactions' => $invoice['txs'],
+        'transactions' => $txs,
         'fee_percent' => '0',
-        'overpaid_fiat' => '0.00',
-    ], JSON_UNESCAPED_SLASHES);
+        'fee_fixed' => '0',
+        'fee_policy' => 'NO_FEE',
+        'overpaid_fiat' => number_format($overpaid, 2, '.', ''),
+    ]);
 }
 
 $cryptos = [
@@ -309,7 +361,7 @@ if ($method === 'GET' && $path === '/api/v1/crypto') {
 
 if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payment_request$#', $path, $m)) {
     if (! authorised($apiKey)) {
-        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+        respond(200, ['status' => 'error', 'message' => 'Bad API key']);
 
         return;
     }
@@ -365,7 +417,7 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payment_request
 
 if ($method === 'GET' && preg_match('#^/api/v1/invoices/([A-Za-z0-9-]+)$#', $path, $m)) {
     if (! authorised($apiKey)) {
-        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+        respond(200, ['status' => 'error', 'message' => 'Bad API key']);
 
         return;
     }
@@ -389,16 +441,20 @@ if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $
     $repeat = max(1, min(100, (int) ($req['repeat'] ?? 1)));
     $deliver = ($req['deliver'] ?? true) !== false;
     $delayCallbackMs = max(0, (int) ($req['delay_callback_ms'] ?? 0));
+    $rate = $rates[$invoice['crypto']] ?? '1';
 
+    // "amount" is the new cumulative balance; the transaction carries what arrived now.
+    $arrived = number_format(max(0, (float) $amount - (float) $invoice['balance_fiat']), 2, '.', '');
+    $tx = transaction($invoice['crypto'], $arrived, $rate);
     $invoice['balance_fiat'] = $amount;
     $invoice['status'] = $req['status'] ?? (bccomp_like($amount, $invoice['amount_fiat']) >= 0 ? 'PAID' : 'PARTIAL');
-    $invoice['txs'][] = ['txid' => bin2hex(random_bytes(16)), 'amount_fiat' => $amount, 'trigger' => true];
+    $invoice['txs'][] = $tx;
     $state[$m[1]] = $invoice;
     save($stateFile, $state);
     unlockState($stateLock);
 
     if (! $deliver) {
-        respond(200, ['status' => 'success', 'delivered' => false, 'callback_http_status' => null,
+        respond(200, ['status' => 'success', 'delivered' => false, 'unconfirmed_http_status' => null, 'callback_http_status' => null,
             'callback_http_statuses' => [], 'callback_response' => null]);
 
         return;
@@ -406,14 +462,22 @@ if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $
     if ($delayCallbackMs > 0) {
         usleep($delayCallbackMs * 1000);
     }
-    $payload = invoicePayload($invoice, (string) ($req['fiat'] ?? $invoice['fiat']), $amount);
+    // Shkeeper reports a transaction once it sees it, before any confirmation.
+    $unconfirmedCode = null;
+    if (($req['unconfirmed'] ?? true) !== false && (float) $arrived > 0) {
+        [$unconfirmedCode] = postCallback($invoice['callback_url'], callbackJson([
+            'status' => 'unconfirmed', 'external_id' => $invoice['external_id'], 'crypto' => $invoice['crypto'],
+            'addr' => $invoice['wallet'], 'txid' => $tx['txid'], 'amount' => $tx['amount_crypto'],
+        ]), $apiKey);
+    }
+    $payload = invoicePayload($invoice, (string) ($req['fiat'] ?? $invoice['fiat']), $amount, $rate);
     $codes = [];
     $response = '';
     for ($i = 0; $i < $repeat; $i++) {
         [$code, $response] = postCallback($invoice['callback_url'], $payload, $apiKey);
         $codes[] = $code;
     }
-    respond(200, ['status' => 'success', 'delivered' => true, 'callback_http_status' => end($codes),
+    respond(200, ['status' => 'success', 'delivered' => true, 'unconfirmed_http_status' => $unconfirmedCode, 'callback_http_status' => end($codes),
         'callback_http_statuses' => $codes, 'callback_response' => json_decode($response, true)]);
 
     return;
@@ -421,7 +485,7 @@ if ($method === 'POST' && preg_match('#^/__mock/pay/([A-Za-z0-9-]+)$#', $path, $
 
 if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/quote$#', $path, $m)) {
     if (! authorised($apiKey)) {
-        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+        respond(200, ['status' => 'error', 'message' => 'Bad API key']);
 
         return;
     }
@@ -432,7 +496,8 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/quote$#', $path
 
         return;
     }
-    respond(200, ['status' => 'success', 'crypto_amount' => number_format((float) $req['amount'] / (float) $rate, 8, '.', ''), 'exchange_rate' => $rate]);
+    respond(200, ['status' => 'success', 'fiat' => (string) ($req['fiat'] ?? 'USD'), 'amount_fiat' => (string) $req['amount'],
+        'crypto' => $m[1], 'amount_crypto' => cryptoAmount((string) $req['amount'], $rate), 'exchange_rate' => $rate]);
 
     return;
 }
@@ -469,13 +534,13 @@ if ($method === 'POST' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout$#', $pat
 
 if ($method === 'GET' && preg_match('#^/api/v1/([A-Za-z0-9_-]+)/payout/status$#', $path, $m)) {
     if (! authorised($apiKey)) {
-        respond(401, ['status' => 'error', 'message' => 'Invalid API key']);
+        respond(200, ['status' => 'error', 'message' => 'Bad API key']);
 
         return;
     }
     $payout = load($stateFile)['payouts'][(string) ($_GET['external_id'] ?? '')] ?? null;
     if ($payout === null) {
-        respond(404, ['status' => 'error', 'message' => 'payout not found']);
+        respond(404, ['error' => 'Payout not found']);
 
         return;
     }
@@ -501,12 +566,15 @@ if ($method === 'POST' && preg_match('#^/__mock/payout-result/([A-Za-z0-9_-]+)$#
     save($stateFile, $state);
     unlockState($stateLock);
 
+    // Shkeeper calls back for SUCCESS only, signed but without X-Shkeeper-Api-Key.
     $code = null;
-    if ($payout['callback_url']) {
-        $payload = json_encode([
+    if ($payout['callback_url'] && $payout['status'] === 'SUCCESS') {
+        $rate = $rates[$payout['crypto']] ?? '1';
+        $payload = callbackJson([
             'payout_id' => 1, 'external_id' => $payout['external_id'], 'tx_hash' => $payout['txid'], 'status' => $payout['status'],
-            'amount' => $payout['amount'], 'crypto' => $payout['crypto'], 'timestamp' => time(),
-        ], JSON_UNESCAPED_SLASHES);
+            'amount' => $payout['amount'], 'crypto' => $payout['crypto'],
+            'amount_fiat' => number_format((float) $payout['amount'] * (float) $rate, 2, '.', ''), 'currency_fiat' => 'USD', 'timestamp' => time(),
+        ]);
         [$code] = postCallback($payout['callback_url'], $payload, $apiKey, true, false);
     }
     respond(200, ['status' => 'success', 'payout_status' => $payout['status'], 'callback_http_status' => $code]);
@@ -531,9 +599,10 @@ if ($method === 'POST' && $path === '/__mock/callback-unknown') {
         'crypto' => $crypto,
         'wallet' => 'mock'.strtolower($crypto).substr(hash('sha256', $req['external_id'].$crypto), 0, 30),
         'status' => (string) ($req['status'] ?? 'PAID'),
-        'txs' => [['txid' => bin2hex(random_bytes(16)), 'amount_fiat' => $amount, 'trigger' => true]],
+        'amount_fiat' => $amount,
+        'txs' => [transaction($crypto, $amount, $rates[$crypto] ?? '1')],
     ];
-    [$code, $response] = postCallback((string) $req['callback_url'], invoicePayload($invoice, (string) $req['fiat'], $amount), $apiKey);
+    [$code, $response] = postCallback((string) $req['callback_url'], invoicePayload($invoice, (string) $req['fiat'], $amount, $rates[$crypto] ?? '1'), $apiKey);
     respond(200, ['status' => 'success', 'callback_http_status' => $code, 'callback_response' => json_decode($response, true)]);
 
     return;

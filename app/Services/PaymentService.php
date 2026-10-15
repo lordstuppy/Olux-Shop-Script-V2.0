@@ -218,6 +218,13 @@ class PaymentService
         if (! Str::isUuid($externalId)) {
             return ['status' => 'ignored', 'message' => 'external_id is not an order id'];
         }
+        // Shkeeper first reports a transaction it has seen but not confirmed
+        // (no fiat, no balance); the confirmed invoice callback follows.
+        if (strtolower((string) ($payload['status'] ?? '')) === 'unconfirmed') {
+            Log::info('Unconfirmed Shkeeper transaction for order {public_id}; waiting for confirmations', ['public_id' => $externalId]);
+
+            return ['status' => 'ignored', 'message' => 'unconfirmed transaction; waiting for confirmations'];
+        }
 
         $paidNow = false;
         $result = DB::transaction(function () use ($payload, $externalId, &$paidNow) {

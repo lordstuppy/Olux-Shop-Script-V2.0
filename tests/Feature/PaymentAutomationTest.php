@@ -44,7 +44,7 @@ class PaymentAutomationTest extends TestCase
         Http::fake([
             'shkeeper.test/api/v1/crypto' => Http::response(json_decode((string) file_get_contents(base_path('tests/Fixtures/shkeeper/crypto.json')), true)),
             'shkeeper.test/api/v1/*/payment_request' => Http::response(json_decode((string) file_get_contents(base_path('tests/Fixtures/shkeeper/payment_request.json')), true)),
-            'shkeeper.test/api/v1/BTC/quote' => Http::response(['crypto_amount' => '0.00150000', 'exchange_rate' => '60000', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote' => Http::response(['amount_crypto' => '0.00150000', 'exchange_rate' => '60000', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout' => Http::response(['task_id' => $taskId, 'external_id' => 'x']),
         ]);
     }

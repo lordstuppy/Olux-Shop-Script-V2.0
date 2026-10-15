@@ -1,7 +1,7 @@
 {
     "shkeeper": "https://demo.shkeeper.io",
     "crypto": "LTC",
-    "run_at": "2026-10-15T13:30:48+00:00",
+    "run_at": "2026-10-15T13:43:58+00:00",
     "results": [
         {
             "check": "crypto list parsed",
@@ -11,12 +11,12 @@
         {
             "check": "invoice created",
             "status": "PASS",
-            "detail": "id 122, amount 0.21227588 LTC, rate 58.1319, address ltc1q3..."
+            "detail": "id 124, amount 0.21136706 LTC, rate 58.38185, address ltc1qf..."
         },
         {
             "check": "same order id returns the same invoice (retry after a lost answer)",
             "status": "PASS",
-            "detail": "first id 122, second id 122"
+            "detail": "first id 124, second id 124"
         },
         {
             "check": "invoice status parsed",
@@ -40,8 +40,8 @@
         },
         {
             "check": "quote parsed by the shop",
-            "status": "FAIL",
-            "detail": "Shkeeper quote response has no valid crypto_amount."
+            "status": "PASS",
+            "detail": "0.21136706 LTC for 12.34 USD"
         },
         {
             "check": "wrong API key refused",
@@ -56,7 +56,7 @@
         {
             "check": "EUR invoice",
             "status": "PASS",
-            "detail": "amount 0.19331142 LTC"
+            "detail": "amount 0.19197543 LTC"
         },
         {
             "check": "unknown payout: raw answer",
@@ -65,8 +65,8 @@
         },
         {
             "check": "unknown payout reads as \"never arrived\"",
-            "status": "FAIL",
-            "detail": "Shkeeper GET /api/v1/LTC/payout/status?external_id=payout-contract-MxezFM failed with HTTP 404."
+            "status": "PASS",
+            "detail": "null"
         }
     ]
 }

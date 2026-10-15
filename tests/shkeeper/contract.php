@@ -79,7 +79,7 @@ try {
     $check('invoice status parsed', 'FAIL', $e->getMessage());
 }
 
-// 4. Quote, as the payment page and payouts use it
+// 4. Quote, as payouts and crypto refunds use it
 $quoteRaw = $raw('POST', "/api/v1/{$crypto}/quote", ['fiat' => 'USD', 'amount' => '12.34']);
 $check('quote answer', 'INFO', 'HTTP '.$quoteRaw->status().' keys: '.implode(', ', array_keys((array) $quoteRaw->json())));
 try {

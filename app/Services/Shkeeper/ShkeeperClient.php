@@ -123,9 +123,10 @@ class ShkeeperClient
             'fiat' => $currency,
             'amount' => Money::toDecimal($amountMinor, $currency),
         ]);
-        $amount = (string) $response->json('crypto_amount');
+        // Shkeeper answers amount_crypto; its README documents crypto_amount.
+        $amount = (string) ($response->json('amount_crypto') ?? $response->json('crypto_amount'));
         if (! preg_match('/^\d+(\.\d+)?$/', $amount)) {
-            throw new ShkeeperException('Shkeeper quote response has no valid crypto_amount.');
+            throw new ShkeeperException('Shkeeper quote response has no valid amount_crypto.');
         }
 
         return $amount;
@@ -269,7 +270,9 @@ class ShkeeperClient
         if (! $response->successful()) {
             GatewayLog::record('api', 'error', ['action' => $action, 'http_status' => $response->status(), 'duration_ms' => $elapsed(), 'message' => 'HTTP '.$response->status()]);
             $e = new ShkeeperException("Shkeeper {$method} {$path} failed with HTTP {$response->status()}.", $response->status());
-            $e->shkeeperNotFound = $response->status() === 404 && $response->json('status') === 'error';
+            // Shkeeper's own "not found" is JSON: {"error": "Payout not found"} (or status "error").
+            $e->shkeeperNotFound = $response->status() === 404
+                && ($response->json('status') === 'error' || is_string($response->json('error')));
             throw $e;
         }
         if ($response->json('status') === 'error') {

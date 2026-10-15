@@ -111,7 +111,12 @@ def crypto_refunds(rec, ctx):
         pid = env.scalar(f"select p.id from payments p join orders o on o.id=p.order_id where o.public_id='{oid}' and p.kind='refund' order by p.id desc limit 1")
         rec.check(pid and env.scalar(f'select status from payments where id={pid}') == 'pending', f'refund not pending: {flashes(r)}')
         res = env.mock(f'/__mock/payout-result/refund-{pid}', {'status': outcome})
-        rec.check(res.get('callback_http_status') == 202, f'callback {res}')
+        if outcome == 'SUCCESS':
+            rec.check(res.get('callback_http_status') == 202, f'callback {res}')
+        else:
+            # Shkeeper never calls back for a failed transfer: the status poll finds it.
+            rec.check(res.get('callback_http_status') is None, f'unexpected failure callback {res}')
+            env.artisan('shop:reconcile-shkeeper-transfers')
         want = 'confirmed' if outcome == 'SUCCESS' else 'failed'
         shop.wait_for(lambda: env.scalar(f'select status from payments where id={pid}') == want, f'refund {want}', 30)
         env.mock(f'/__mock/payout-result/refund-{pid}', {'status': outcome})  # duplicate

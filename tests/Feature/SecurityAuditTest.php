@@ -153,7 +153,7 @@ class SecurityAuditTest extends TestCase
         $admin = User::factory()->admin()->create();
         $sent = [];
         Http::fake([
-            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['crypto_amount' => '0.001', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['amount_crypto' => '0.001', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout' => function (HttpRequest $r) use (&$sent) {
                 $sent[] = $r['external_id'];
 
@@ -188,7 +188,7 @@ class SecurityAuditTest extends TestCase
         $payout = Payout::create(['seller_id' => $seller->id, 'amount_minor' => 5000, 'currency' => 'USD', 'destination' => 'bc1qsellerpayoutaddress', 'status' => PayoutStatus::Approved]);
         $statusDuringTransfer = null;
         Http::fake([
-            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['crypto_amount' => '0.001', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['amount_crypto' => '0.001', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout' => function () use ($payout, &$statusDuringTransfer) {
                 $statusDuringTransfer = Payout::query()->whereKey($payout->id)->value('status');
 
@@ -212,7 +212,7 @@ class SecurityAuditTest extends TestCase
         $order = $this->pendingOrder($buyer);
         app(PaymentService::class)->payWithBalance($order, $buyer);
         Http::fake([
-            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['crypto_amount' => '0.001', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['amount_crypto' => '0.001', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout' => fn () => throw new ConnectionException('cURL error 28: Operation timed out after 30001 milliseconds with 0 bytes received'),
         ]);
         try {
@@ -236,7 +236,7 @@ class SecurityAuditTest extends TestCase
         $order = $this->pendingOrder($buyer);
         app(PaymentService::class)->payWithBalance($order, $buyer);
         $refund = app(RefundService::class)->reservePending($order->fresh(), 5000, 'BTC', 'bc1qbuyer', User::factory()->admin()->create(), 'test');
-        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response(['status' => 'error', 'message' => 'payout not found'], 404)]);
+        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response(['error' => 'Payout not found'], 404)]);
 
         app(ShkeeperPayoutService::class)->reconcile();
         $this->assertSame(PaymentStatus::Pending, $refund->fresh()->status);
@@ -494,7 +494,7 @@ class SecurityAuditTest extends TestCase
     {
         Mail::fake();
         $payout = $this->processingPayout('task-9');
-        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response(['status' => 'error', 'message' => 'payout not found'], 404)]);
+        Http::fake(['shkeeper.test/api/v1/BTC/payout/status*' => Http::response(['error' => 'Payout not found'], 404)]);
         $this->travel(2)->hours();
         app(ShkeeperPayoutService::class)->reconcile();
         $this->assertSame(PayoutStatus::Processing, $payout->fresh()->status);
@@ -527,7 +527,7 @@ class SecurityAuditTest extends TestCase
         $seller = $this->sellerWithProfile();
         $payout = Payout::create(['seller_id' => $seller->id, 'amount_minor' => 5000, 'currency' => 'USD', 'destination' => 'bc1qsellerpayoutaddress', 'status' => PayoutStatus::Approved]);
         Http::fake([
-            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['crypto_amount' => '0.001', 'status' => 'success']),
+            'shkeeper.test/api/v1/BTC/quote*' => Http::response(['amount_crypto' => '0.001', 'status' => 'success']),
             'shkeeper.test/api/v1/BTC/payout' => Http::response(['status' => 'success']),
         ]);
         $this->assertThrows(fn () => app(ShkeeperPayoutService::class)->sendPayout($payout, User::factory()->admin()->create()), UserFacingException::class);

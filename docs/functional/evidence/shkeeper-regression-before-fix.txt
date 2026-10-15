@@ -1,0 +1,7 @@
+ShkeeperContractTest on 49270dd (before the SK-1 to SK-3 fixes)
+tests 5 passed 0 failed 3 errors 2
+- test_sk1_a_payout_through_shkeeper_is_sent : Session is missing expected key [success].
+- test_sk2_an_unconfirmed_transaction_callback_neither_rejects_the_payment_nor_alerts_staff : Unable to find JSON: 
+- test_sk3_a_refund_shkeeper_never_received_is_failed_after_30_minutes : Failed asserting that two variables reference the same object.
+- test_sk1_quote_reads_the_field_shkeeper_sends : Shkeeper quote response has no valid crypto_amount.
+- test_sk3_shkeepers_payout_not_found_answer_reads_as_never_arrived : Shkeeper GET /api/v1/BTC/payout/status?external_id=payout-1 failed with HTTP 404.
