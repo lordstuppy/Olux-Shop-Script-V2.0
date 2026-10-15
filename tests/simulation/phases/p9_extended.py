@@ -548,7 +548,9 @@ def reports(rec, ctx):
 def concurrency(rec, ctx):
     staff_form(admin(), '/admin/settings', '/admin/settings', {'payout_hold_days': '0'})
     sid = env.scalar("select id from users where email='seller10@sim.test'")
-    paid_order(40, product=instant_product(f'seller_id={sid}'), qty=5)
+    _, _, oid = paid_order(40, product=instant_product(f'seller_id={sid}'), qty=5)
+    # Delivery runs on the queue; the sale can only be aged once its items are delivered.
+    wait_status(oid, 'delivered')
     past_dispute_window(sid)
     s = shop.login('seller10@sim.test')
     available = seller_available(s)
