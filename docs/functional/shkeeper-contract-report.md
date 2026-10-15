@@ -93,4 +93,6 @@ The mock still has no fee and no 95 % threshold, because the shop requires that 
 - **PHPUnit:** 345 / 345 (4,301 assertions), including the 5 new regression tests.
 - **Pint, PHPStan level 5, ASCII:** clean.
 - **Contract test against the demo:** all 10 checks PASS ([evidence/shkeeper-demo-contract.json](evidence/shkeeper-demo-contract.json)). The quote and the unknown payout now read correctly.
-- **Simulation phases 2, 5, 9 and 12 with the new mock:** running; the result is added here when it is in.
+- **Simulation phases 2, 4, 5, 9 and 12 with the new mock:** 71 / 71 scenarios PASS on the production image built from the fixed code.
+  - Phase 4 runs alongside because the phase 5 dispute scenario needs its dispute.
+  - The first run had one harness fault, fixed in `1fd8201`. The phase 9 concurrency scenario aged the seller's sale before its queued delivery had finished, so nothing was payable. It now waits for the delivery; no assertion changed.
