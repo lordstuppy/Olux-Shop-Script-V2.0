@@ -111,6 +111,10 @@ Regression tests are in `tests/Feature/SecurityAuditRun2Test.php` (SA) and `test
 | WQ-4 | The status poll took the 200 newest unresolved payments, so many abandoned invoices could keep an older paid one from ever being polled. | `payments.polled_at`; least recently polled first. | `test_wq4_*` |
 | WQ-8 | Webhook `last_error` and the failed-jobs list showed a database error's SQL with its bound values to finance and managers. | `App\Support\ErrorSummary`: only the class and SQLSTATE are shown; the full error stays in the log. | `test_wq8_*` |
 
+**Verification:**
+- PHPUnit 361 / 361, plus Pint, PHPStan, ASCII and the translation catalogue.
+- Simulation phases 1, 2, 4, 5, 9 and 12 on the production image built from this code: 81 / 81 scenarios (coupons, exchange rates, payment and payout callbacks, refunds, recovery and race scenarios).
+
 **Not changed:**
 - **Duplicate retry jobs (WQ-7).** They stay: a duplicate is harmless because the claim lets only one run. Making the job unique would take a cache lock that aborts an enclosing PostgreSQL transaction on a duplicate.
 - **WQ-5 and WQ-6 have no rows of their own.** WQ-5 (the paid-email mark lost on a failed send) is fixed under WQ-3, and WQ-6 (the provider check) under WQ-2.
