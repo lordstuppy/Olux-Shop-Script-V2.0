@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\UserFacingException;
 use App\Services\CartService;
 use App\Services\CatalogService;
 use App\Services\CurrencyConverter;
@@ -51,7 +52,11 @@ class ProductController extends Controller
         $cartCurrency = $cart->currency();
         $converted = null;
         if ($cartCurrency !== $product->currency && $converter->rate($product->currency, $cartCurrency) !== null) {
-            $converted = $converter->convert($product->price_minor, $product->currency, $cartCurrency)[0];
+            try {
+                $converted = $converter->convert($product->price_minor, $product->currency, $cartCurrency)[0];
+            } catch (UserFacingException) {
+                $converted = null;
+            }
         }
 
         $user = auth()->user();

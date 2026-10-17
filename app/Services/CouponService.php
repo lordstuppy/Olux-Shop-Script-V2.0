@@ -9,6 +9,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\Money;
+use App\Support\SelfDealing;
 
 class CouponService
 {
@@ -75,6 +76,11 @@ class CouponService
         }
         if ($coupon->expires_at !== null && $coupon->expires_at->isPast()) {
             throw new UserFacingException(__('Coupon :code expired on :date.', ['code' => $code, 'date' => $coupon->expires_at->toDateString()]));
+        }
+        // Like gift cards and balance adjustments: staff do not grant themselves
+        // value. The discount would come out of another seller's earnings.
+        if ($user !== null && $coupon->created_by !== null) {
+            SelfDealing::assertNotSelf($user, (int) $coupon->created_by);
         }
         if ($coupon->max_redemptions !== null && $coupon->redemptions_count >= $coupon->max_redemptions) {
             throw new UserFacingException(__('Coupon :code has reached its redemption limit.', ['code' => $code]));

@@ -54,6 +54,12 @@
 - Refunds are in the order currency. A refund to balance follows the same
   rule as other credits.
 
+## Manual rate changes
+
+- A rate change may move the rate at most `SHOP_EXCHANGE_RATE_MAX_CHANGE_PERCENT` (default 30) percent from the rate at the start of a 24-hour window. A larger real move is entered in steps on later days. A pair without a rate can be set to any value.
+- A conversion never turns a positive price into zero: such a product cannot be bought in that currency until the rate is corrected.
+- Coupons follow the four-eyes rule: a staff member cannot use a coupon they created.
+
 ## Coupons and commission
 
 - Percent coupons are stored in basis points, and the discount rounds

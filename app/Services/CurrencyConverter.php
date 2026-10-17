@@ -54,8 +54,14 @@ class CurrencyConverter
         $amount = BigDecimal::ofUnscaledValue($minor, Money::exponent($from))
             ->multipliedBy($rate)
             ->toScale(Money::exponent($to), RoundingMode::HalfUp);
+        $converted = $amount->getUnscaledValue()->toInt();
+        // A price never becomes free through a rate (a typo or a deliberately
+        // tiny rate); the converted amount is at least one minor unit.
+        if ($minor > 0 && $converted < 1) {
+            throw new UserFacingException(__('Prices in :from cannot be shown in :to at the current exchange rate. Switch the shop currency to :from.', ['from' => $from, 'to' => $to]));
+        }
 
-        return [$amount->getUnscaledValue()->toInt(), $rate];
+        return [$converted, $rate];
     }
 
     public function forget(): void

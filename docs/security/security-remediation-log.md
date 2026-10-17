@@ -92,16 +92,31 @@ The Cloudflare `security-audit` skill (quick profile, source and sandboxed local
 
 **Follow-up scoped run (run-2, on `ff8bbc5`).** This run audited the three areas the first run had not reviewed.
 
-- **Webhook and queue retry paths:** no finding. Replays do not credit, deliver or issue an invoice twice. Some failures (events left in "received", payout callbacks without retry state) are recovered only by the status polling; these are noted as hardening.
-- **Role transitions:** no finding. Every case needs a super admin to demote or promote first.
-- **Staff self-use:** two confirmed findings, both low and both insider-only (finance or admin):
-  - SA-03: a staff member can create a 100% coupon and redeem it on their own order.
-  - SA-04: a staff member can set a near-zero exchange rate and check out for free.
+- **Webhook and queue retry paths:** no security finding. Replays do not credit, deliver or issue an invoice twice. The robustness gaps it found are fixed below (WQ-1 to WQ-8).
+- **Role transitions:** no finding. Every case needs a super admin first.
+- **Staff self-use:** two confirmed low-severity, insider-only findings (SA-03 and SA-04), fixed below.
 
-  In both cases a third-party seller's earning is booked as 0. Not fixed yet; this needs an owner decision on how far the four-eyes rule should reach (see below).
+### Fixes from run-2
+
+Regression tests are in `tests/Feature/SecurityAuditRun2Test.php` (SA) and `tests/Feature/WebhookQueueHardeningTest.php` (WQ). All 12 fail on `ac131e7`, the code before these fixes ([evidence/skill-audit-run2-before-fix.txt](evidence/skill-audit-run2-before-fix.txt)).
+
+| Id | Root cause | Change (main files) | Regression test |
+|---|---|---|---|
+| SA-03 | A coupon's `created_by` was recorded but never checked, so a finance or admin user could make a 100% coupon and use it on their own order, charged to the seller. Coupon creation needed no recent password. | `CouponService::assertUsable` applies `SelfDealing` to the creator (preview and order creation). Coupon create and toggle routes need `password.recent`. | `test_sa03_*` (2) |
+| SA-04 | A manual exchange rate was checked only for format, and a converted price could round to 0, so a near-zero rate made goods free. | `CurrencyConverter::convert` never turns a positive price into 0 (the cart shows the usual "cannot be bought in" message). `ExchangeRateController::store` bounds a change to `shop.exchange_rate_max_change_percent` (30) of the rate at the start of a 24-hour window (`exchange_rates.reference_rate/_at`), so small steps cannot walk it down within a day. | `test_sa04_*` (2) |
+| SA-05 | `.dockerignore` did not exclude `docker/rclone/rclone.conf`, the backup remote credentials, so a host build copied them into the image. | `.dockerignore`: `docker/rclone/*`, `!docker/rclone/README` | Docker build of a context with a dummy `rclone.conf`: the old rules copy it into the image, the new ones do not (README only) |
+| WQ-1 | An event left in "received" (the process died before its result or retry was saved) was never retried, counted or retryable by staff, and Shkeeper's redelivery was acknowledged as a duplicate. | `WebhookEvent::needsAttention()` and `isStale()` (older than `shop.webhook_stale_minutes`, 10). `shop:retry-webhooks` picks them up. `WebhookProcessor::claim` takes events under a row lock for the job, the sweep and the staff retry alike. Dashboard, analytics and live counters include them. | `test_wq1_*` (2) |
+| WQ-2 | A payout callback whose handling failed got HTTP 500 and no retry state; the redelivery was dropped as a duplicate. `WebhookProcessor` had no provider check. | Payout callbacks go through `WebhookProcessor` (stored, then processed with backoff retries like payment callbacks). The processor routes by provider and ignores unknown ones. | `test_wq2_*` (2) |
+| WQ-3 | The "order paid" email mark (a cache key) was set before sending, so a failed send was never retried. An order without instant lines never got the email if its delivery job was lost. | `orders.paid_notice_sent_at`, taken atomically and given back if sending fails. `shop:recover-stuck-orders` also queues the delivery job for paid orders without the email (except orders with a failed delivery line, which wait for staff). Existing paid orders are backfilled. | `test_wq3_*` (2) |
+| WQ-4 | The status poll took the 200 newest unresolved payments, so many abandoned invoices could keep an older paid one from ever being polled. | `payments.polled_at`; least recently polled first. | `test_wq4_*` |
+| WQ-8 | Webhook `last_error` and the failed-jobs list showed a database error's SQL with its bound values to finance and managers. | `App\Support\ErrorSummary`: only the class and SQLSTATE are shown; the full error stays in the log. | `test_wq8_*` |
+
+**Not changed:**
+- **Duplicate retry jobs (WQ-7).** They stay: a duplicate is harmless because the claim lets only one run. Making the job unique would take a cache lock that aborts an enclosing PostgreSQL transaction on a duplicate.
+- **WQ-5 and WQ-6 have no rows of their own.** WQ-5 (the paid-email mark lost on a failed send) is fixed under WQ-3, and WQ-6 (the provider check) under WQ-2.
 
 **Still open:**
-- **Possible credentials in the image.** `.dockerignore` does not exclude `docker/rclone/rclone.conf`. Owner check of the built image needed.
 - **Two areas deferred by run-2's coverage critic:**
   - a staff member who is also a seller approving their own products, commission or seller application (each needs an admin promotion first);
-  - value moved to a second account the staff member controls, which creator-id checks cannot stop.
+  - value moved to a second account the staff member controls. Creator-id checks cannot stop this; it needs a dual-approval policy.
+- **Migration.** The rate bound, the paid-email mark and the poll order need migration `2026_10_17_000100_add_audit_follow_up_columns`.

@@ -18,6 +18,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'paid_notice_sent_at' => 'datetime',
             'status' => OrderStatus::class,
             'subtotal_minor' => 'integer',
             'discount_minor' => 'integer',

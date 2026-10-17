@@ -28,3 +28,7 @@ scripts
 .semgrep
 .claude
 skills-lock.json
+
+# Backup remote credentials live here on the host (docs/OPERATIONS.md); never in an image.
+docker/rclone/*
+!docker/rclone/README

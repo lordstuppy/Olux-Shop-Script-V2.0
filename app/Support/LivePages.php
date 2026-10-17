@@ -6,6 +6,7 @@ use App\Models\Dispute;
 use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\WebhookEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -72,8 +73,8 @@ final class LivePages
                        (SELECT max(updated_at) FROM payouts) AS payouts, (SELECT max(updated_at) FROM tickets) AS tickets,
                        (SELECT max(updated_at) FROM products) AS products, (SELECT max(updated_at) FROM seller_profiles) AS sellers,
                        (SELECT count(*) FROM failed_jobs) AS failed_jobs,
-                       (SELECT count(*) FROM webhook_events WHERE status IN ('failed', 'dead')) AS failed_webhooks
-                SQL)) : null,
+                       (SELECT count(*) FROM webhook_events WHERE status IN ('failed', 'dead') OR (status = 'received' AND updated_at < ?)) AS failed_webhooks
+                SQL, [WebhookEvent::staleBefore()])) : null,
             'admin.orders.index' => $user->can('orders.view') ? [$max('orders', 'updated_at'), $max('order_items', 'delivered_at')] : null,
             'admin.orders.show' => $user->can('orders.view') ? self::order($user, (string) ($p['order'] ?? ''), staffView: true) : null,
             'admin.disputes.index' => $user->can('disputes.manage') ? [$max('disputes', 'updated_at')] : null,

@@ -6,6 +6,7 @@ use App\Exceptions\UserFacingException;
 use App\Http\Controllers\Controller;
 use App\Services\AuditLogger;
 use App\Services\SystemHealthService;
+use App\Support\ErrorSummary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -23,7 +24,7 @@ class SystemHealthController extends Controller
                 'uuid' => $job->uuid,
                 'name' => class_basename((string) (json_decode($job->payload, true)['displayName'] ?? __('unknown job'))),
                 'queue' => $job->queue,
-                'error' => Str::limit(strtok((string) $job->exception, "\n") ?: '', 300),
+                'error' => Str::limit(ErrorSummary::fromLine(strtok((string) $job->exception, "\n") ?: ''), 300),
                 'failed_at' => $job->failed_at,
             ]);
 

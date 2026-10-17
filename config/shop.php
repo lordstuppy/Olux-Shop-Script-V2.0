@@ -59,6 +59,13 @@ return [
 
     // Webhook processing retries, in seconds between attempts.
     'webhook_retry_backoff' => [30, 120, 600, 1800, 7200],
+    // An event still "received" after this long was never finished (the
+    // process died); the retry sweep takes it over.
+    'webhook_stale_minutes' => (int) env('SHOP_WEBHOOK_STALE_MINUTES', 10),
+
+    // A manual exchange rate may move at most this far (percent) from the
+    // rate at the start of a 24-hour window; larger moves take several days.
+    'exchange_rate_max_change_percent' => (int) env('SHOP_EXCHANGE_RATE_MAX_CHANGE_PERCENT', 30),
 
     /*
     | Requests per minute (per hour for registration). Raise these only in a

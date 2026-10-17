@@ -315,16 +315,19 @@ class PaymentService
     {
         $count = 0;
         $failures = 0;
-        // Newest first: they are the likeliest to have been paid just now.
+        // Least recently polled first, so every unresolved payment is reached in
+        // turn however many abandoned invoices there are; among never-polled ones
+        // the newest first, as they are the likeliest to have been paid just now.
         $payments = Payment::query()->with('order')
             ->where('provider', PaymentProvider::Shkeeper->value)->where('kind', PaymentKind::Charge->value)
             ->whereIn('status', [PaymentStatus::Pending->value, PaymentStatus::Partial->value, PaymentStatus::Rejected->value])
             ->where('created_at', '<', now()->subMinutes($olderThanMinutes))
             ->where('created_at', '>', now()->subDays(7))
-            ->orderByDesc('created_at')->orderByDesc('id')
+            ->orderByRaw('polled_at ASC NULLS FIRST')->orderByDesc('created_at')->orderByDesc('id')
             ->limit(200)->get();
 
         foreach ($payments as $payment) {
+            Payment::query()->whereKey($payment->id)->update(['polled_at' => now()]);
             try {
                 $status = $this->shkeeper->getInvoiceStatus($payment->order->public_id);
                 $failures = 0;

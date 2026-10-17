@@ -15,6 +15,7 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
+            'polled_at' => 'datetime',
             'kind' => PaymentKind::class,
             'provider' => PaymentProvider::class,
             'status' => PaymentStatus::class,

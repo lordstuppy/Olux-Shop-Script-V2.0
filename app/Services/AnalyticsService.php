@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Enums\PaymentProvider;
 use App\Enums\PaymentStatus;
-use App\Enums\WebhookEventStatus;
+use App\Models\WebhookEvent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +118,7 @@ class AnalyticsService
         $stuck = DB::table('payments')->where('provider', PaymentProvider::Shkeeper->value)->where('kind', 'charge')
             ->whereIn('status', [PaymentStatus::Pending->value, PaymentStatus::Partial->value])->where('created_at', '<', now()->subHour())
             ->whereExists(fn ($q) => $q->from('orders')->whereColumn('orders.id', 'payments.order_id')->where('orders.status', 'pending'))->count();
-        $failedEvents = DB::table('webhook_events')->whereIn('status', [WebhookEventStatus::Failed->value, WebhookEventStatus::Dead->value])->count();
+        $failedEvents = WebhookEvent::needsAttention()->count();
         $pendingSince = DB::table('payments')->where('provider', PaymentProvider::Shkeeper->value)->where('status', PaymentStatus::Pending->value)
             ->where('created_at', '>=', $day)->count();
 

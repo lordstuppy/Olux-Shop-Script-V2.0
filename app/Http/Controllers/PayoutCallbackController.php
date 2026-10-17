@@ -6,8 +6,8 @@ use App\Enums\WebhookEventStatus;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
 use App\Services\Shkeeper\ShkeeperClient;
-use App\Services\ShkeeperPayoutService;
 use App\Services\StaffAlerts;
+use App\Services\WebhookProcessor;
 use App\Support\GatewayLog;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class PayoutCallbackController extends Controller
 {
     private const MAX_BODY_BYTES = 65536;
 
-    public function __invoke(Request $request, ShkeeperClient $client, ShkeeperPayoutService $payouts, AuditLogger $audit): JsonResponse
+    public function __invoke(Request $request, ShkeeperClient $client, WebhookProcessor $processor, AuditLogger $audit): JsonResponse
     {
         $allowed = array_filter(array_map('trim', explode(',', (string) config('shop.webhook_allowed_ips'))));
         if ($allowed !== [] && ! IpUtils::checkIp((string) $request->ip(), $allowed)) {
@@ -73,17 +73,13 @@ class PayoutCallbackController extends Controller
             return response()->json(['message' => 'Duplicate event ignored.'], 202);
         }
 
-        $outcome = $payouts->handleResult($payload['external_id'], (string) ($payload['status'] ?? ''), isset($payload['tx_hash']) ? (string) $payload['tx_hash'] : null);
-        $event->forceFill([
-            'status' => $outcome === 'processed' ? WebhookEventStatus::Processed : WebhookEventStatus::Ignored,
-            'attempts' => 1,
-            'processed_at' => now(),
-        ])->save();
+        // Same retry machine as payment callbacks: a failure leaves a "failed"
+        // event that is retried with backoff (Shkeeper's redelivery is a duplicate).
+        $processor->process($event);
+        GatewayLog::record('payout_webhook', $event->status === WebhookEventStatus::Failed ? 'error' : 'ok', ['ip' => $request->ip(), 'http_status' => 202,
+            'external_id' => $payload['external_id'], 'message' => trim($event->status->value.' '.($payload['status'] ?? '').' '.($event->last_error ?? ''))]);
 
-        GatewayLog::record('payout_webhook', 'ok', ['ip' => $request->ip(), 'http_status' => 202, 'external_id' => $payload['external_id'],
-            'message' => trim($outcome.' '.($payload['status'] ?? ''))]);
-
-        return response()->json(['message' => 'Accepted.', 'status' => $outcome], 202);
+        return response()->json(['message' => 'Accepted.', 'status' => $event->status->value], 202);
     }
 
     /**

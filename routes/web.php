@@ -261,8 +261,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/reconciliation', Admin\ReconciliationController::class)->can('payouts.manage')->name('reconciliation');
 
         Route::get('/coupons', [Admin\CouponController::class, 'index'])->can('coupons.manage')->name('coupons.index');
-        Route::post('/coupons', [Admin\CouponController::class, 'store'])->can('coupons.manage')->name('coupons.store');
-        Route::post('/coupons/{coupon}/toggle', [Admin\CouponController::class, 'toggle'])->can('coupons.manage')->name('coupons.toggle');
+        Route::post('/coupons', [Admin\CouponController::class, 'store'])->can('coupons.manage')->middleware('password.recent')->name('coupons.store');
+        Route::post('/coupons/{coupon}/toggle', [Admin\CouponController::class, 'toggle'])->can('coupons.manage')->middleware('password.recent')->name('coupons.toggle');
         Route::get('/gift-cards', [Admin\GiftCardController::class, 'index'])->can('giftcards.manage')->name('gift-cards.index');
         Route::post('/gift-cards', [Admin\GiftCardController::class, 'store'])->can('giftcards.manage')->middleware(['password.recent', 'submit.once'])->name('gift-cards.store');
         Route::get('/exchange-rates', [Admin\ExchangeRateController::class, 'index'])->can('rates.manage')->name('rates.index');

@@ -8,7 +8,6 @@ use App\Services\DeliveryService;
 use App\Services\Notifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -36,9 +35,19 @@ class DeliverOrder implements ShouldQueue
         $order = Order::query()->with('buyer')->findOrFail($this->orderId);
         $delivery->deliver($order);
         // Once per order: shop:recover-stuck-orders can queue a second job while the
-        // queue lags, and the buyer must not get the email (and entry) twice.
-        if (Cache::add('order-paid-notice:'.$order->id, true, now()->addDays(30)) || $this->resend) {
+        // queue lags, and the buyer must not get the email (and entry) twice. The
+        // mark is taken atomically and given back if sending fails, so a retry sends it.
+        $claimed = Order::query()->whereKey($order->id)->whereNull('paid_notice_sent_at')->update(['paid_notice_sent_at' => now()]) === 1;
+        if (! $claimed && ! $this->resend) {
+            return;
+        }
+        try {
             app(Notifier::class)->send($order->buyer, new OrderPaidMail($order->fresh()));
+        } catch (Throwable $e) {
+            if ($claimed) {
+                Order::query()->whereKey($order->id)->update(['paid_notice_sent_at' => null]);
+            }
+            throw $e;
         }
     }
 

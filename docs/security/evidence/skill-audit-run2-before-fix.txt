@@ -1,0 +1,15 @@
+SecurityAuditRun2Test and WebhookQueueHardeningTest on ac131e7 (before the fixes)
+SecurityAuditRun2Test: tests 4 passed 0 failed 4 errors 0
+- test_sa03_staff_cannot_use_a_coupon_they_created : Failed asserting that null matches expected 'This concerns your own account, order, sale or payout. Another team member has to do it.'.
+- test_sa03_creating_a_coupon_needs_a_recent_password : Failed asserting that two strings are equal.
+- test_sa04_a_positive_price_never_converts_to_zero : Failed asserting that '<!doctype html>\n
+- test_sa04_a_rate_can_move_at_most_30_percent_within_a_day : Session is missing expected key [errors].
+WebhookQueueHardeningTest: tests 8 passed 0 failed 7 errors 1
+- test_wq1_an_event_left_in_received_is_picked_up_by_the_retry_sweep : Failed asserting that two variables reference the same object.
+- test_wq2_a_failed_payout_callback_is_retried_instead_of_dropped : Expected response status code [202] but received 500.
+- test_wq2_payout_events_reach_the_payout_service_and_unknown_providers_nothing : Failed asserting that two variables reference the same object.
+- test_wq3_the_paid_email_is_sent_once_and_not_lost_when_sending_fails : The expected [App\Mail\OrderPaidMail] mailable was queued 0 times instead of 1 time.
+- test_wq3_a_paid_order_whose_jobs_were_lost_still_gets_its_paid_email : The expected [App\Jobs\DeliverOrder] job was not pushed.
+- test_wq4_the_status_poll_reaches_every_unresolved_payment_over_successive_runs : An expected request was not recorded.
+- test_wq8_stored_errors_and_the_failed_jobs_list_leave_out_sql_and_its_values : Failed asserting that 'Illuminate\Database\QueryException: SQLSTATE[08006]: connection failure (Connection: pgsql, SQL: update orders set note = <binding> wher
+- test_wq1_staff_can_retry_a_stale_received_event_and_it_counts_as_needing_attention : Call to undefined method App\Models\WebhookEvent::needsAttention()

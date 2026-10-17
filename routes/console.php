@@ -52,13 +52,19 @@ Artisan::command('shop:reconcile-payments', function (PaymentService $payments) 
 })->purpose('Poll Shkeeper for pending invoices whose webhook may have been lost');
 
 Artisan::command('shop:retry-webhooks', function () {
-    $ids = WebhookEvent::query()->where('status', WebhookEventStatus::Failed->value)
-        ->where('next_attempt_at', '<=', now())->orderBy('id')->limit(100)->pluck('id');
+    // Failed events whose backoff has elapsed, and events stuck in "received"
+    // because the process died before their result or retry was saved. The
+    // job's claim re-checks both under a row lock, so an extra copy next to a
+    // delayed retry job does nothing.
+    $ids = WebhookEvent::query()
+        ->where(fn ($q) => $q->where('status', WebhookEventStatus::Failed->value)->where('next_attempt_at', '<=', now())
+            ->orWhere(fn ($q) => $q->where('status', WebhookEventStatus::Received->value)->where('updated_at', '<', WebhookEvent::staleBefore())))
+        ->orderBy('id')->limit(100)->pluck('id');
     foreach ($ids as $id) {
         ProcessWebhookEvent::dispatch($id);
     }
     $this->info("Queued {$ids->count()} webhook events for retry.");
-})->purpose('Re-queue failed webhook events whose backoff has elapsed');
+})->purpose('Re-queue failed webhook events whose backoff has elapsed, and events whose processing never finished');
 
 Artisan::command('shop:reconcile-payouts', function (PayoutService $payouts) {
     $mismatches = $payouts->reconcile();
@@ -121,6 +127,16 @@ Artisan::command('shop:recover-stuck-orders {--minutes=3}', function () {
         ->whereNotExists(fn ($q) => $q->from('audit_log')->where('audit_log.action', 'delivery.failed')->where('audit_log.target_type', 'OrderItem')
             ->whereRaw('audit_log.target_id = order_items.id::text'))
         ->distinct()->limit(200)->pluck('orders.id');
+    // The "order paid" email goes out from the delivery job; orders without
+    // instant lines (manual delivery) otherwise never get it if the job was lost.
+    $unnotified = DB::table('orders')->whereIn('status', ['paid', 'delivered', 'partially_refunded'])
+        ->where('paid_at', '<', $since)->where('paid_at', '>', now()->subDays(7))->whereNull('paid_notice_sent_at')
+        // As above: an order with a line whose delivery failed waits for staff.
+        ->whereNotExists(fn ($q) => $q->from('order_items')->whereColumn('order_items.order_id', 'orders.id')
+            ->whereExists(fn ($a) => $a->from('audit_log')->where('audit_log.action', 'delivery.failed')->where('audit_log.target_type', 'OrderItem')
+                ->whereRaw('audit_log.target_id = order_items.id::text')))
+        ->limit(200)->pluck('id');
+    $undelivered = $undelivered->merge($unnotified)->unique()->values();
     $uninvoiced = DB::table('orders')->whereIn('status', ['paid', 'delivered', 'partially_refunded'])
         ->where('paid_at', '<', $since)->where('paid_at', '>', now()->subDays(7))
         ->whereNotExists(fn ($q) => $q->from('invoices')->whereColumn('invoices.order_id', 'orders.id'))

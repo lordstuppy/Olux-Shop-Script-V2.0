@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\WebhookEventStatus;
 use App\Http\Controllers\Controller;
 use App\Models\WebhookEvent;
 use App\Services\AuditLogger;
@@ -20,10 +19,12 @@ class WebhookEventController extends Controller
 
     public function retry(Request $request, WebhookEvent $event, WebhookProcessor $processor, AuditLogger $audit): RedirectResponse
     {
-        abort_unless(in_array($event->status, [WebhookEventStatus::Failed, WebhookEventStatus::Dead], true), 422, __('Only failed events can be retried.'));
-        $audit->log('webhook.retried', $event);
-        $processor->process($event);
+        // Claimed under the same lock as the retry job, so the two never run it together.
+        $claimed = $processor->claim($event->id, manual: true);
+        abort_if($claimed === null, 422, __('Only failed events, or events stuck for more than :minutes minutes, can be retried.', ['minutes' => (int) config('shop.webhook_stale_minutes')]));
+        $audit->log('webhook.retried', $claimed);
+        $processor->process($claimed);
 
-        return back()->with('success', __('Webhook event #:id reprocessed: :status.', ['id' => $event->id, 'status' => mb_strtolower($event->status->label())]));
+        return back()->with('success', __('Webhook event #:id reprocessed: :status.', ['id' => $claimed->id, 'status' => mb_strtolower($claimed->status->label())]));
     }
 }
