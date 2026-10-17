@@ -90,6 +90,18 @@ The Cloudflare `security-audit` skill (quick profile, source and sandboxed local
 | SA-01 | The four-eyes rule (`SelfDealing`) covered only the balance-adjust endpoint. A finance or admin user could issue a gift card and redeem it on their own account (500.00 USD credited in the reproduction). | `GiftCardService::redeem` refuses when the redeemer issued the card | `test_staff_cannot_redeem_a_gift_card_they_issued` | Before: redeemed, balance 50000; after: refused, card unused, another user can redeem it |
 | SA-02 | 2FA could be turned on before the email address was confirmed. A password reset (the owner's first proof of the mailbox) kept a second factor set up by whoever registered the address, so the owner stayed locked out. | Route `account.two-factor.enable` needs `verified`; `TwoFactorService::enable` refuses unconfirmed accounts; the 2FA page asks to confirm the email first; `UserService::resetPassword` on a never-confirmed account marks it confirmed and clears 2FA | `test_two_factor_needs_a_confirmed_email_address`, `test_reset_of_a_never_confirmed_account_drops_a_second_factor_set_by_the_registrant`, `test_reset_of_a_confirmed_account_keeps_its_second_factor` | Before: enabled while unconfirmed, 2FA kept after reset; after: refused, reset clears it, confirmed accounts unchanged |
 
-**Not fixed here:**
-- **Possible credentials in the image.** `.dockerignore` does not exclude `docker/rclone/rclone.conf`, so an image built on a host that holds it would contain the backup credentials. This needs an owner check of the built image; no image build was allowed in the audit sandbox.
-- **Areas not yet reviewed.** The run's final coverage critic named three areas it had not reviewed: the webhook and queue retry paths, staff self-use of coupons and exchange rates, and role transitions. They are being audited in a follow-up scoped run.
+**Follow-up scoped run (run-2, on `ff8bbc5`).** This run audited the three areas the first run had not reviewed.
+
+- **Webhook and queue retry paths:** no finding. Replays do not credit, deliver or issue an invoice twice. Some failures (events left in "received", payout callbacks without retry state) are recovered only by the status polling; these are noted as hardening.
+- **Role transitions:** no finding. Every case needs a super admin to demote or promote first.
+- **Staff self-use:** two confirmed findings, both low and both insider-only (finance or admin):
+  - SA-03: a staff member can create a 100% coupon and redeem it on their own order.
+  - SA-04: a staff member can set a near-zero exchange rate and check out for free.
+
+  In both cases a third-party seller's earning is booked as 0. Not fixed yet; this needs an owner decision on how far the four-eyes rule should reach (see below).
+
+**Still open:**
+- **Possible credentials in the image.** `.dockerignore` does not exclude `docker/rclone/rclone.conf`. Owner check of the built image needed.
+- **Two areas deferred by run-2's coverage critic:**
+  - a staff member who is also a seller approving their own products, commission or seller application (each needs an admin promotion first);
+  - value moved to a second account the staff member controls, which creator-id checks cannot stop.
