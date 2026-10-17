@@ -26,3 +26,5 @@ docs
 scripts
 .github
 .semgrep
+.claude
+skills-lock.json
