@@ -216,10 +216,20 @@ class UserService
         $status = Password::reset(
             ['email' => Str::lower($email), 'token' => $token, 'password' => $password],
             function (User $user, string $password) {
+                // The reset link proves the mailbox. On an account whose address
+                // was never confirmed, that is the first proof of ownership, so
+                // a second factor set up by whoever registered it is dropped.
+                $firstProof = $user->email_verified_at === null;
                 $user->forceFill([
                     'password_hash' => $password,
                     'remember_token' => Str::random(60),
-                ])->save();
+                ] + ($firstProof ? [
+                    'email_verified_at' => now(),
+                    'two_factor_secret' => null,
+                    'two_factor_recovery_codes' => null,
+                    'two_factor_confirmed_at' => null,
+                    'two_factor_last_step' => null,
+                ] : []))->save();
                 // Sign out other sessions that used the old password.
                 DB::table('sessions')->where('user_id', $user->id)->delete();
                 self::clearLoginLock($user->email);

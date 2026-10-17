@@ -1,0 +1,6 @@
+SecurityAuditFollowUpTest on d788612 (before the fixes)
+tests 4 passed 1 failed 3 errors 0
+- test_staff_cannot_redeem_a_gift_card_they_issued : Failed asserting that null matches expected 'This concerns your own account, order, sale or payout. Another team member has to do it.'.
+- test_two_factor_needs_a_confirmed_email_address : Failed asserting that '<!doctype html>\n
+- test_reset_of_a_never_confirmed_account_drops_a_second_factor_set_by_the_registrant : Failed asserting that true is false.
+- test_reset_of_a_confirmed_account_keeps_its_second_factor : passes before and after (guards against weakening the reset)

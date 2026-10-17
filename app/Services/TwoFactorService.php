@@ -55,6 +55,11 @@ class TwoFactorService
         if ($user->fresh()?->hasTwoFactor()) {
             throw new UserFacingException(__('Two-factor authentication is already on.'));
         }
+        // Whoever registered an address they do not own must not bind a second
+        // factor that would lock the real owner out after a password reset.
+        if (! $user->hasVerifiedEmail()) {
+            throw new UserFacingException(__('Confirm your email address first, then turn on two-factor authentication.'));
+        }
         // Passing 0 (not null) makes the library return the matched time step
         // instead of true, so the setup code cannot be replayed at sign-in.
         $step = $this->google2fa->verifyKeyNewer($secret, $this->normalize($code), 0, 1);

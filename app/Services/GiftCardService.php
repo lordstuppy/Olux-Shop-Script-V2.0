@@ -7,6 +7,7 @@ use App\Models\GiftCard;
 use App\Models\User;
 use App\Support\KeyedHash;
 use App\Support\Money;
+use App\Support\SelfDealing;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -58,6 +59,11 @@ class GiftCardService
             }
             if ($card->expires_at !== null && $card->expires_at->isPast()) {
                 throw new UserFacingException(__('This gift card expired on :date.', ['date' => $card->expires_at->toDateString()]));
+            }
+            // Issuing a card and redeeming it is a self-credit like a balance
+            // adjustment, so the same four-eyes rule applies.
+            if ($card->created_by !== null) {
+                SelfDealing::assertNotSelf($user, (int) $card->created_by);
             }
 
             $this->balances->credit($user, $card->amount_minor, $card->currency, 'gift_card', $card, 'Gift card ending '.$card->code_last4);

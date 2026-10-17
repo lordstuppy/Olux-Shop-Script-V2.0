@@ -51,7 +51,7 @@ class TwoFactorController extends Controller
         $user = $request->user();
         $secret = null;
         $qr = null;
-        if (! $user->hasTwoFactor()) {
+        if (! $user->hasTwoFactor() && $user->hasVerifiedEmail()) {
             $secret = $request->session()->get(self::SETUP_KEY) ?? $twoFactor->generateSecret();
             $request->session()->put(self::SETUP_KEY, $secret);
             $qr = $twoFactor->qrDataUri($user, $secret);

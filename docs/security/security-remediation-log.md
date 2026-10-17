@@ -80,3 +80,16 @@ For each fix: root cause, change, regression test, verification and commit.
   before payout scenarios.
 - Gate tooling: `scripts/security-gate.sh`, `.semgrep/shop-rules.yml`,
   `.gitleaks.toml`, CI job `security`, `.github/CODEOWNERS`.
+
+## Security-audit skill run (2026-10-17)
+
+The Cloudflare `security-audit` skill (quick profile, source and sandboxed local checks only) was run on `d788612`. It confirmed two low-severity findings. Each was reproduced independently through the real HTTP routes and is fixed here. Regression tests are in `tests/Feature/SecurityAuditFollowUpTest.php`. Before the fixes, 3 of its 4 tests fail ([evidence/skill-audit-regression-before-fix.txt](evidence/skill-audit-regression-before-fix.txt)). The fourth passes before and after: it checks that the fix does not drop the second factor of a confirmed account on reset.
+
+| Id | Root cause | Change (main files) | Regression test | Verification |
+|---|---|---|---|---|
+| SA-01 | The four-eyes rule (`SelfDealing`) covered only the balance-adjust endpoint. A finance or admin user could issue a gift card and redeem it on their own account (500.00 USD credited in the reproduction). | `GiftCardService::redeem` refuses when the redeemer issued the card | `test_staff_cannot_redeem_a_gift_card_they_issued` | Before: redeemed, balance 50000; after: refused, card unused, another user can redeem it |
+| SA-02 | 2FA could be turned on before the email address was confirmed. A password reset (the owner's first proof of the mailbox) kept a second factor set up by whoever registered the address, so the owner stayed locked out. | Route `account.two-factor.enable` needs `verified`; `TwoFactorService::enable` refuses unconfirmed accounts; the 2FA page asks to confirm the email first; `UserService::resetPassword` on a never-confirmed account marks it confirmed and clears 2FA | `test_two_factor_needs_a_confirmed_email_address`, `test_reset_of_a_never_confirmed_account_drops_a_second_factor_set_by_the_registrant`, `test_reset_of_a_confirmed_account_keeps_its_second_factor` | Before: enabled while unconfirmed, 2FA kept after reset; after: refused, reset clears it, confirmed accounts unchanged |
+
+**Not fixed here:**
+- **Possible credentials in the image.** `.dockerignore` does not exclude `docker/rclone/rclone.conf`, so an image built on a host that holds it would contain the backup credentials. This needs an owner check of the built image; no image build was allowed in the audit sandbox.
+- **Areas not yet reviewed.** The run's final coverage critic named three areas it had not reviewed: the webhook and queue retry paths, staff self-use of coupons and exchange rates, and role transitions. They are being audited in a follow-up scoped run.

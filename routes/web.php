@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->middleware('throttle:password-check');
 
     Route::get('/account/two-factor', [TwoFactorController::class, 'show'])->name('account.two-factor');
-    Route::post('/account/two-factor', [TwoFactorController::class, 'enable'])->middleware(['throttle:two-factor', 'throttle:password-check'])->name('account.two-factor.enable');
+    Route::post('/account/two-factor', [TwoFactorController::class, 'enable'])->middleware(['verified', 'throttle:two-factor', 'throttle:password-check'])->name('account.two-factor.enable');
     Route::delete('/account/two-factor', [TwoFactorController::class, 'disable'])->middleware(['password.recent', 'throttle:two-factor'])->name('account.two-factor.disable');
     Route::post('/account/two-factor/recovery-codes', [TwoFactorController::class, 'regenerate'])->middleware(['password.recent', 'throttle:two-factor'])->name('account.two-factor.recovery');
     Route::delete('/account/sessions/{handle}', [SessionController::class, 'destroy'])->name('account.sessions.destroy');

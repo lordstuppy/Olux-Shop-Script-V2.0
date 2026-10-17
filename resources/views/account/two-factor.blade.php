@@ -39,6 +39,9 @@
         @else
             <p class="hint">{{ __('Staff accounts must keep two-factor authentication on.') }}</p>
         @endunless
+    @elseif (! $user->hasVerifiedEmail())
+        <p>{{ __('Confirm your email address first, then turn on two-factor authentication.') }}</p>
+        <p><a href="{{ route('verification.notice') }}">{{ __('Confirm your email address') }}</a></p>
     @else
         <p>{{ __('Protect your account with a second step at sign-in: a 6-digit code from an authenticator app (for example Aegis, 2FAS, Google Authenticator or a password manager).') }}</p>
         <ol>
