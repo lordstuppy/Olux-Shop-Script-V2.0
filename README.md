@@ -131,6 +131,18 @@ The conversion rules are in [docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
 Requirements: PHP 8.3 with `pdo_pgsql`, `intl`, `zip`, `gd`, `sodium`;
 Composer; PostgreSQL 15+.
 
+The database user and database must exist before the first migration.
+Setting `DB_PASSWORD` in `.env` does not create them. On Debian or Ubuntu:
+
+```sh
+sudo -u postgres psql -c "CREATE ROLE shop LOGIN PASSWORD 'choose-a-password';"
+sudo -u postgres createdb -O shop shop
+sudo -u postgres createdb -O shop shop_test   # only for php artisan test
+```
+
+Put the same password into `DB_PASSWORD`. If the role already exists, set
+its password with `ALTER ROLE shop PASSWORD '...';`.
+
 ```sh
 composer install
 cp .env.example .env            # set APP_ENV=local, DB_*, APP_URL; for http://localhost set SESSION_SECURE_COOKIE=false
