@@ -262,7 +262,7 @@ def through_nginx(rec, ctx):
 
 
 @scenario(10, 'Upgrade: the go-live migrations on a populated database',
-          'All earlier scenarios left their data; the four go-live and three performance migrations are rolled back and applied again, as an upgrade from the previous release would',
+          'All earlier scenarios left their data; the four go-live, three performance and one audit follow-up migrations are rolled back and applied again, as an upgrade from the previous release would',
           'Both directions run cleanly; no row is lost; existing users get both email preferences switched on; the new indexes '
           'exist again; the shop keeps serving buyers and staff', 'major')
 def upgrade(rec, ctx):
@@ -280,21 +280,28 @@ def upgrade(rec, ctx):
     before = counts()
     rec.ev(f'rows before: {before}')
     # The four go-live migrations (foreign-key indexes, email preferences, notification
-    # centre, payout attempts) and the three performance ones (sales ranking, indexes,
-    # catalogue order index; docs/performance), newest first.
-    env.artisan('migrate:rollback', '--step=7', '--force')
+    # centre, payout attempts), the three performance ones (sales ranking, indexes,
+    # catalogue order index; docs/performance) and the audit follow-up (exchange-rate
+    # reference, paid-notice marker, poll order), newest first.
+    env.artisan('migrate:rollback', '--step=8', '--force')
     attempt = "select count(*) from information_schema.columns where table_name='payouts' and column_name='attempt'"
     ranking = "select count(*) from information_schema.columns where table_name='products' and column_name='units_sold'"
     perf_index = "select count(*) from pg_indexes where indexname in ('orders_paid_at_index', 'products_status_created_at_id_index')"
-    rec.check(not has(column) and not has(index) and not has(centre) and not has(attempt) and not has(ranking) and not has(perf_index),
+    follow_up = ("select count(*) from information_schema.columns where (table_name, column_name) in "
+                 "(('exchange_rates', 'reference_rate'), ('orders', 'paid_notice_sent_at'), ('payments', 'polled_at'))")
+    rec.check(not has(column) and not has(index) and not has(centre) and not has(attempt) and not has(ranking) and not has(perf_index)
+              and not has(follow_up),
               'rollback left a column, index or table')
     env.artisan('migrate', '--force')
-    rec.check(has(column) and has(index) and has(centre) and has(attempt) and has(ranking) and env.scalar(perf_index) == '2',
+    rec.check(has(column) and has(index) and has(centre) and has(attempt) and has(ranking) and env.scalar(perf_index) == '2'
+              and env.scalar(follow_up) == '3',
               'migration did not add the column, index or table')
     rec.check(counts() == before, f'rows changed: {before} -> {counts()}')
     rec.check(env.scalar('select count(*) from users where not notify_sales or not notify_reviews or not notification_sound') == '0',
               'existing users not opted in')
-    rec.check(env.scalar("select count(*) from migrations where migration like '2026_10_13_%' or migration like '2026_10_14_%' or migration like '2026_10_15_%' or migration like '2026_10_16_%'") == '7',
+    rec.check(env.scalar("select count(*) from orders where paid_at is not null and paid_notice_sent_at is null") == '0',
+              'paid orders not marked as notified')
+    rec.check(env.scalar("select count(*) from migrations where migration like '2026_10_13_%' or migration like '2026_10_14_%' or migration like '2026_10_15_%' or migration like '2026_10_16_%' or migration like '2026_10_17_%'") == '8',
               'migrations table')
     email, b = buyer(16)
     oid = env.scalar(f"select o.public_id from orders o join users u on u.id=o.buyer_id where u.email='{email}' order by o.id desc limit 1")

@@ -259,7 +259,7 @@ The features added by the go-live check (docs/READINESS.md), on the production s
 | Seller preferences | No sale or review mail while turned off; mails again once turned on; buyers mailed either way |
 | Dispute confirmation | Buyer, seller and staff each get their own text |
 | nginx and TLS | Colour-scheme cookie is Secure and HttpOnly and applies to later pages and the 404 page; `security.txt` served; `.env`, `.git` and traversal blocked; CSS gzipped and immutable under its hash; HTML not compressed, private |
-| Upgrade | The two go-live migrations down and up on the populated database: no row lost, existing users opted in, indexes back, pages served |
+| Upgrade | The go-live, performance and audit follow-up migrations down and up on the populated database: no row lost, existing users opted in, paid orders marked as notified, indexes back, pages served |
 
 Also from this round on, any `N+1 query` warning in the app log fails the scenario that caused it.
 
