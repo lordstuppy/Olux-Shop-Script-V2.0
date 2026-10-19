@@ -15,7 +15,7 @@ features).
 | Web | nginx 1.27 with TLS (self-signed, port 8443) in front of the app; a plain HTTP listener (8080) for Shkeeper callbacks |
 | App | `APP_ENV=production`, `APP_DEBUG=false`, config, route and view caches, encrypted `Secure` sessions, Argon2id, `TRUSTED_PROXIES=127.0.0.1`. PHP's built-in server (8 workers) stands in for PHP-FPM |
 | Workers | `queue:work` and `schedule:work`, as in `docker-compose.yml` |
-| Database | PostgreSQL 15 (container) |
+| Database | PostgreSQL 18 (container) |
 | Payments | `docker/shkeeper-mock` with payout API and signed callbacks |
 | Virus scan | `SHOP_VIRUS_SCAN=required` against a minimal clamd stand-in that flags the EICAR test file (real ClamAV needs signature downloads) |
 | Mail | SMTP to a local sink that stores every message; links are followed from the stored mails |

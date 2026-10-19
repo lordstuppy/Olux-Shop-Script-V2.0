@@ -96,7 +96,7 @@ host_up() {
     if [ -n "$key" ]; then sed -i "s#^APP_KEY=.*#$key#" "$W/app/.env"; else (cd "$W/app" && php artisan key:generate --force -q); fi
     tls_certs
     docker inspect shopsim-db >/dev/null 2>&1 || docker run -d --name shopsim-db --network host \
-        -e POSTGRES_USER=shop -e POSTGRES_PASSWORD=shop -e POSTGRES_DB=shop -e PGPORT=5433 postgres:15-alpine \
+        -e POSTGRES_USER=shop -e POSTGRES_PASSWORD=shop -e POSTGRES_DB=shop -e PGPORT=5433 postgres:18-alpine \
         postgres -c log_min_duration_statement=200 -c log_statement=mod -c "log_line_prefix=%m [%p] %u@%d " >/dev/null
     docker start shopsim-db >/dev/null
     until docker exec shopsim-db pg_isready -p 5433 -q; do sleep 1; done
@@ -117,7 +117,7 @@ host_start_mock() {
     fi
     docker rm -f shopsim-mock >/dev/null 2>&1 || true
     docker run -d --name shopsim-mock --network host -e MOCK_API_KEY=sim-api-key-0123456789 -e MOCK_STATE_FILE=/tmp/state.json \
-        -e PHP_CLI_SERVER_WORKERS=8 -v "$ROOT/docker/shkeeper-mock:/mock:ro" php:8.3-cli-alpine php -S 127.0.0.1:8081 /mock/server.php >/dev/null
+        -e PHP_CLI_SERVER_WORKERS=8 -v "$ROOT/docker/shkeeper-mock:/mock:ro" php:8.5-cli-alpine php -S 127.0.0.1:8081 /mock/server.php >/dev/null
 }
 
 host_reset() {

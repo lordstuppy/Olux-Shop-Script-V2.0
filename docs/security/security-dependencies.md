@@ -37,10 +37,10 @@ compatible release.
 
 | Image | Tag (before -> after) | Status | Decision |
 |---|---|---|---|
-| App runtime | `php:8.3-fpm-alpine` + `apk upgrade` | Alpine 3.24.2 | `apk upgrade` added so builds pick up OS fixes released after the base image |
+| App runtime | `php:8.5-fpm-alpine` + `apk upgrade` | Alpine 3.24.2 | `apk upgrade` added so builds pick up OS fixes released after the base image |
 | Composer build stage | `composer:2` | Build only, not shipped | Keep |
 | Web | `nginxinc/nginx-unprivileged:1.27-alpine` -> `digital-goods-shop-web` from `1.30-alpine` + `apk upgrade` | 1.27 mainline is superseded (no fixes); 1.30 is the current stable branch | Replaced (SEC-32) |
-| Database | `postgres:15-alpine` | PostgreSQL 15 supported until 2027-11. Image contains `gosu` built with Go 1.24.6 (25 Go stdlib findings). `gosu` only drops privileges at container start, takes no network input | Accepted with justification (R-04); move to `postgres:17-alpine` with the next maintenance window |
+| Database | `postgres:18-alpine` | PostgreSQL 18 supported until 2030-11. Image contains `gosu` 1.19 built with Go 1.24.6 (Go stdlib findings). `gosu` only drops privileges at container start, takes no network input | Accepted with justification (R-04); take the next upstream image that rebuilds `gosu` |
 | ClamAV | `clamav/clamav:stable` | Vendor image, signature updates at run time | Keep; scan in deployment pipeline (R-04) |
 | Test-only images (`nginx` TLS front end, mailpit, shkeeper-mock, fakeclamd) | `nginx:1.27-alpine` -> `nginx:1.30-alpine` | Never deployed | Updated where cheap |
 
@@ -63,5 +63,5 @@ compatible release.
 
 | Id | Component | Finding | Why accepted | Owner / expiry |
 |---|---|---|---|---|
-| R-04 | `postgres:15-alpine` `gosu` | Go stdlib CVEs (1 critical, 24 high) in a binary that only runs at start-up as root to drop privileges | Not reachable from the network or the application; no fixed upstream image of PG 15 at audit time | Needs approval by the security owner; expires 2027-01-31 or on the next upstream image |
+| R-04 | `postgres:18-alpine` `gosu` | Go stdlib CVEs in a binary that only runs at start-up as root to drop privileges | Not reachable from the network or the application; no upstream image with a rebuilt `gosu` yet | Needs approval by the security owner; expires 2027-01-31 or on the next upstream image |
 | R-05 | Files under `vendor/*/docs`, `vendor/*/tests` | Vulnerable Ruby/Python lockfiles and sample Dockerfiles of third-party documentation | Not installed, not executed | Needs approval by the security owner; review at each dependency update |

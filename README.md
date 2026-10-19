@@ -22,9 +22,9 @@ JavaScript needed).
 
 | Concern | Choice |
 |---|---|
-| Language / framework | PHP 8.3, Laravel 13 (Laravel 11 is out of security support) |
+| Language / framework | PHP 8.5 (8.4.1 or newer), Laravel 13 |
 | Templates | Blade, server-rendered, auto-escaped `{{ }}` |
-| Database | PostgreSQL 15+ with migrations; money in integer minor units |
+| Database | PostgreSQL 18 with migrations; money in integer minor units |
 | Payments | Self-hosted Shkeeper: invoices plus HMAC-signed callbacks |
 | Queue / cache / sessions | Database drivers (no Redis required) |
 | Logging | Monolog JSON lines in `storage/logs/shop-YYYY-MM-DD.log` |
@@ -128,8 +128,8 @@ The conversion rules are in [docs/CURRENCY_POLICY.md](docs/CURRENCY_POLICY.md).
 
 ## Quick start (local)
 
-Requirements: PHP 8.3 with `pdo_pgsql`, `intl`, `zip`, `gd`, `sodium`;
-Composer; PostgreSQL 15+.
+Requirements: PHP 8.4.1 or newer (8.5 recommended) with `pdo_pgsql`, `intl`, `zip`,
+`gd`, `sodium`; Composer; PostgreSQL 18.
 
 The database user and database must exist before the first migration.
 Setting `DB_PASSWORD` in `.env` does not create them. On Debian or Ubuntu:
@@ -177,7 +177,7 @@ docker compose exec app php artisan migrate --force
 The Compose services are:
 - `app`: PHP-FPM.
 - `web`: nginx on port 8080.
-- `db`: PostgreSQL 15.
+- `db`: PostgreSQL 18.
 - `queue` and `scheduler`.
 - `clamav`: virus scanning of seller uploads.
 - `shkeeper-mock`: started only with the `mock` or `test` profile.

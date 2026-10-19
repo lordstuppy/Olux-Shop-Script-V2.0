@@ -34,7 +34,7 @@ Every run starts from a fresh database (`migrate:fresh` plus
 | App | production image, PHP-FPM, nginx | git HEAD copied to `tests/simulation/work/app`, PHP built-in server with the production `php.ini` limits |
 | TLS front end | nginx 1.27, `docker/test/tls.conf` | nginx 1.27, `docker/test/host-tls.conf` |
 | Worker, scheduler | containers with `restart: unless-stopped` | host processes in a restart loop (same behaviour) |
-| PostgreSQL 15, Mailpit, Shkeeper mock, ClamAV | containers (fake clamd by default; profile `real-clamav` for the real one) | same containers; fake clamd on the host |
+| PostgreSQL 18, Mailpit, Shkeeper mock, ClamAV | containers (fake clamd by default; profile `real-clamav` for the real one) | same containers; fake clamd on the host |
 | Client addresses | Docker NAT shows one address | each simulated person connects from its own loopback address |
 
 Both backends expose the same endpoints:
@@ -362,8 +362,8 @@ These were recorded as not applicable when the scope was agreed:
 ## Known limits of this environment
 
 - The certification backend (`compose`, the production image with PHP-FPM) needs the Alpine and Debian package mirrors to build the image. They were blocked for most of this work, so the earlier runs used the `host` backend; the production image was certified once network access was granted (see Results):
-  - the same PostgreSQL 15, nginx TLS front end, Mailpit and mock containers;
-  - the app on PHP 8.3 with PHP's built-in server instead of PHP-FPM.
+  - the same PostgreSQL 18, nginx TLS front end, Mailpit and mock containers;
+  - the app on the host PHP (8.4.1 or newer) with PHP's built-in server instead of PHP-FPM.
   
   Re-run `SIM_BACKEND=compose sh tests/simulation/run.sh up` and `test --runs 5` (and `load`) once the mirrors are reachable. Load numbers on FPM will differ.
 - On the compose backend, Docker's port publishing hides client addresses. Per-address rate limits then apply to all simulated people together, and the "five source addresses" lockout case cannot spread its attempts.

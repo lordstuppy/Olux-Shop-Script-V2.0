@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Runs the browser checks against a freshly seeded local shop.
-# Requires: PostgreSQL reachable per .env, PHP, Node 18+.
+# Requires: PostgreSQL reachable per .env, PHP, Node 20+.
 set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"

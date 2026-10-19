@@ -1,4 +1,4 @@
-# Local and test stack: app (PHP-FPM), web (nginx), db (PostgreSQL 15),
+# Local and test stack: app (PHP-FPM), web (nginx), db (PostgreSQL 18),
 # queue worker, scheduler, and shkeeper-mock (Shkeeper API emulator).
 # Production: replace shkeeper-mock with a real Shkeeper instance and set
 # SHKEEPER_BASE_URL / SHKEEPER_API_KEY / SHKEEPER_WEBHOOK_SECRET in .env.
@@ -86,7 +86,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     # random_page_cost 1.1 instead of 4 (spinning disks): on SSD storage the
     # default makes the planner skip the catalogue search's trigram indexes
     # (130 ms sequential scan instead of 2 ms at 20,000 products; see
@@ -97,7 +97,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-shop}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-shop}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
     security_opt: ["no-new-privileges:true"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-shop} -d ${DB_DATABASE:-shop}"]
@@ -123,7 +123,7 @@ services:
   # Scheduled, encrypted, off-site backups (enable with --profile backup).
   # Needs BACKUP_AGE_RECIPIENT (age public key) and optionally an rclone remote.
   backup:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     profiles: ["backup"]
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -151,7 +151,7 @@ services:
     restart: unless-stopped
 
   shkeeper-mock:
-    image: php:8.3-cli-alpine
+    image: php:8.5-cli-alpine
     working_dir: /mock
     command: ["php", "-S", "0.0.0.0:8081", "server.php"]
     environment:

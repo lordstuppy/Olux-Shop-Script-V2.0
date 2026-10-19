@@ -65,12 +65,12 @@ up() {
         (cd "$W/app" && php artisan key:generate --force -q)
     fi
     docker inspect shoplive-db >/dev/null 2>&1 || docker run -d --name shoplive-db --network host \
-        -e POSTGRES_USER=shop -e POSTGRES_PASSWORD=live-db-pass -e POSTGRES_DB=shop -e PGPORT=5433 postgres:15-alpine >/dev/null
+        -e POSTGRES_USER=shop -e POSTGRES_PASSWORD=live-db-pass -e POSTGRES_DB=shop -e PGPORT=5433 postgres:18-alpine >/dev/null
     docker start shoplive-db >/dev/null
     until docker exec shoplive-db pg_isready -p 5433 -q; do sleep 1; done
     docker rm -f shoplive-nginx shoplive-mock >/dev/null 2>&1 || true
     docker run -d --name shoplive-mock --network host -e MOCK_API_KEY=live-api-key-0123456789 -e MOCK_STATE_FILE=/tmp/state.json \
-        -v "$ROOT/docker/shkeeper-mock:/mock:ro" php:8.3-cli-alpine php -S 127.0.0.1:8081 /mock/server.php >/dev/null
+        -v "$ROOT/docker/shkeeper-mock:/mock:ro" php:8.5-cli-alpine php -S 127.0.0.1:8081 /mock/server.php >/dev/null
     docker run -d --name shoplive-nginx --network host -v "$HERE/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
         -v "$W/tls:/etc/nginx/tls:ro" nginx:1.30-alpine >/dev/null
     (cd "$W/app" && php artisan migrate --force -q)

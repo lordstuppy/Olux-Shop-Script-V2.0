@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: shop
           POSTGRES_PASSWORD: shop
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
@@ -56,12 +56,12 @@ jobs:
           fetch-depth: 0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium
           coverage: none
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "24"
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: python3 -m pip install --user semgrep==1.180.0
       - name: Build the runtime images
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-24.04
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: shop
           POSTGRES_PASSWORD: shop
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
@@ -124,7 +124,7 @@ jobs:
     needs: php
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: shop
           POSTGRES_PASSWORD: shop
@@ -136,12 +136,12 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium, curl
           coverage: none
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "24"
       - run: composer install --no-interaction --prefer-dist --no-progress
       - name: Configure
         run: |
@@ -161,7 +161,7 @@ jobs:
           retention-days: 14
 
   # End-to-end run on a production-like stack (nginx TLS, queue worker,
-  # scheduler, PostgreSQL 15, Shkeeper mock). Takes about 8 minutes because it
+  # scheduler, PostgreSQL 18, Shkeeper mock). Takes about 8 minutes because it
   # waits for the 5-minute payment reconciliation, so it runs weekly and on demand.
   live:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
@@ -171,7 +171,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium, curl
           coverage: none
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
@@ -198,7 +198,7 @@ jobs:
     timeout-minutes: 300
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: shop
           POSTGRES_PASSWORD: shop
@@ -215,12 +215,12 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.5"
           extensions: pdo_pgsql, intl, zip, gd, sodium, curl
           coverage: none
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "24"
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: composer install --no-interaction --prefer-dist --no-progress
       - name: Configure

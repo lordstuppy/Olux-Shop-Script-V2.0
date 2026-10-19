@@ -13,15 +13,16 @@ COPY . .
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
 # --- Runtime (PHP-FPM) ------------------------------------------------------
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.5-fpm-alpine AS app
 
 # GD needs WebP: product images are re-encoded to WebP (ProductImageService).
+# OPcache is built into PHP; it is configured in docker/php/php.ini.
 # apk upgrade: take Alpine security fixes released after the base image was built.
 RUN apk upgrade --no-cache \
     && apk add --no-cache icu-libs libzip libpng freetype libjpeg-turbo libwebp postgresql-libs fcgi \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev libwebp-dev postgresql-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd opcache bcmath \
+    && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd bcmath \
     && php -r 'foreach (["imagewebp", "imagecreatefromjpeg", "imagettftext"] as $f) { if (! function_exists($f)) { fwrite(STDERR, "gd lacks $f\n"); exit(1); } }' \
     && apk del .build-deps
 

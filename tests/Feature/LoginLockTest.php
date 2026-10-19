@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 class LoginLockTest extends TestCase
 {
-    private function attempt(string $email, string $password, string $ip): TestResponse
+    private function tryLogin(string $email, string $password, string $ip): TestResponse
     {
         return $this->withServerVariables(['REMOTE_ADDR' => $ip])->postForm('/login', ['email' => $email, 'password' => $password]);
     }
@@ -24,24 +24,24 @@ class LoginLockTest extends TestCase
         Mail::fake();
         $user = User::factory()->create(['email' => 'target@example.test']);
         for ($i = 0; $i < 20; $i++) {
-            $this->attempt('target@example.test', 'wrong-password-'.$i, '203.0.113.'.intdiv($i, 4))
+            $this->tryLogin('target@example.test', 'wrong-password-'.$i, '203.0.113.'.intdiv($i, 4))
                 ->assertSessionHas('error', 'Login failed: the email or password is incorrect.');
         }
 
-        $this->attempt('target@example.test', 'correct-horse-battery-1', '198.51.100.9')
+        $this->tryLogin('target@example.test', 'correct-horse-battery-1', '198.51.100.9')
             ->assertSessionHas('error', 'Sign-in to this account is paused for 15 minutes after too many failed attempts. Reset your password to sign in now; devices you signed in with before still work.');
         $this->assertGuest();
         Mail::assertQueued(LoginLockedMail::class, 1);
         $this->assertSame(1, AuditLog::query()->where('action', 'user.login_locked')->count());
 
         // More failures while locked do not send more mail.
-        $this->attempt('target@example.test', 'wrong-again', '198.51.100.10');
+        $this->tryLogin('target@example.test', 'wrong-again', '198.51.100.10');
         Mail::assertQueued(LoginLockedMail::class, 1);
 
         $token = Password::createToken($user);
         $this->postForm('/reset-password', ['token' => $token, 'email' => 'target@example.test', 'password' => 'A-new-password-2026', 'password_confirmation' => 'A-new-password-2026'])
             ->assertRedirect();
-        $this->attempt('target@example.test', 'A-new-password-2026', '198.51.100.11')->assertRedirect(route('account.orders'));
+        $this->tryLogin('target@example.test', 'A-new-password-2026', '198.51.100.11')->assertRedirect(route('account.orders'));
         $this->assertAuthenticatedAs($user);
     }
 
@@ -49,9 +49,9 @@ class LoginLockTest extends TestCase
     {
         Mail::fake();
         for ($i = 0; $i < 20; $i++) {
-            $this->attempt('ghost@example.test', 'nope-'.$i, '203.0.113.'.intdiv($i, 4));
+            $this->tryLogin('ghost@example.test', 'nope-'.$i, '203.0.113.'.intdiv($i, 4));
         }
-        $this->attempt('ghost@example.test', 'nope', '198.51.100.9')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused for 15 minutes'));
+        $this->tryLogin('ghost@example.test', 'nope', '198.51.100.9')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused for 15 minutes'));
         Mail::assertNothingQueued();
     }
 
@@ -60,9 +60,9 @@ class LoginLockTest extends TestCase
         User::factory()->create(['email' => 'typo@example.test']);
         for ($round = 0; $round < 2; $round++) {
             for ($i = 0; $i < 15; $i++) {
-                $this->attempt('typo@example.test', 'typo-'.$i, '203.0.113.'.($round * 10 + intdiv($i, 4)));
+                $this->tryLogin('typo@example.test', 'typo-'.$i, '203.0.113.'.($round * 10 + intdiv($i, 4)));
             }
-            $this->attempt('typo@example.test', 'correct-horse-battery-1', '198.51.100.'.$round)->assertRedirect(route('account.orders'));
+            $this->tryLogin('typo@example.test', 'correct-horse-battery-1', '198.51.100.'.$round)->assertRedirect(route('account.orders'));
             $this->postForm('/logout');
         }
     }
@@ -71,21 +71,21 @@ class LoginLockTest extends TestCase
     {
         Mail::fake();
         $user = User::factory()->create(['email' => 'owner@example.test']);
-        $this->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.1')->assertRedirect(route('account.orders'));
+        $this->tryLogin('owner@example.test', 'correct-horse-battery-1', '198.51.100.1')->assertRedirect(route('account.orders'));
         $device = $this->app['cookie']->queued(UserService::DEVICE_COOKIE)?->getValue();
         $this->assertNotNull($device);
         $this->postForm('/logout');
 
         for ($i = 0; $i < 20; $i++) {
-            $this->attempt('owner@example.test', 'wrong-'.$i, '203.0.113.'.intdiv($i, 4));
+            $this->tryLogin('owner@example.test', 'wrong-'.$i, '203.0.113.'.intdiv($i, 4));
         }
-        $this->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.2')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
+        $this->tryLogin('owner@example.test', 'correct-horse-battery-1', '198.51.100.2')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
         $this->withCookie(UserService::DEVICE_COOKIE, $device)
-            ->attempt('owner@example.test', 'correct-horse-battery-1', '198.51.100.3')->assertRedirect(route('account.orders'));
+            ->tryLogin('owner@example.test', 'correct-horse-battery-1', '198.51.100.3')->assertRedirect(route('account.orders'));
         $this->assertAuthenticatedAs($user);
         $this->postForm('/logout');
         $this->withCookie(UserService::DEVICE_COOKIE, $device)
-            ->attempt('owner@example.test', 'wrong-again', '198.51.100.4')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
+            ->tryLogin('owner@example.test', 'wrong-again', '198.51.100.4')->assertSessionHas('error', fn ($m) => str_contains($m, 'paused'));
     }
 
     public function test_repeated_locks_send_at_most_one_mail_a_day(): void
@@ -94,7 +94,7 @@ class LoginLockTest extends TestCase
         User::factory()->create(['email' => 'target2@example.test']);
         foreach ([0, 1] as $round) {
             for ($i = 0; $i < 20; $i++) {
-                $this->attempt('target2@example.test', "w-{$round}-{$i}", '203.0.'.$round.'.'.intdiv($i, 4));
+                $this->tryLogin('target2@example.test', "w-{$round}-{$i}", '203.0.'.$round.'.'.intdiv($i, 4));
             }
             Cache::forget(UserService::loginLockKey('target2@example.test'));
         }
